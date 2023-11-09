@@ -2,6 +2,9 @@
 members = [
     "client/aura",
     "primitives/aura",
+    "node",
+    "pallets/etf",
+    "runtime",
 ]
 resolver = "2"
 
