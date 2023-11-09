@@ -132,11 +132,12 @@ pub async fn claim_slot<B, P: Pair>(
 			let proof = DLEQProof::new(x, pk, generator, s.to_le_bytes().to_vec(), &mut rng);
 			let mut out = Vec::new();
 			let _= proof.serialize_compressed(&mut out);
+			let proof_bytes: [u8;224] = out.try_into().unwrap();
 			let pre_digest = PreDigest {
 				slot: slot, 
 				secret: convert_to_bytes::<K, 48>(proof.secret_commitment_g)
 					.try_into().expect("The slot secret should be valid; qed;"),
-				proof: out.try_into().expect("should be ok"),
+				proof: proof_bytes,
 			};
 			Some((pre_digest.clone(), p.clone()))
 		} else {
@@ -218,7 +219,7 @@ pub fn find_pre_digest<B: BlockT, Signature: Codec>(
 		return Ok(PreDigest{ 
 			slot: 0.into(), 
 			secret: [0;48],
-			proof: ([0;244]),
+			proof: ([0;224]),
 		});
 	}
 

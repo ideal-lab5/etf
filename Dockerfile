@@ -1,31 +1,48 @@
-FROM docker.io/library/ubuntu:22.04
+FROM rust:buster as builder
+WORKDIR /app
 
-# show backtraces
-ENV RUST_BACKTRACE 1
-
-# install tools and dependencies
 RUN apt-get update && \
-	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-		ca-certificates && \
-# apt cleanup
-	apt-get autoremove -y && \
-	apt-get clean && \
-	find /var/lib/apt/lists/ -type f -not -name lock -delete; \
-# add user and link ~/.local/share/polkadot to /data
-	useradd -m -u 1000 -U -s /bin/sh -d /polkadot polkadot && \
-	mkdir -p /data /polkadot/.local/share && \
-	chown -R polkadot:polkadot /data && \
-	ln -s /data /polkadot/.local/share/node-template
+	apt-get dist-upgrade -y -o Dpkg::Options::="--force-confold" && \
+	apt-get install -y cmake pkg-config libssl-dev git clang libclang-dev protobuf-compiler
 
-USER polkadot
+ARG GIT_COMMIT=
+ENV GIT_COMMIT=$GIT_COMMIT
+ARG BUILD_ARGS
+ARG PROFILE=production
 
-# copy the compiled binary to the container
-COPY --chown=polkadot:polkadot --chmod=774 node-template /usr/bin/node-template
+COPY . .
 
-# check if executable works in this container
-RUN /usr/bin/node-template --version
+RUN make $BUILD_ARGS
 
-# ws_port
-EXPOSE 9930 9333 9944 30333 30334
+# =============
 
-CMD ["/usr/bin/node-template"]
+FROM phusion/baseimage:focal-1.2.0
+LABEL maintainer="driemworks@idealabs.network"
+
+ARG PROFILE
+
+# RUN mv /usr/share/ca* /tmp && \
+# 	rm -rf /usr/share/*  && \
+# 	mv /tmp/ca-certificates /usr/share/ && \
+# 	useradd -m -u 1000 -U -s /bin/sh -d /acala acala
+
+RUN useradd -m -u 1000 -U -s /bin/sh -d /acala acala
+
+COPY --from=builder /app/target/$PROFILE/acala /usr/local/bin
+
+# checks
+RUN ldd /usr/local/bin/acala && \
+	/usr/local/bin/acala --version
+
+# Shrinking
+RUN rm -rf /usr/lib/python* && \
+	rm -rf /usr/sbin /usr/share/man
+
+USER acala
+EXPOSE 30333 9933 9944
+
+RUN mkdir /acala/data
+
+VOLUME ["/acala/data"]
+
+ENTRYPOINT ["/usr/local/bin/acala"]

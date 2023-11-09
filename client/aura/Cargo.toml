@@ -33,33 +33,33 @@ rand_chacha = { version = "0.3.1", default-features = false }
 etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk/", default-features = false }
 
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", version = "0.10.0-dev" }
-sc-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0", version = "0.10.0-dev" }
-sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0", version = "4.0.0-dev" }
-sc-consensus = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0", version = "0.10.0-dev" }
-sc-consensus-slots = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0", version = "0.10.0-dev" }
-sc-telemetry = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0", version = "4.0.0-dev" }
-sp-api = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0", version = "4.0.0-dev" }
-sp-application-crypto = { git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0", version = "23.0.0" }
-sp-block-builder = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sp-blockchain = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sp-consensus = { version = "0.10.0-dev", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
+sc-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", version = "0.10.0-dev" }
+sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", version = "4.0.0-dev" }
+sc-consensus = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", version = "0.10.0-dev" }
+sc-consensus-slots = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", version = "0.10.0-dev" }
+sc-telemetry = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", version = "4.0.0-dev" }
+sp-api = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", version = "4.0.0-dev" }
+sp-application-crypto = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", version = "23.0.0" }
+sp-block-builder = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sp-blockchain = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sp-consensus = { version = "0.10.0-dev", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
 sp-consensus-etf-aura = { version = "0.10.0-dev", path = "../../primitives/aura" }
-sp-consensus-slots = { version = "0.10.0-dev", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sp-core = { version = "21.0.0", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sp-inherents = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sp-keystore = { version = "0.27.0", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sp-runtime = { version = "24.0.0", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
+sp-consensus-slots = { version = "0.10.0-dev", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sp-core = { version = "21.0.0", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sp-inherents = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sp-keystore = { version = "0.27.0", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sp-runtime = { version = "24.0.0", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
 
 [dev-dependencies]
 array-bytes = "6.1"
 hex = "0.4.3"
 parking_lot = "0.12.1"
 tempfile = "3.1.0"
-sc-keystore = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sc-network = { version = "0.10.0-dev", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sc-network-test = { version = "0.8.0", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sp-keyring = { version = "24.0.0", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sp-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-sp-tracing = { version = "10.0.0", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
-substrate-test-runtime-client = { version = "2.0.0", git = "https://github.com/paritytech/polkadot-sdk", tag = "polkadot-v1.3.0" }
+sc-keystore = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sc-network = { version = "0.10.0-dev", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sc-network-test = { version = "0.8.0", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sp-keyring = { version = "24.0.0", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sp-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+sp-tracing = { version = "10.0.0", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
+substrate-test-runtime-client = { version = "2.0.0", git = "https://github.com/paritytech/polkadot-sdk", branch = "master" }
 tokio = { version = "1.22.0" }
