@@ -1,48 +1,24 @@
-FROM rust:buster as builder
-WORKDIR /app
+FROM paritytech/ci-linux:production as build
 
-RUN apt-get update && \
-	apt-get dist-upgrade -y -o Dpkg::Options::="--force-confold" && \
-	apt-get install -y cmake pkg-config libssl-dev git clang libclang-dev protobuf-compiler
-
-ARG GIT_COMMIT=
-ENV GIT_COMMIT=$GIT_COMMIT
-ARG BUILD_ARGS
-ARG PROFILE=production
-
+WORKDIR /code
 COPY . .
+RUN cargo +nightly build --release
 
-RUN make $BUILD_ARGS
+FROM ubuntu:22.04
+WORKDIR /node
 
-# =============
+# Copy the node binary.
+COPY --from=build /code/target/release/node .
 
-FROM phusion/baseimage:focal-1.2.0
-LABEL maintainer="driemworks@idealabs.network"
+# Install root certs, see: https://github.com/paritytech/substrate/issues/9984
+RUN apt update && \
+    apt install -y ca-certificates && \
+    update-ca-certificates && \
+    apt remove ca-certificates -y && \
+    rm -rf /var/lib/apt/lists/*
 
-ARG PROFILE
-
-# RUN mv /usr/share/ca* /tmp && \
-# 	rm -rf /usr/share/*  && \
-# 	mv /tmp/ca-certificates /usr/share/ && \
-# 	useradd -m -u 1000 -U -s /bin/sh -d /acala acala
-
-RUN useradd -m -u 1000 -U -s /bin/sh -d /acala acala
-
-COPY --from=builder /app/target/$PROFILE/acala /usr/local/bin
-
-# checks
-RUN ldd /usr/local/bin/acala && \
-	/usr/local/bin/acala --version
-
-# Shrinking
-RUN rm -rf /usr/lib/python* && \
-	rm -rf /usr/sbin /usr/share/man
-
-USER acala
-EXPOSE 30333 9933 9944
-
-RUN mkdir /acala/data
-
-VOLUME ["/acala/data"]
-
-ENTRYPOINT ["/usr/local/bin/acala"]
+EXPOSE 9944
+# Exposing unsafe RPC methods is needed for testing but should not be done in
+# production.
+#CMD [ "./node-template", "--dev", "--ws-external", "--rpc-external"]
+ENTRYPOINT ["./node"]
