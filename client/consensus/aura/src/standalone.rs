@@ -120,23 +120,21 @@ pub async fn claim_slot<B, P: Pair>(
 	let expected_author = slot_author::<P>(slot, authorities);
 	let public = expected_author.and_then(|p| {
 		if keystore.has_keys(&[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)]) {
-			// let mut id = p.to_raw_vec();
 			let s = u64::from(slot);
 			let id = s.to_string().as_bytes().to_vec();
-			// id.append(&mut s.to_string().as_bytes().to_vec());
 			let pk = hash_to_g1(&id);
 			let x: Fr = Fr::from_be_bytes_mod_order(secret);
 			let generator: K = convert_from_bytes::<K, 48>(g)
 				.expect("A generator of G1 should be known; qed;");
 			let mut rng = ChaCha20Rng::seed_from_u64(s);
-			let proof = DLEQProof::new(x, pk, generator, vec![], &mut rng);
+			let proof = DLEQProof::new(x, pk, generator, id, &mut rng);
 			let mut out = Vec::new();
-			let _= proof.serialize_compressed(&mut out);
+			let _= proof.serialize_compressed(&mut out).unwrap();
 			let proof_bytes: [u8;224] = out.try_into().unwrap();
 			let pre_digest = PreDigest {
 				slot: slot, 
 				secret: convert_to_bytes::<K, 48>(proof.secret_commitment_g)
-					.try_into().expect("The slot secret should be valid; qed;"),
+					.try_into().expect("The slot secret should be valid; qed;"), // x*pk
 				proof: proof_bytes,
 			};
 			Some((pre_digest.clone(), p.clone()))
@@ -365,19 +363,18 @@ where
 		// verify the DLEQ proof
 		let expected_author =
 			slot_author::<P>(slot, authorities).ok_or(SealVerificationError::SlotAuthorNotFound)?;
-		let secret_bytes = claim.secret;
 		let s = u64::from(slot);
-		let slot_secret: K = K::deserialize_compressed(&secret_bytes[..])
-			.map_err(|_| SealVerificationError::BadSignature)?;
+		let id = s.to_string().as_bytes().to_vec();
+		let pk = hash_to_g1(&id);
+
 		let generator: K = K::deserialize_compressed(&g[..])
 			.expect("The runtime should contain a valid point in G1; qed;");
 		let p = claim.proof;
 		let proof = DLEQProof::deserialize_compressed(&p[..]).unwrap();
-		log::info!("proof {:?}", proof);
 		// check the signature is valid under the expected authority and chain state.
 		let pre_hash = header.hash();
 
-		if proof.verify(slot_secret, generator, vec![]) {
+		if proof.verify(pk, generator, id) {
 			if P::verify(&sig, pre_hash.as_ref(), expected_author) {
 				Ok((header, claim, seal))
 			} else {

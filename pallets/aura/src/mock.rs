@@ -37,10 +37,7 @@ type Block = frame_system::mocking::MockBlock<Test>;
 type AccountId = u64;
 
 frame_support::construct_runtime!(
-	pub enum Test where
-		Block = Block,
-		NodeBlock = Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
+	pub enum Test
 	{
 		System: frame_system,
 		Timestamp: pallet_timestamp,
