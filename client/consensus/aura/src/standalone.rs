@@ -129,7 +129,7 @@ pub async fn claim_slot<B, P: Pair>(
 			let generator: K = convert_from_bytes::<K, 48>(g)
 				.expect("A generator of G1 should be known; qed;");
 			let mut rng = ChaCha20Rng::seed_from_u64(s);
-			let proof = DLEQProof::new(x, pk, generator, s.to_le_bytes().to_vec(), &mut rng);
+			let proof = DLEQProof::new(x, pk, generator, vec![], &mut rng);
 			let mut out = Vec::new();
 			let _= proof.serialize_compressed(&mut out);
 			let proof_bytes: [u8;224] = out.try_into().unwrap();
@@ -372,13 +372,12 @@ where
 		let generator: K = K::deserialize_compressed(&g[..])
 			.expect("The runtime should contain a valid point in G1; qed;");
 		let p = claim.proof;
-		// DRIEMWORKS:: This could be cleaned up but it's fine for now
 		let proof = DLEQProof::deserialize_compressed(&p[..]).unwrap();
-		// check the signature is valid under the expected authority and
-		// chain state.
+		log::info!("proof {:?}", proof);
+		// check the signature is valid under the expected authority and chain state.
 		let pre_hash = header.hash();
 
-		if proof.verify(slot_secret, generator, s.to_le_bytes().to_vec()) {
+		if proof.verify(slot_secret, generator, vec![]) {
 			if P::verify(&sig, pre_hash.as_ref(), expected_author) {
 				Ok((header, claim, seal))
 			} else {
@@ -412,7 +411,7 @@ mod tests {
 
 	#[test]
 	fn authorities_call_works() {
-		let client = substrate_test_runtime_client::new();
+		let client = substrate_etf_test_runtime_client::new();
 
 		assert_eq!(client.chain_info().best_number, 0);
 		assert_eq!(

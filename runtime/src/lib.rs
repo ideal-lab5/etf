@@ -141,7 +141,7 @@ const CONTRACTS_EVENTS: pallet_contracts::CollectEvents =
 /// This determines the average expected block time that we are targeting.
 /// Blocks will be produced at a minimum duration defined by `SLOT_DURATION`.
 /// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
-/// up by `pallet_aura` to implement `fn slot_duration()`.
+/// up by `pallet_etf_aura` to implement `fn slot_duration()`.
 ///
 /// Change this to adjust the block time.
 pub const MILLISECS_PER_BLOCK: u64 = 6000;
@@ -238,14 +238,14 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-impl pallet_aura::Config for Runtime {
+impl pallet_etf_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<32>;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
 
 	#[cfg(feature = "experimental")]
-	type SlotDuration = pallet_aura::MinimumPeriodTimesTwo<Runtime>;
+	type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Runtime>;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -287,7 +287,7 @@ impl pallet_balances::Config for Runtime {
 	type MaxFreezes = ();
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeFreezeReason = ();
-	type MaxHolds = ();
+	type MaxHolds = ConstU32<1>;
 }
 
 parameter_types! {
@@ -376,7 +376,7 @@ construct_runtime!(
 	pub struct Runtime {
 		System: frame_system,
 		Timestamp: pallet_timestamp,
-		Aura: pallet_aura,
+		Aura: pallet_etf_aura,
 		Grandpa: pallet_grandpa,
 		Balances: pallet_balances,
 		TransactionPayment: pallet_transaction_payment,

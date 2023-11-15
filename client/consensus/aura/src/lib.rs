@@ -374,10 +374,13 @@ where
 		)?;
 		let ibe_params = ibe_params(
 			self.client.as_ref(),
-			header.hash(), 
+			header.hash(),
+			*header.number(),
+			&self.compatibility_mode,
 		)?;
 		Ok((
-			authorities, secret, 
+			authorities, 
+			secret, 
 			ibe_params.try_into().expect("A generator should be known; qed;"),
 		))
 	}
@@ -604,6 +607,7 @@ where
 					.map_err(|_| ConsensusError::InvalidAuthoritiesSet)?;
 			},
 	}
+	// TODO: This is the wrong type of error
 	runtime_api
 		.secret(parent_hash).ok()
 		.ok_or(ConsensusError::Other(Box::new(Error::<B>::InvalidDLEQProof(parent_hash))))
@@ -613,6 +617,8 @@ where
 pub fn ibe_params<A, B, C>(
 	client: &C,
 	parent_hash: B::Hash,
+	context_block_number: NumberFor<B>,
+	compatibility_mode: &CompatibilityMode<NumberFor<B>>,
 ) -> Result<Vec<u8>, ConsensusError>
 where
 	A: Codec + Debug,
@@ -620,8 +626,28 @@ where
 	C: ProvideRuntimeApi<B>,
 	C::Api: AuraApi<B, A>,
 {
-	client
-		.runtime_api()
+	let runtime_api = client.runtime_api();
+	match compatibility_mode {
+		CompatibilityMode::None => {},
+		// Use `initialize_block` until we hit the block that should disable the mode.
+		CompatibilityMode::UseInitializeBlock { until } =>
+			if *until > context_block_number {
+				runtime_api
+					.initialize_block(
+						parent_hash,
+						&B::Header::new(
+							context_block_number,
+							Default::default(),
+							Default::default(),
+							parent_hash,
+							Default::default(),
+						),
+					)
+					.map_err(|_| ConsensusError::InvalidAuthoritiesSet)?;
+			},
+	}
+
+	runtime_api
 		.ibe_params(parent_hash)
 		.ok()
 		.ok_or(ConsensusError::InvalidAuthoritiesSet)
@@ -631,15 +657,15 @@ where
 mod tests {
 	use super::*;
 	use parking_lot::Mutex;
-	use sc_block_builder::BlockBuilderProvider;
+	use sc_block_builder::BlockBuilderBuilder;
 	use sc_client_api::BlockchainEvents;
 	use sc_consensus::BoxJustificationImport;
 	use sc_consensus_slots::{BackoffAuthoringOnFinalizedHeadLagging, SimpleSlotWorker};
 	use sc_keystore::LocalKeystore;
-	use sc_network_test::{Block as TestBlock, *};
+	use sc_network_etf_test::{Block as TestBlock, *};
 	use sp_application_crypto::{key_types::AURA, AppCrypto};
 	use sp_consensus::{DisableProofRecording, NoNetwork as DummyOracle, Proposal};
-	use sp_consensus_aura::sr25519::AuthorityPair;
+	use sp_consensus_etf_aura::sr25519::AuthorityPair;
 	use sp_inherents::InherentData;
 	use sp_keyring::sr25519::Keyring;
 	use sp_keystore::Keystore;
@@ -652,7 +678,7 @@ mod tests {
 		task::Poll,
 		time::{Duration, Instant},
 	};
-	use substrate_test_runtime_client::{
+	use substrate_etf_test_runtime_client::{
 		runtime::{Header, H256},
 		TestClient,
 	};
@@ -687,7 +713,14 @@ mod tests {
 			_: Duration,
 			_: Option<usize>,
 		) -> Self::Proposal {
-			let r = self.1.new_block(digests).unwrap().build().map_err(|e| e.into());
+			let r = BlockBuilderBuilder::new(&*self.1)
+				.on_parent_block(self.1.chain_info().best_hash)
+				.fetch_parent_block_number(&*self.1)
+				.unwrap()
+				.with_inherent_digests(digests)
+				.build()
+				.unwrap()
+				.build();
 
 			future::ready(r.map(|b| Proposal {
 				block: b.block,
@@ -887,10 +920,10 @@ mod tests {
 			force_authoring: false,
 			backoff_authoring_blocks: Some(BackoffAuthoringOnFinalizedHeadLagging::default()),
 			telemetry: None,
-			_phantom: PhantomData::<AuthorityPair>,
 			block_proposal_slot_portion: SlotProportion::new(0.5),
 			max_block_proposal_slot_portion: None,
 			compatibility_mode: Default::default(),
+			_phantom: PhantomData::<fn() -> AuthorityPair>,
 		};
 
 		let head = Header::new(
@@ -940,10 +973,10 @@ mod tests {
 			force_authoring: false,
 			backoff_authoring_blocks: Option::<()>::None,
 			telemetry: None,
-			_key_type: PhantomData::<AuthorityPair>,
 			block_proposal_slot_portion: SlotProportion::new(0.5),
 			max_block_proposal_slot_portion: None,
 			compatibility_mode: Default::default(),
+			_phantom: PhantomData::<fn() -> AuthorityPair>,
 		};
 
 		let head = client.expect_header(client.info().genesis_hash).unwrap();

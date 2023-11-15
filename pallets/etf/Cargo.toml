@@ -7,7 +7,7 @@ homepage = "https://idealabs.network"
 edition = "2021"
 license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 publish = false
-repository = "https://github.com/ideal-lab5/substrate/"
+repository = "https://github.com/ideal-lab5/etf/"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -20,19 +20,20 @@ codec = { package = "parity-scale-codec", version = "3.2.2", default-features = 
 ] }
 ark-serialize = { version = "0.4.0", features = [ "derive" ], default-features = false }
 ark-bls12-381 = { version = "0.4.0", features = ["curve"], default-features = false }
-sp-io = { version = "23.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master"  }
+sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master"  }
 primitive-types = { version = "0.12.1", default-features = false }
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
-frame-benchmarking = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" , optional = true }
-frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master"  }
-frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master"  }
+frame-benchmarking = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" , optional = true }
+frame-support = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+frame-system = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 
-sp-std = { version = "8.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master"  }
-sp-runtime = { version = "24.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master"  }
-sp-core = { version = "21.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master"  }
+sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 
 [dev-dependencies]
-frame-support-test = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master"  }
+frame-support-test = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
+pallet-balances = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", branch = "master" }
 rand_chacha ="0.3.1"
 ark-std = { version = "0.4.0", default-features = false }
 hex = "0.4.3"
@@ -53,6 +54,13 @@ std = [
 	"sp-core/std",
 	"ark-serialize/std",
 	"ark-bls12-381/std",
+	"pallet-balances/std",
 ]
-runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
-try-runtime = ["frame-support/try-runtime"]
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+]
+try-runtime = [
+	"frame-support/try-runtime",
+	"pallet-balances/try-runtime"
+]

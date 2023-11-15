@@ -1,12 +1,21 @@
 [workspace]
 members = [
-    "client/aura",
-    "primitives/aura",
+    "client/consensus/aura",
+    "client/network/test",
+    "primitives/consensus/aura",
     "node",
     "pallets/etf",
     "runtime",
+    "test-utils/runtime",
+    "test-utils/runtime/client",
 ]
 resolver = "2"
+
+[workspace.package]
+edition = "2021"
+authors = ["Ideal Labs <driemworks@idealabs.network>"]
+repository = "https://github.com/ideal-lab5/etf"
+
 
 [profile.release]
 opt-level = 3

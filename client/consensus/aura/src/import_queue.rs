@@ -206,7 +206,9 @@ where
 
 		let ibe_params = ibe_params(
 			self.client.as_ref(),
-			parent_hash, 
+			parent_hash,
+			*block.header.number(),
+			&self.compatibility_mode,
 		).map_err(|e| format!("Could not fetch IBE generator at {:?}: {}", parent_hash, e))?;
 
 		let create_inherent_data_providers = self
@@ -221,9 +223,6 @@ where
 			.map_err(Error::<B>::Inherent)?;
 
 		let slot_now = create_inherent_data_providers.slot();
-		// I still think it makes sense to try to get the secret this way as well.. but how?
-		// let slot_secret = create_inherent_data_providers.secret();
-
 		// we add one to allow for some small drift.
 		// FIXME #1019 in the future, alter this queue to allow deferring of
 		// headers
@@ -246,7 +245,6 @@ where
 					let new_block = B::new(pre_header.clone(), inner_body);
 
 					inherent_data.aura_replace_inherent_data(slot);
-					// inherent_data.etf_replace_inherent_data([2;32]);
 					// skip the inherents verification if the runtime API is old or not expected to
 					// exist.
 					if self
