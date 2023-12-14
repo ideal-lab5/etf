@@ -3,8 +3,7 @@
   "id": "rintaro",
   "chainType": "Development",
   "bootNodes": [
-    "/dns/etf0.idealabs.network/tcp/30334/wss/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
-    "/dns/etf1.idealabs.network/tcp/30333/wss/p2p/12D3KooWF9PqFCdboSo7FTmbuwQqj2A49xvxutKQZCyWo6fXYqJw"
+    "/dns/etf0.idealabs.network/tcp/30334/wss/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp"
   ],
   "telemetryEndpoints": null,
   "protocolId": "ETF",

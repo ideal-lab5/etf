@@ -515,13 +515,13 @@ impl_runtime_apis! {
 		fn secret() -> [u8;32] {
 			// read master secret from somehwere else...
 			[2;32]
-			// let key = context_block_number.to_string();
-			// log::info!("Calling secret({:?})", key);
-			// match StorageValueRef::persistent(key.as_bytes()).get::<[u8;32]>() {
-			// // match StorageValueRef::persistent(b.).get::<[u8;32]>() {
-			// 	Ok(Some(secret)) => secret,
-			// 	_ => [0;32]
-			// }
+			let key = context_block_number.to_string();
+			log::info!("Calling secret({:?})", key);
+			match StorageValueRef::persistent(key.as_bytes()).get::<[u8;32]>() {
+			// match StorageValueRef::persistent(b.).get::<[u8;32]>() {
+				Ok(Some(secret)) => secret,
+				_ => [0;32]
+			}
 		}
 
 		fn ibe_params() -> Vec<u8> {
