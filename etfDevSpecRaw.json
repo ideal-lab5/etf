@@ -1,13 +1,18 @@
 {
-  "name": "Local Testnet",
-  "id": "local_testnet",
-  "chainType": "Local",
+  "name": "Rintaro",
+  "id": "rintaro",
+  "chainType": "Development",
   "bootNodes": [
-    "/dns/etf0.idealabs.network/tcp/30334/wss/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp"
+    "/dns/etf0.idealabs.network/tcp/30334/wss/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
+    "/dns/etf1.idealabs.network/tcp/30333/wss/p2p/12D3KooWF9PqFCdboSo7FTmbuwQqj2A49xvxutKQZCyWo6fXYqJw"
   ],
   "telemetryEndpoints": null,
-  "protocolId": null,
-  "properties": null,
+  "protocolId": "ETF",
+  "properties": {
+    "ss58Format": 42,
+    "tokenDecimals": 12,
+    "tokenSymbol": "ETF"
+  },
   "codeSubstitutes": {},
   "genesis": {
     "raw": {
