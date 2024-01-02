@@ -29,6 +29,16 @@ use frame_support::{
 use sp_runtime::traits::Hash;
 use substrate_test_utils::assert_eq_uvec;
 
+use ark_std::{
+	rand::SeedableRng, 
+	test_rng, 
+	ops::Mul,
+};
+use ark_bls12_381::{Fr, G2Projective as G2};
+use ark_ff::UniformRand;
+use ark_ec::Group;
+use etf_crypto_primitives::utils::convert_to_bytes;
+
 #[test]
 #[docify::export]
 fn basic_scheduling_works() {
@@ -62,6 +72,55 @@ fn basic_scheduling_works() {
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
+
+#[test]
+#[docify::export]
+fn basic_scheduling_timelock_works() {
+	let message = b"this is a test";
+	let ids = vec![
+		b"id1".to_vec(), 
+	];
+	let t = 1;
+
+	let ibe_pp: G2 = G2::generator().into();
+	let s = Fr::rand(&mut test_rng());
+	let p_pub: G2 = ibe_pp.mul(s).into();
+
+	let ibe_pp_bytes = convert_to_bytes::<G2, 96>(ibe_pp);
+	let p_pub_bytes = convert_to_bytes::<G2, 96>(p_pub);
+	// Q: how can we mock the decryption trait so that we can do whatever?
+	// probably don't really need to perform decryption here?
+	// new_test_ext().execute_with(|| {
+	// 	// Call to schedule
+	// 	let call =
+	// 		RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
+
+	// 	// BaseCallFilter should be implemented to accept `Logger::log` runtime call which is
+	// 	// implemented for `BaseFilter` in the mock runtime
+	// 	assert!(!<Test as frame_system::Config>::BaseCallFilter::contains(&call));
+
+	// 	// Schedule call to be executed at the 4th block
+	// 	assert_ok!(Scheduler::do_schedule(
+	// 		DispatchTime::At(4),
+	// 		None,
+	// 		127,
+	// 		root(),
+	// 		Preimage::bound(call).unwrap()
+	// 	));
+
+	// 	// `log` runtime call should not have executed yet
+	// 	run_to_block(3);
+	// 	assert!(logger::log().is_empty());
+
+	// 	run_to_block(4);
+	// 	// `log` runtime call should have executed at block 4
+	// 	assert_eq!(logger::log(), vec![(root(), 42u32)]);
+
+	// 	run_to_block(100);
+	// 	assert_eq!(logger::log(), vec![(root(), 42u32)]);
+	// });
+}
+
 
 #[test]
 #[docify::export]
@@ -878,156 +937,20 @@ fn should_check_origin_for_cancel() {
 }
 
 #[test]
-fn migration_to_v4_works() {
-	new_test_ext().execute_with(|| {
-		for i in 0..3u64 {
-			let k = i.twox_64_concat();
-			let old = vec![
-				Some(ScheduledV1 {
-					maybe_id: None,
-					priority: i as u8 + 10,
-					call: RuntimeCall::Logger(LoggerCall::log {
-						i: 96,
-						weight: Weight::from_parts(100, 0),
-					}),
-					maybe_periodic: None,
-				}),
-				None,
-				Some(ScheduledV1 {
-					maybe_id: Some(b"test".to_vec()),
-					priority: 123,
-					call: RuntimeCall::Logger(LoggerCall::log {
-						i: 69,
-						weight: Weight::from_parts(10, 0),
-					}),
-					maybe_periodic: Some((456u64, 10)),
-				}),
-			];
-			frame_support::migration::put_storage_value(b"Scheduler", b"Agenda", &k, old);
-		}
-
-		Scheduler::migrate_v1_to_v4();
-
-		let mut x = Agenda::<Test>::iter().map(|x| (x.0, x.1.into_inner())).collect::<Vec<_>>();
-		x.sort_by_key(|x| x.0);
-		let expected = vec![
-			(
-				0,
-				vec![
-					Some(ScheduledOf::<Test> {
-						maybe_id: None,
-						priority: 10,
-						call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
-							i: 96,
-							weight: Weight::from_parts(100, 0),
-						}))
-						.unwrap(),
-						maybe_periodic: None,
-						origin: root(),
-						_phantom: PhantomData::<u64>::default(),
-					}),
-					None,
-					Some(ScheduledOf::<Test> {
-						maybe_id: Some(blake2_256(&b"test"[..])),
-						priority: 123,
-						call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
-							i: 69,
-							weight: Weight::from_parts(10, 0),
-						}))
-						.unwrap(),
-						maybe_periodic: Some((456u64, 10)),
-						origin: root(),
-						_phantom: PhantomData::<u64>::default(),
-					}),
-				],
-			),
-			(
-				1,
-				vec![
-					Some(ScheduledOf::<Test> {
-						maybe_id: None,
-						priority: 11,
-						call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
-							i: 96,
-							weight: Weight::from_parts(100, 0),
-						}))
-						.unwrap(),
-						maybe_periodic: None,
-						origin: root(),
-						_phantom: PhantomData::<u64>::default(),
-					}),
-					None,
-					Some(ScheduledOf::<Test> {
-						maybe_id: Some(blake2_256(&b"test"[..])),
-						priority: 123,
-						call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
-							i: 69,
-							weight: Weight::from_parts(10, 0),
-						}))
-						.unwrap(),
-						maybe_periodic: Some((456u64, 10)),
-						origin: root(),
-						_phantom: PhantomData::<u64>::default(),
-					}),
-				],
-			),
-			(
-				2,
-				vec![
-					Some(ScheduledOf::<Test> {
-						maybe_id: None,
-						priority: 12,
-						call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
-							i: 96,
-							weight: Weight::from_parts(100, 0),
-						}))
-						.unwrap(),
-						maybe_periodic: None,
-						origin: root(),
-						_phantom: PhantomData::<u64>::default(),
-					}),
-					None,
-					Some(ScheduledOf::<Test> {
-						maybe_id: Some(blake2_256(&b"test"[..])),
-						priority: 123,
-						call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
-							i: 69,
-							weight: Weight::from_parts(10, 0),
-						}))
-						.unwrap(),
-						maybe_periodic: Some((456u64, 10)),
-						origin: root(),
-						_phantom: PhantomData::<u64>::default(),
-					}),
-				],
-			),
-		];
-		for (i, j) in x.iter().zip(expected.iter()) {
-			assert_eq!(i.0, j.0);
-			for (x, y) in i.1.iter().zip(j.1.iter()) {
-				assert_eq!(x, y);
-			}
-		}
-		assert_eq_uvec!(x, expected);
-
-		assert_eq!(Scheduler::on_chain_storage_version(), 4);
-	});
-}
-
-#[test]
 fn test_migrate_origin() {
 	new_test_ext().execute_with(|| {
 		for i in 0..3u64 {
 			let k = i.twox_64_concat();
-			let old: Vec<Option<Scheduled<[u8; 32], BoundedCallOf<Test>, u64, u32, u64>>> = vec![
+			let old: Vec<Option<Scheduled<[u8; 32], BoundedCallOf<Test>, BoundedVec<u8, ConstU32<512>>, u64, u32, u64>>> = vec![
 				Some(Scheduled {
 					maybe_id: None,
 					priority: i as u8 + 10,
-					call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
+					maybe_call: Some(Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
 						i: 96,
 						weight: Weight::from_parts(100, 0),
 					}))
-					.unwrap(),
+					.unwrap()),
+					maybe_ciphertext: None,
 					origin: 3u32,
 					maybe_periodic: None,
 					_phantom: Default::default(),
@@ -1037,11 +960,12 @@ fn test_migrate_origin() {
 					maybe_id: Some(blake2_256(&b"test"[..])),
 					priority: 123,
 					origin: 2u32,
-					call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
+					maybe_call: Some(Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
 						i: 69,
 						weight: Weight::from_parts(10, 0),
 					}))
-					.unwrap(),
+					.unwrap()),
+					maybe_ciphertext: None,
 					maybe_periodic: Some((456u64, 10)),
 					_phantom: Default::default(),
 				}),
@@ -1070,11 +994,12 @@ fn test_migrate_origin() {
 						Some(ScheduledOf::<Test> {
 							maybe_id: None,
 							priority: 10,
-							call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
+							maybe_call: Some(Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
 								i: 96,
 								weight: Weight::from_parts(100, 0)
 							}))
-							.unwrap(),
+							.unwrap()),
+							maybe_ciphertext: None,
 							maybe_periodic: None,
 							origin: system::RawOrigin::Root.into(),
 							_phantom: PhantomData::<u64>::default(),
@@ -1083,11 +1008,12 @@ fn test_migrate_origin() {
 						Some(Scheduled {
 							maybe_id: Some(blake2_256(&b"test"[..])),
 							priority: 123,
-							call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
+							maybe_call: Some(Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
 								i: 69,
 								weight: Weight::from_parts(10, 0)
 							}))
-							.unwrap(),
+							.unwrap()),
+							maybe_ciphertext: None,
 							maybe_periodic: Some((456u64, 10)),
 							origin: system::RawOrigin::None.into(),
 							_phantom: PhantomData::<u64>::default(),
@@ -1100,11 +1026,12 @@ fn test_migrate_origin() {
 						Some(Scheduled {
 							maybe_id: None,
 							priority: 11,
-							call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
+							maybe_call: Some(Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
 								i: 96,
 								weight: Weight::from_parts(100, 0)
 							}))
-							.unwrap(),
+							.unwrap()),
+							maybe_ciphertext: None,
 							maybe_periodic: None,
 							origin: system::RawOrigin::Root.into(),
 							_phantom: PhantomData::<u64>::default(),
@@ -1113,11 +1040,12 @@ fn test_migrate_origin() {
 						Some(Scheduled {
 							maybe_id: Some(blake2_256(&b"test"[..])),
 							priority: 123,
-							call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
+							maybe_call: Some(Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
 								i: 69,
 								weight: Weight::from_parts(10, 0)
 							}))
-							.unwrap(),
+							.unwrap()),
+							maybe_ciphertext: None,
 							maybe_periodic: Some((456u64, 10)),
 							origin: system::RawOrigin::None.into(),
 							_phantom: PhantomData::<u64>::default(),
@@ -1130,11 +1058,12 @@ fn test_migrate_origin() {
 						Some(Scheduled {
 							maybe_id: None,
 							priority: 12,
-							call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
+							maybe_call: Some(Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
 								i: 96,
 								weight: Weight::from_parts(100, 0)
 							}))
-							.unwrap(),
+							.unwrap()),
+							maybe_ciphertext: None,
 							maybe_periodic: None,
 							origin: system::RawOrigin::Root.into(),
 							_phantom: PhantomData::<u64>::default(),
@@ -1143,11 +1072,12 @@ fn test_migrate_origin() {
 						Some(Scheduled {
 							maybe_id: Some(blake2_256(&b"test"[..])),
 							priority: 123,
-							call: Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
+							maybe_call: Some(Preimage::bound(RuntimeCall::Logger(LoggerCall::log {
 								i: 69,
 								weight: Weight::from_parts(10, 0)
 							}))
-							.unwrap(),
+							.unwrap()),
+							maybe_ciphertext: None,
 							maybe_periodic: Some((456u64, 10)),
 							origin: system::RawOrigin::None.into(),
 							_phantom: PhantomData::<u64>::default(),
@@ -1198,7 +1128,8 @@ fn postponed_named_task_cannot_be_rescheduled() {
 			vec![Some(Scheduled {
 				maybe_id: Some(name),
 				priority: 127,
-				call: hashed,
+				maybe_call: Some(hashed),
+				maybe_ciphertext: None,
 				maybe_periodic: None,
 				origin: root().into(),
 				_phantom: Default::default(),

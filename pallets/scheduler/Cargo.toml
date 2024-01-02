@@ -22,10 +22,25 @@ sp-std = { default-features = false, git = "https://github.com/paritytech/polkad
 sp-weights = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 docify = "0.2.6"
 
+pallet-etf = { version = "4.0.0-dev", default-features = false, path = "../etf" }
+
 [dev-dependencies]
 pallet-preimage = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 substrate-test-utils = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main" }
+ark-std = { version = "0.4.0", default-features = false }
+ark-ff = { version = "0.4.0", default-features = false }
+ark-poly = { version = "0.4.0", default-features = false }
+ark-ec = { version = "0.4.0", default-features = false }
+ark-serialize = { version = "0.4.0", default-features = false }
+ark-bls12-381 = { version = "0.4.0", features = ["curve"], default-features = false }
+ark-crypto-primitives = { version = "0.4.0", default-features = false, features = ["signature"] }
+sp-consensus-etf-aura = { path = "../../primitives/consensus/aura" }
+pallet-etf = { version = "4.0.0-dev", default-features = false, path = "../etf" }
+pallet-etf-aura = { version = "4.0.0-dev", default-features = false, path = "../aura" }
+pallet-insecure-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 
 [features]
 default = [ "std" ]
@@ -50,6 +65,7 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 	"sp-weights/std",
+	"pallet-etf/std",
 ]
 try-runtime = [
 	"frame-support/try-runtime",

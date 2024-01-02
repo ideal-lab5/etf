@@ -78,7 +78,6 @@
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-pub mod migration;
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
@@ -92,7 +91,7 @@ use frame_support::{
 	traits::{
 		schedule::{self, DispatchTime, MaybeHashed},
 		Bounded, CallerTrait, EnsureOrigin, Get, IsType, OriginTrait, PalletInfoAccess,
-		PrivilegeCmp, QueryPreimage, StorageVersion, StorePreimage,
+		PrivilegeCmp, QueryPreimage, StorageVersion, StorePreimage, ConstU32,
 	},
 	weights::{Weight, WeightMeter},
 };
@@ -107,7 +106,7 @@ use sp_runtime::{
 	BoundedVec, DispatchError, RuntimeDebug,
 };
 use sp_std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, prelude::*};
-
+use pallet_etf::TimelockEncryptionProvider;
 pub use pallet::*;
 pub use weights::WeightInfo;
 
@@ -122,25 +121,21 @@ pub type CallOrHashOf<T> =
 pub type BoundedCallOf<T> =
 	Bounded<<T as Config>::RuntimeCall, <T as frame_system::Config>::Hashing>;
 
-#[cfg_attr(any(feature = "std", test), derive(PartialEq, Eq))]
-#[derive(Clone, RuntimeDebug, Encode, Decode)]
-struct ScheduledV1<Call, BlockNumber> {
-	maybe_id: Option<Vec<u8>>,
-	priority: schedule::Priority,
-	call: Call,
-	maybe_periodic: Option<schedule::Period<BlockNumber>>,
-}
+/// represents an opaque ciphertext
+pub type Ciphertext = BoundedVec<u8, ConstU32<512>>;
 
 /// Information regarding an item to be executed in the future.
 #[cfg_attr(any(feature = "std", test), derive(PartialEq, Eq))]
 #[derive(Clone, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub struct Scheduled<Name, Call, BlockNumber, PalletsOrigin, AccountId> {
+pub struct Scheduled<Name, Call, Ciphertext, BlockNumber, PalletsOrigin, AccountId> {
 	/// The unique identity for this task, if there is one.
 	maybe_id: Option<Name>,
 	/// This task's priority.
 	priority: schedule::Priority,
-	/// The call to be dispatched.
-	call: Call,
+	/// The call to be dispatched. If none, then delayed transactions are used
+	maybe_call: Option<Call>,
+	/// the delayed call ciphertext
+	maybe_ciphertext: Option<Ciphertext>,
 	/// If the call is periodic, then this points to the information concerning that.
 	maybe_periodic: Option<schedule::Period<BlockNumber>>,
 	/// The origin with which to dispatch the call.
@@ -148,27 +143,10 @@ pub struct Scheduled<Name, Call, BlockNumber, PalletsOrigin, AccountId> {
 	_phantom: PhantomData<AccountId>,
 }
 
-use crate::{Scheduled as ScheduledV3, Scheduled as ScheduledV2};
-
-pub type ScheduledV2Of<T> = ScheduledV2<
-	Vec<u8>,
-	<T as Config>::RuntimeCall,
-	BlockNumberFor<T>,
-	<T as Config>::PalletsOrigin,
-	<T as frame_system::Config>::AccountId,
->;
-
-pub type ScheduledV3Of<T> = ScheduledV3<
-	Vec<u8>,
-	CallOrHashOf<T>,
-	BlockNumberFor<T>,
-	<T as Config>::PalletsOrigin,
-	<T as frame_system::Config>::AccountId,
->;
-
 pub type ScheduledOf<T> = Scheduled<
 	TaskName,
 	BoundedCallOf<T>,
+	Ciphertext,
 	BlockNumberFor<T>,
 	<T as Config>::PalletsOrigin,
 	<T as frame_system::Config>::AccountId,
@@ -258,6 +236,8 @@ pub mod pallet {
 
 		/// The preimage provider with which we look up call hashes to get the call.
 		type Preimages: QueryPreimage<H = Self::Hashing> + StorePreimage;
+
+		type TlockProvider: TimelockEncryptionProvider;
 	}
 
 	#[pallet::storage]
@@ -440,253 +420,26 @@ pub mod pallet {
 			)?;
 			Ok(())
 		}
-	}
-}
 
-impl<T: Config> Pallet<T> {
-	/// Migrate storage format from V1 to V4.
-	///
-	/// Returns the weight consumed by this migration.
-	pub fn migrate_v1_to_v4() -> Weight {
-		use migration::v1 as old;
-		let mut weight = T::DbWeight::get().reads_writes(1, 1);
-
-		// Delete all undecodable values.
-		// `StorageMap::translate` is not enough since it just skips them and leaves the keys in.
-		let keys = old::Agenda::<T>::iter_keys().collect::<Vec<_>>();
-		for key in keys {
-			weight.saturating_accrue(T::DbWeight::get().reads(1));
-			if let Err(_) = old::Agenda::<T>::try_get(&key) {
-				weight.saturating_accrue(T::DbWeight::get().writes(1));
-				old::Agenda::<T>::remove(&key);
-				log::warn!("Deleted undecodable agenda");
-			}
+		/// Anonymously schedule a timelocked task.
+		#[pallet::call_index(6)]
+		#[pallet::weight(<T as Config>::WeightInfo::schedule(T::MaxScheduledPerBlock::get()))]
+		pub fn schedule_sealed(
+			origin: OriginFor<T>,
+			when: BlockNumberFor<T>,
+			priority: schedule::Priority,
+			ciphertext: Ciphertext,
+		) -> DispatchResult {
+			T::ScheduleOrigin::ensure_origin(origin.clone())?;
+			let origin = <T as Config>::RuntimeOrigin::from(origin);
+			Self::do_schedule_sealed(
+				DispatchTime::At(when),
+				priority,
+				origin.caller().clone(),
+				ciphertext,
+			)?;
+			Ok(())
 		}
-
-		Agenda::<T>::translate::<
-			Vec<Option<ScheduledV1<<T as Config>::RuntimeCall, BlockNumberFor<T>>>>,
-			_,
-		>(|_, agenda| {
-			Some(BoundedVec::truncate_from(
-				agenda
-					.into_iter()
-					.map(|schedule| {
-						weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
-
-						schedule.and_then(|schedule| {
-							if let Some(id) = schedule.maybe_id.as_ref() {
-								let name = blake2_256(id);
-								if let Some(item) = old::Lookup::<T>::take(id) {
-									Lookup::<T>::insert(name, item);
-								}
-								weight.saturating_accrue(T::DbWeight::get().reads_writes(2, 2));
-							}
-
-							let call = T::Preimages::bound(schedule.call).ok()?;
-
-							if call.lookup_needed() {
-								weight.saturating_accrue(T::DbWeight::get().reads_writes(0, 1));
-							}
-
-							Some(Scheduled {
-								maybe_id: schedule.maybe_id.map(|x| blake2_256(&x[..])),
-								priority: schedule.priority,
-								call,
-								maybe_periodic: schedule.maybe_periodic,
-								origin: system::RawOrigin::Root.into(),
-								_phantom: Default::default(),
-							})
-						})
-					})
-					.collect::<Vec<_>>(),
-			))
-		});
-
-		#[allow(deprecated)]
-		frame_support::storage::migration::remove_storage_prefix(
-			Self::name().as_bytes(),
-			b"StorageVersion",
-			&[],
-		);
-
-		StorageVersion::new(4).put::<Self>();
-
-		weight + T::DbWeight::get().writes(2)
-	}
-
-	/// Migrate storage format from V2 to V4.
-	///
-	/// Returns the weight consumed by this migration.
-	pub fn migrate_v2_to_v4() -> Weight {
-		use migration::v2 as old;
-		let mut weight = T::DbWeight::get().reads_writes(1, 1);
-
-		// Delete all undecodable values.
-		// `StorageMap::translate` is not enough since it just skips them and leaves the keys in.
-		let keys = old::Agenda::<T>::iter_keys().collect::<Vec<_>>();
-		for key in keys {
-			weight.saturating_accrue(T::DbWeight::get().reads(1));
-			if let Err(_) = old::Agenda::<T>::try_get(&key) {
-				weight.saturating_accrue(T::DbWeight::get().writes(1));
-				old::Agenda::<T>::remove(&key);
-				log::warn!("Deleted undecodable agenda");
-			}
-		}
-
-		Agenda::<T>::translate::<Vec<Option<ScheduledV2Of<T>>>, _>(|_, agenda| {
-			Some(BoundedVec::truncate_from(
-				agenda
-					.into_iter()
-					.map(|schedule| {
-						weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
-						schedule.and_then(|schedule| {
-							if let Some(id) = schedule.maybe_id.as_ref() {
-								let name = blake2_256(id);
-								if let Some(item) = old::Lookup::<T>::take(id) {
-									Lookup::<T>::insert(name, item);
-								}
-								weight.saturating_accrue(T::DbWeight::get().reads_writes(2, 2));
-							}
-
-							let call = T::Preimages::bound(schedule.call).ok()?;
-							if call.lookup_needed() {
-								weight.saturating_accrue(T::DbWeight::get().reads_writes(0, 1));
-							}
-
-							Some(Scheduled {
-								maybe_id: schedule.maybe_id.map(|x| blake2_256(&x[..])),
-								priority: schedule.priority,
-								call,
-								maybe_periodic: schedule.maybe_periodic,
-								origin: schedule.origin,
-								_phantom: Default::default(),
-							})
-						})
-					})
-					.collect::<Vec<_>>(),
-			))
-		});
-
-		#[allow(deprecated)]
-		frame_support::storage::migration::remove_storage_prefix(
-			Self::name().as_bytes(),
-			b"StorageVersion",
-			&[],
-		);
-
-		StorageVersion::new(4).put::<Self>();
-
-		weight + T::DbWeight::get().writes(2)
-	}
-
-	/// Migrate storage format from V3 to V4.
-	///
-	/// Returns the weight consumed by this migration.
-	#[allow(deprecated)]
-	pub fn migrate_v3_to_v4() -> Weight {
-		use migration::v3 as old;
-		let mut weight = T::DbWeight::get().reads_writes(2, 1);
-
-		// Delete all undecodable values.
-		// `StorageMap::translate` is not enough since it just skips them and leaves the keys in.
-		let blocks = old::Agenda::<T>::iter_keys().collect::<Vec<_>>();
-		for block in blocks {
-			weight.saturating_accrue(T::DbWeight::get().reads(1));
-			if let Err(_) = old::Agenda::<T>::try_get(&block) {
-				weight.saturating_accrue(T::DbWeight::get().writes(1));
-				old::Agenda::<T>::remove(&block);
-				log::warn!("Deleted undecodable agenda of block: {:?}", block);
-			}
-		}
-
-		Agenda::<T>::translate::<Vec<Option<ScheduledV3Of<T>>>, _>(|block, agenda| {
-			log::info!("Migrating agenda of block: {:?}", &block);
-			Some(BoundedVec::truncate_from(
-				agenda
-					.into_iter()
-					.map(|schedule| {
-						weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
-						schedule
-							.and_then(|schedule| {
-								if let Some(id) = schedule.maybe_id.as_ref() {
-									let name = blake2_256(id);
-									if let Some(item) = old::Lookup::<T>::take(id) {
-										Lookup::<T>::insert(name, item);
-										log::info!("Migrated name for id: {:?}", id);
-									} else {
-										log::error!("No name in Lookup for id: {:?}", &id);
-									}
-									weight.saturating_accrue(T::DbWeight::get().reads_writes(2, 2));
-								} else {
-									log::info!("Schedule is unnamed");
-								}
-
-								let call = match schedule.call {
-									MaybeHashed::Hash(h) => {
-										let bounded = Bounded::from_legacy_hash(h);
-										// Check that the call can be decoded in the new runtime.
-										if let Err(err) = T::Preimages::peek::<
-											<T as Config>::RuntimeCall,
-										>(&bounded)
-										{
-											log::error!(
-												"Dropping undecodable call {:?}: {:?}",
-												&h,
-												&err
-											);
-											return None
-										}
-										weight.saturating_accrue(T::DbWeight::get().reads(1));
-										log::info!("Migrated call by hash, hash: {:?}", h);
-										bounded
-									},
-									MaybeHashed::Value(v) => {
-										let call = T::Preimages::bound(v)
-											.map_err(|e| {
-												log::error!("Could not bound Call: {:?}", e)
-											})
-											.ok()?;
-										if call.lookup_needed() {
-											weight.saturating_accrue(
-												T::DbWeight::get().reads_writes(0, 1),
-											);
-										}
-										log::info!(
-											"Migrated call by value, hash: {:?}",
-											call.hash()
-										);
-										call
-									},
-								};
-
-								Some(Scheduled {
-									maybe_id: schedule.maybe_id.map(|x| blake2_256(&x[..])),
-									priority: schedule.priority,
-									call,
-									maybe_periodic: schedule.maybe_periodic,
-									origin: schedule.origin,
-									_phantom: Default::default(),
-								})
-							})
-							.or_else(|| {
-								log::info!("Schedule in agenda for block {:?} is empty - nothing to do here.", &block);
-								None
-							})
-					})
-					.collect::<Vec<_>>(),
-			))
-		});
-
-		#[allow(deprecated)]
-		frame_support::storage::migration::remove_storage_prefix(
-			Self::name().as_bytes(),
-			b"StorageVersion",
-			&[],
-		);
-
-		StorageVersion::new(4).put::<Self>();
-
-		weight + T::DbWeight::get().writes(2)
 	}
 }
 
@@ -699,6 +452,7 @@ impl<T: Config> Pallet<T> {
 					Scheduled<
 						TaskName,
 						BoundedCallOf<T>,
+						Ciphertext,
 						BlockNumberFor<T>,
 						OldOrigin,
 						T::AccountId,
@@ -714,7 +468,8 @@ impl<T: Config> Pallet<T> {
 						schedule.map(|schedule| Scheduled {
 							maybe_id: schedule.maybe_id,
 							priority: schedule.priority,
-							call: schedule.call,
+							maybe_call: schedule.maybe_call,
+							maybe_ciphertext: None,
 							maybe_periodic: schedule.maybe_periodic,
 							origin: schedule.origin.into(),
 							_phantom: Default::default(),
@@ -814,7 +569,8 @@ impl<T: Config> Pallet<T> {
 		let task = Scheduled {
 			maybe_id: None,
 			priority,
-			call,
+			maybe_call: Some(call),
+			maybe_ciphertext: None,
 			maybe_periodic,
 			origin,
 			_phantom: PhantomData,
@@ -836,7 +592,7 @@ impl<T: Config> Pallet<T> {
 		let scheduled = Agenda::<T>::try_mutate(when, |agenda| {
 			agenda.get_mut(index as usize).map_or(
 				Ok(None),
-				|s| -> Result<Option<Scheduled<_, _, _, _, _>>, DispatchError> {
+				|s| -> Result<Option<Scheduled<_, _, _, _, _, _>>, DispatchError> {
 					if let (Some(ref o), Some(ref s)) = (origin, s.borrow()) {
 						if matches!(
 							T::OriginPrivilegeCmp::cmp_privilege(o, &s.origin),
@@ -850,7 +606,7 @@ impl<T: Config> Pallet<T> {
 			)
 		})?;
 		if let Some(s) = scheduled {
-			T::Preimages::drop(&s.call);
+			T::Preimages::drop(&s.maybe_call.clone().unwrap());
 			if let Some(id) = s.maybe_id {
 				Lookup::<T>::remove(id);
 			}
@@ -909,7 +665,8 @@ impl<T: Config> Pallet<T> {
 		let task = Scheduled {
 			maybe_id: Some(id),
 			priority,
-			call,
+			maybe_call: Some(call),
+			maybe_ciphertext: None,
 			maybe_periodic,
 			origin,
 			_phantom: Default::default(),
@@ -937,7 +694,7 @@ impl<T: Config> Pallet<T> {
 							) {
 								return Err(BadOrigin.into())
 							}
-							T::Preimages::drop(&s.call);
+							T::Preimages::drop(&s.maybe_call.clone().unwrap());
 						}
 						*s = None;
 					}
@@ -972,6 +729,39 @@ impl<T: Config> Pallet<T> {
 		Self::cleanup_agenda(when);
 		Self::deposit_event(Event::Canceled { when, index });
 		Self::place_task(new_time, task).map_err(|x| x.0)
+	}
+
+	/*
+		Schedule sealed tasks
+	*/
+
+	fn do_schedule_sealed(
+		when: DispatchTime<BlockNumberFor<T>>,
+		priority: schedule::Priority,
+		origin: T::PalletsOrigin,
+		ciphertext: Ciphertext,
+	) -> Result<TaskAddress<BlockNumberFor<T>>, DispatchError> {
+		let when = Self::resolve_time(when)?;
+		// let lookup_hash = call.lookup_hash();
+
+		let task = Scheduled {
+			maybe_id: None,
+			priority,
+			maybe_call: None,
+			maybe_ciphertext: Some(ciphertext),
+			maybe_periodic: None,
+			origin,
+			_phantom: PhantomData,
+		};
+		let res = Self::place_task(when, task).map_err(|x| x.0)?;
+
+		// TODO: probably needs to be passed as a parameter
+		// if let Some(hash) = lookup_hash {
+		// 	// Request the call to be made available.
+		// 	T::Preimages::request(&hash);
+		// }
+
+		Ok(res)
 	}
 }
 
@@ -1044,7 +834,7 @@ impl<T: Config> Pallet<T> {
 				Some(t) => t,
 			};
 			let base_weight = T::WeightInfo::service_task(
-				task.call.lookup_len().map(|x| x as usize),
+				task.maybe_call.clone().unwrap().lookup_len().map(|x| x as usize),
 				task.maybe_id.is_some(),
 				task.maybe_periodic.is_some(),
 			);
@@ -1095,7 +885,21 @@ impl<T: Config> Pallet<T> {
 			Lookup::<T>::remove(id);
 		}
 
-		let (call, lookup_len) = match T::Preimages::peek(&task.call) {
+		// let call;
+		// if the call is None and the ciphertext is Some, 
+		// then we will attempt to decrypt it first
+		// and then set it as the call in the task
+		if let Some(ref ciphertext) = task.maybe_ciphertext {
+			if now.eq(&when) {
+				if let Some(plaintext) = 
+					T::TlockProvider::decrypt_current(ciphertext.clone().to_vec()) {
+						// TODO
+				}
+
+			}
+		}
+
+		let (call, lookup_len) = match T::Preimages::peek(&task.maybe_call.clone().unwrap()) {
 			Ok(c) => c,
 			Err(_) => {
 				Self::deposit_event(Event::CallUnavailable {
@@ -1107,6 +911,7 @@ impl<T: Config> Pallet<T> {
 			},
 		};
 
+		// what is the lookup_len?
 		let _ = weight.try_consume(T::WeightInfo::service_task(
 			lookup_len.map(|x| x as usize),
 			task.maybe_id.is_some(),
@@ -1115,7 +920,7 @@ impl<T: Config> Pallet<T> {
 
 		match Self::execute_dispatch(weight, task.origin.clone(), call) {
 			Err(()) if is_first => {
-				T::Preimages::drop(&task.call);
+				T::Preimages::drop(&task.maybe_call.clone().unwrap());
 				Self::deposit_event(Event::PermanentlyOverweight {
 					task: (when, agenda_index),
 					id: task.maybe_id,
@@ -1141,7 +946,7 @@ impl<T: Config> Pallet<T> {
 						Err((_, task)) => {
 							// TODO: Leave task in storage somewhere for it to be rescheduled
 							// manually.
-							T::Preimages::drop(&task.call);
+							T::Preimages::drop(&task.maybe_call.clone().unwrap());
 							Self::deposit_event(Event::PeriodicFailed {
 								task: (when, agenda_index),
 								id: task.maybe_id,
@@ -1149,7 +954,7 @@ impl<T: Config> Pallet<T> {
 						},
 					}
 				} else {
-					T::Preimages::drop(&task.call);
+					T::Preimages::drop(&task.maybe_call.clone().unwrap());
 				}
 				Ok(())
 			},

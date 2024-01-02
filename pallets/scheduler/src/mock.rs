@@ -23,7 +23,9 @@ use crate as scheduler;
 use frame_support::{
 	ord_parameter_types, parameter_types,
 	traits::{
-		ConstU32, ConstU64, Contains, EitherOfDiverse, EqualPrivilegeOnly, OnFinalize, OnInitialize,
+		ConstU32, ConstU64, ConstBool, 
+		Contains, EitherOfDiverse, EqualPrivilegeOnly, 
+		OnFinalize, OnInitialize,
 	},
 	weights::constants::RocksDbWeight,
 };
@@ -33,6 +35,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	BuildStorage, Perbill,
 };
+use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
 
 // Logger module to track execution.
 #[frame_support::pallet]
@@ -101,6 +104,8 @@ frame_support::construct_runtime!(
 		Logger: logger::{Pallet, Call, Event<T>},
 		Scheduler: scheduler::{Pallet, Call, Storage, Event<T>},
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>, HoldReason},
+		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
+		Etf: pallet_etf,
 	}
 );
 
@@ -158,6 +163,31 @@ impl pallet_preimage::Config for Test {
 	type Consideration = ();
 }
 
+impl pallet_timestamp::Config for Test {
+	/// A timestamp: milliseconds since the unix epoch.
+	type Moment = u64;
+	type OnTimestampSet = ();
+	type MinimumPeriod = ConstU64<{ 6000 / 2 }>;
+	type WeightInfo = ();
+}
+
+impl pallet_etf_aura::Config for Test {
+	type AuthorityId = AuraId;
+	type DisabledValidators = ();
+	type MaxAuthorities = ConstU32<32>;
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+
+	#[cfg(feature = "experimental")]
+	type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Test>;
+}
+
+impl pallet_insecure_randomness_collective_flip::Config for Test {}
+
+impl pallet_etf::Config for Test {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Test>;
+	type Randomness = RandomnessCollectiveFlip;
+}
 pub struct TestWeightInfo;
 impl WeightInfo for TestWeightInfo {
 	fn service_agendas_base() -> Weight {
@@ -213,6 +243,7 @@ impl Config for Test {
 	type WeightInfo = TestWeightInfo;
 	type OriginPrivilegeCmp = EqualPrivilegeOnly;
 	type Preimages = Preimage;
+	type TlockProvider = Etf;
 }
 
 pub type LoggerCall = logger::Call<Test>;
