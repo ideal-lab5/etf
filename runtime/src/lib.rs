@@ -24,14 +24,14 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-
+use frame_system::EnsureRoot;
 use frame_support::genesis_builder_helper::{build_config, create_default_config};
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
 		ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, Randomness,
-		StorageInfo, Nothing,
+		StorageInfo, Nothing, LinearStoragePrice, fungible::HoldConsideration, EqualPrivilegeOnly,
 	},
 	weights::{
 		constants::{
@@ -326,6 +326,46 @@ impl frame_support::traits::Contains<RuntimeCall> for AllowBalancesCall {
 }
 
 parameter_types! {
+	pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+	pub const PreimageByteDeposit: Balance = deposit(0, 1);
+	pub const PreimageHoldReason: RuntimeHoldReason = RuntimeHoldReason::Preimage(pallet_preimage::HoldReason::Preimage);
+}
+
+impl pallet_preimage::Config for Runtime {
+	type WeightInfo = pallet_preimage::weights::SubstrateWeight<Runtime>;
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type ManagerOrigin = EnsureRoot<AccountId>;
+	type Consideration = HoldConsideration<
+		AccountId,
+		Balances,
+		PreimageHoldReason,
+		LinearStoragePrice<PreimageBaseDeposit, PreimageByteDeposit, Balance>,
+	>;
+}
+
+parameter_types! {
+	pub MaximumSchedulerWeight: Weight = 
+		Perbill::from_percent(80) * BlockWeights::get().max_block;
+}
+
+impl pallet_scheduler::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeOrigin = RuntimeOrigin;
+	type PalletsOrigin = OriginCaller;
+	type RuntimeCall = RuntimeCall;
+	type MaximumWeight = MaximumSchedulerWeight;
+	type ScheduleOrigin = EnsureRoot<AccountId>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type MaxScheduledPerBlock = ConstU32<512>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type MaxScheduledPerBlock = ConstU32<50>;
+	type WeightInfo = pallet_scheduler::weights::SubstrateWeight<Runtime>;
+	type OriginPrivilegeCmp = EqualPrivilegeOnly;
+	type Preimages = Preimage;
+}
+
+parameter_types! {
 	pub const DepositPerItem: Balance = deposit(0, 1);
 	pub const DepositPerByte: Balance = deposit(1, 0);
 	pub const DefaultDepositLimit: Balance = deposit(128 * 1024, 2 * 1024 * 1024);
@@ -368,6 +408,7 @@ impl pallet_contracts::Config for Runtime {
 	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
 	type Debug = ();
 	type Environment = ();
+	type Xcm = ();
 }
 
 
@@ -384,6 +425,8 @@ construct_runtime!(
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
 		Contracts: pallet_contracts,
 		Etf: pallet_etf,
+		Preimage: pallet_preimage,
+		Scheduler: pallet_scheduler,
 	}
 );
 
@@ -515,13 +558,13 @@ impl_runtime_apis! {
 		fn secret() -> [u8;32] {
 			// read master secret from somehwere else...
 			[2;32]
-			let key = context_block_number.to_string();
-			log::info!("Calling secret({:?})", key);
-			match StorageValueRef::persistent(key.as_bytes()).get::<[u8;32]>() {
-			// match StorageValueRef::persistent(b.).get::<[u8;32]>() {
-				Ok(Some(secret)) => secret,
-				_ => [0;32]
-			}
+			// let key = context_block_number.to_string();
+			// log::info!("Calling secret({:?})", key);
+			// match StorageValueRef::persistent(key.as_bytes()).get::<[u8;32]>() {
+			// // match StorageValueRef::persistent(b.).get::<[u8;32]>() {
+			// 	Ok(Some(secret)) => secret,
+			// 	_ => [0;32]
+			// }
 		}
 
 		fn ibe_params() -> Vec<u8> {
