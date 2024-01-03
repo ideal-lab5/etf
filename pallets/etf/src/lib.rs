@@ -16,7 +16,7 @@ mod tests;
 mod benchmarking;
 pub mod weights;
 pub use weights::WeightInfo;
-use sp_std::{vec::Vec, prelude::ToOwned};
+use sp_std::{vec, vec::Vec, prelude::ToOwned};
 use frame_support::{
 	pallet_prelude::*,
 	traits::{Randomness, ConstU32},
@@ -159,12 +159,14 @@ pub enum TimelockError {
 
 /// provides timelock encryption using the current slot
 pub trait TimelockEncryptionProvider {
+	/// attempt to decrypt the ciphertext with the current slot secret
 	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError>;
 }
 
 impl<T:Config> TimelockEncryptionProvider for Pallet<T> {
 
 	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError> {
+		// instead, could pass the secrets as a param?
 		let predigest = frame_system::Pallet::<T>::digest()
 			.logs
 			.iter()

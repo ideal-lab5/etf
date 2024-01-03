@@ -41,6 +41,7 @@ sp-consensus-etf-aura = { path = "../../primitives/consensus/aura" }
 pallet-etf = { version = "4.0.0-dev", default-features = false, path = "../etf" }
 pallet-etf-aura = { version = "4.0.0-dev", default-features = false, path = "../aura" }
 pallet-insecure-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
+rand_chacha = { version = "0.3.1", default-features = false }
 
 [features]
 default = [ "std" ]

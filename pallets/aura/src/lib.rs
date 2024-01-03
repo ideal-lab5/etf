@@ -44,7 +44,7 @@ use frame_support::{
 	BoundedSlice, BoundedVec, ConsensusEngineId, Parameter,
 };
 use log;
-use sp_consensus_etf_aura::{AuthorityIndex, ConsensusLog, Slot, digests::PreDigest, AURA_ENGINE_ID};
+use sp_consensus_etf_aura::{AuthorityIndex, ConsensusLog, Slot, digests::PreDigest, AURA_ENGINE_ID, OpaqueSecret};
 use sp_runtime::{
 	generic::DigestItem,
 	traits::{IsMember, Member, SaturatedConversion, Saturating, Zero},
@@ -134,7 +134,12 @@ pub mod pallet {
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(_: BlockNumberFor<T>) -> Weight {
 			if let Some(predigest) = Self::current_slot_from_digests() {
+
+				let new_secret = predigest.secret;
 				let new_slot = predigest.slot;
+
+				Self::add_slot_secret(new_slot, new_secret);
+
 				let current_slot = CurrentSlot::<T>::get();
 				
 				if T::AllowMultipleBlocksPerSlot::get() {
@@ -192,7 +197,7 @@ pub mod pallet {
 		_, 
 		Twox64Concat, 
 		Slot, 
-		sp_consensus_etf_aura::digests::OpaqueSecret
+		OpaqueSecret
 	>;
 
 	#[pallet::genesis_config]
@@ -327,9 +332,9 @@ impl<T: Config> Pallet<T> {
 	pub fn do_try_state() -> Result<(), sp_runtime::TryRuntimeError> {
 		// We don't have any guarantee that we are already after `on_initialize` and thus we have to
 		// check the current slot from the digest or take the last known slot.
-		let current_slot =
-			Self::current_slot_from_digests().unwrap_or_else(|| CurrentSlot::<T>::get()).slot;
-
+		let current_slot = 
+			Self::current_slot_from_digests()
+				.map_or_else(|| CurrentSlot::<T>::get(), |predigest| predigest.slot);
 		// Check that the current slot is less than the maximal slot number, unless we allow for
 		// multiple blocks per slot.
 		if !T::AllowMultipleBlocksPerSlot::get() {
@@ -355,10 +360,10 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub fn add_slot_secret(slot_secret: sp_consensus_etf_aura::digests::OpaqueSecret) {
-		let slot = CurrentSlot::<T>::get();
-		// we only store the secret here, not the entire proof (in block header)
-		SlotSecrets::<T>::insert(slot, &slot_secret);
+	/// add a new slot secret to runtime storage
+	/// we only store the secret here, not the entire proof (in block header)
+	pub fn add_slot_secret(slot: Slot, secret: OpaqueSecret) {
+		SlotSecrets::<T>::insert(slot, &secret);
 	}
 
 }

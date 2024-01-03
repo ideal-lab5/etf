@@ -38,6 +38,15 @@ use ark_bls12_381::{Fr, G2Projective as G2};
 use ark_ff::UniformRand;
 use ark_ec::Group;
 use etf_crypto_primitives::utils::convert_to_bytes;
+use etf_crypto_primitives::{
+	client::etf_client::{
+		DefaultEtfClient, 
+		EtfClient
+	},
+	ibe::fullident::BfIbe,
+};
+use sp_consensus_etf_aura::{AURA_ENGINE_ID, digests::PreDigest};
+use rand_chacha::ChaCha20Rng;
 
 #[test]
 #[docify::export]
@@ -76,7 +85,8 @@ fn basic_scheduling_works() {
 #[test]
 #[docify::export]
 fn basic_scheduling_timelock_works() {
-	let message = b"this is a test";
+	let mut rng = ChaCha20Rng::from_seed([4;32]);
+
 	let ids = vec![
 		b"id1".to_vec(), 
 	];
@@ -90,35 +100,55 @@ fn basic_scheduling_timelock_works() {
 	let p_pub_bytes = convert_to_bytes::<G2, 96>(p_pub);
 	// Q: how can we mock the decryption trait so that we can do whatever?
 	// probably don't really need to perform decryption here?
-	// new_test_ext().execute_with(|| {
-	// 	// Call to schedule
-	// 	let call =
-	// 		RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
+	new_test_ext().execute_with(|| {
+		// Call to schedule
+		let call =
+			RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
 
-	// 	// BaseCallFilter should be implemented to accept `Logger::log` runtime call which is
-	// 	// implemented for `BaseFilter` in the mock runtime
-	// 	assert!(!<Test as frame_system::Config>::BaseCallFilter::contains(&call));
+		// let scale_encoded_call: Vec<u8> = call.encode();
+		// // then we convert to bytes and encrypt the call
+		let ct: etf_crypto_primitives::client::etf_client::AesIbeCt = 
+			DefaultEtfClient::<BfIbe>::encrypt(
+				ibe_pp_bytes.to_vec(),
+				p_pub_bytes.to_vec(),
+				&call.encode(),
+				ids,
+				t,
+				&mut rng,
+			);
 
-	// 	// Schedule call to be executed at the 4th block
-	// 	assert_ok!(Scheduler::do_schedule(
-	// 		DispatchTime::At(4),
-	// 		None,
-	// 		127,
-	// 		root(),
-	// 		Preimage::bound(call).unwrap()
-	// 	));
 
-	// 	// `log` runtime call should not have executed yet
-	// 	run_to_block(3);
-	// 	assert!(logger::log().is_empty());
+		// let bounded_ct = 
 
-	// 	run_to_block(4);
-	// 	// `log` runtime call should have executed at block 4
-	// 	assert_eq!(logger::log(), vec![(root(), 42u32)]);
+		// let ciphertext = Ciphertext {
+		// 	ciphertext: BoundedVec::from_vec(ct.aes_ct.ciphertext).unwrap(),
+		// 	nonce: BoundedVec::from_vec(ct.aes_ct.nonce).unwrap(),
+		// 	capsule: BoundedVec::from_vec(ct.etf_ct).unwrap(),
+		// };
 
-	// 	run_to_block(100);
-	// 	assert_eq!(logger::log(), vec![(root(), 42u32)]);
-	// });
+		// // BaseCallFilter should be implemented to accept `Logger::log` runtime call which is
+		// // implemented for `BaseFilter` in the mock runtime
+		// assert!(!<Test as frame_system::Config>::BaseCallFilter::contains(&call));
+
+		// // Schedule call to be executed at the 4th block
+		// assert_ok!(Scheduler::do_schedule_sealed(
+		// 	DispatchTime::At(4),
+		// 	127,
+		// 	root(),
+		// 	ciphertext,
+		// ));
+
+		// // `log` runtime call should not have executed yet
+		// run_to_block(3);
+		// assert!(logger::log().is_empty());
+
+		// run_to_block(4);
+		// // `log` runtime call should have executed at block 4
+		// assert_eq!(logger::log(), vec![(root(), 42u32)]);
+
+		// run_to_block(100);
+		// assert_eq!(logger::log(), vec![(root(), 42u32)]);
+	});
 }
 
 

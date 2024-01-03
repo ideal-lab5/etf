@@ -21,7 +21,7 @@
 //! This implements the digests for AuRa, to allow the private
 //! `CompatibleDigestItem` trait to appear in public interfaces.
 
-use crate::AURA_ENGINE_ID;
+use crate::{AURA_ENGINE_ID, OpaqueProof, OpaqueSecret};
 use codec::{Codec, Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 
@@ -34,14 +34,12 @@ use sp_runtime::{
 /// ETF slot assignment pre-digest.
 #[derive(Clone, RuntimeDebug, Encode, Decode, MaxEncodedLen, TypeInfo)]
 pub struct PreDigest {
-	// /// Authority index
-	// pub authority_index: super::AuthorityIndex,
 	/// Slot
 	pub slot: Slot,
 	/// the slot secret
-	pub secret: [u8;48],
+	pub secret: OpaqueSecret,
 	/// dleq proof  of knowledge of slot secret
-	pub proof: [u8;224],
+	pub proof: OpaqueProof,
 }
 
 /// A digest item which is usable with aura consensus.
