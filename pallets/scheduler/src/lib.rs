@@ -106,7 +106,7 @@ use sp_runtime::{
 	BoundedVec, DispatchError, RuntimeDebug,
 };
 use sp_std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, prelude::*};
-use pallet_etf::TimelockEncryptionProvider;
+use pallet_etf::{Ciphertext, TimelockEncryptionProvider};
 pub use pallet::*;
 pub use weights::WeightInfo;
 
@@ -120,9 +120,6 @@ pub type CallOrHashOf<T> =
 
 pub type BoundedCallOf<T> =
 	Bounded<<T as Config>::RuntimeCall, <T as frame_system::Config>::Hashing>;
-
-/// represents an opaque ciphertext
-pub type Ciphertext = BoundedVec<u8, ConstU32<512>>;
 
 /// Information regarding an item to be executed in the future.
 #[cfg_attr(any(feature = "std", test), derive(PartialEq, Eq))]
@@ -872,20 +869,24 @@ impl<T: Config> Pallet<T> {
 		agenda_index: u32,
 		now: BlockNumberFor<T>,
 		when: BlockNumberFor<T>,
-		mut task: ScheduledOf<T>,
+		task: ScheduledOf<T>,
 	) -> Option<(<T as pallet::Config>::RuntimeCall, Option<usize>)> {
 		// if the call is None and the ciphertext is Some, 
 		// then we will attempt to decrypt it first
 		// and then set it as the call in the task
 		if let Some(ref ciphertext) = task.maybe_ciphertext {
 			if now.eq(&when) {
-				if let Some(plaintext) = T::TlockProvider::decrypt_current(ciphertext.clone().to_vec()) {
-					let mut pt: &[u8] = plaintext.as_ref();
-					// TODO: handle error
-					let call = <T as Config>::RuntimeCall::decode(&mut pt).unwrap();
-					return Some((call, None));
+				match T::TlockProvider::decrypt_current(ciphertext.clone()) {
+					Ok(plaintext) => {
+						let mut pt: &[u8] = plaintext.as_ref();
+						// TODO: handle unwrap
+						let call = <T as Config>::RuntimeCall::decode(&mut pt).unwrap();
+						return Some((call, None));
+					},
+					Err(_) => {
+						return None;
+					}
 				}
-
 			}
 		}
 

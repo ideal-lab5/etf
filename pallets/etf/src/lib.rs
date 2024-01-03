@@ -19,15 +19,30 @@ pub use weights::WeightInfo;
 use sp_std::{vec::Vec, prelude::ToOwned};
 use frame_support::{
 	pallet_prelude::*,
-	traits::Randomness,
+	traits::{Randomness, ConstU32},
 };
 use sp_runtime::DispatchResult;
-
 use ark_serialize::CanonicalDeserialize;
 
-// pub(crate) use ark_scale::hazmat::ArkScaleProjective;
-// const HOST_CALL: ark_scale::Usage = ark_scale::HOST_CALL;
-// pub(crate) type ArkScale<T> = ark_scale::ArkScale<T, HOST_CALL>;
+use etf_crypto_primitives::{
+	client::etf_client::{
+		DefaultEtfClient, 
+		EtfClient
+	},
+	ibe::fullident::BfIbe,
+};
+use sp_consensus_etf_aura::{AURA_ENGINE_ID, digests::PreDigest};
+
+/// represents a timelock ciphertext
+#[derive(Debug, Clone, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo)]
+pub struct Ciphertext {
+	/// the (AES) ciphertext
+	ciphertext: BoundedVec<u8, ConstU32<512>>,
+	/// the (AES) nonce
+	nonce: BoundedVec<u8, ConstU32<96>>,
+	/// the IBE ciphertext(s): for now we assume a single point in the future is used
+	capsule: BoundedVec<u8, ConstU32<512>>,
+}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -41,7 +56,7 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_etf_aura::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// Type representing the weight of this pallet
@@ -50,8 +65,6 @@ pub mod pallet {
 		type Randomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
 	}
 
-	/// this value is only used in DLEQ proofs
-	/// in fact, I think I'll remove it...
 	#[pallet::storage]
 	#[pallet::getter(fn ibe_params)]
 	pub(super) type IBEParams<T: Config> = StorageValue<
@@ -100,7 +113,7 @@ pub mod pallet {
 		///
 		/// * `g`: A generator of G1
 		///
-		#[pallet::weight(T::WeightInfo::update_ibe_params())]
+		#[pallet::weight(<T as pallet::Config>::WeightInfo::update_ibe_params())]
 		#[pallet::call_index(1)]
 		pub fn update_ibe_params(
 			origin: OriginFor<T>,
@@ -134,10 +147,45 @@ impl<T: Config> Pallet<T> {
 		let _ = 
 			ark_bls12_381::G2Affine::deserialize_compressed(&ibe_commitment_bytes[..])
 			.map_err(|_| Error::<T>::G2DecodingFailure)?;
-		// let _ = <ArkScale<Vec<ark_bls12_381::G1Affine>> as Decode>::
-		// 	decode(&mut g.as_slice())
-		// 	.map_err(|_| Error::<T>::G1DecodingFailure)?;
 		IBEParams::<T>::set((g.to_owned(), ibe_pp_bytes.to_owned(), ibe_commitment_bytes.to_owned()));
 		Ok(())
 	}
+}
+
+/// errors for timelock encryption
+pub enum TimelockError {
+	DecryptionFailed,
+}
+
+/// provides timelock encryption using the current slot
+pub trait TimelockEncryptionProvider {
+	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError>;
+}
+
+impl<T:Config> TimelockEncryptionProvider for Pallet<T> {
+
+	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError> {
+		let predigest = frame_system::Pallet::<T>::digest()
+			.logs
+			.iter()
+			.filter_map(|d| d.as_pre_runtime())
+			.filter_map(|(id, mut data)| {
+		// for (id, mut data) in pre_runtime_digests {
+			if id == AURA_ENGINE_ID {
+				PreDigest::decode(&mut data).ok()
+			} else {
+				None
+			}
+		}).next();
+		let (g, p, p_pub) = Self::ibe_params();
+		// we need to convert the ciphertext to a 
+		let pt = DefaultEtfClient::<BfIbe>::decrypt(
+			p, ciphertext.ciphertext.to_vec(), 
+			ciphertext.nonce.to_vec(), 
+			vec![ciphertext.capsule.to_vec()], 
+			vec![predigest.unwrap().secret.to_vec()],
+		).map_err(|err| TimelockError::DecryptionFailed)?;
+		Ok(pt)
+	}
+
 }
