@@ -40,7 +40,7 @@
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
-	traits::{DisabledValidators, FindAuthor, Get, OnTimestampSet, OneSessionHandler, ConstU8},
+	traits::{DisabledValidators, FindAuthor, Get, OnTimestampSet, OneSessionHandler},
 	BoundedSlice, BoundedVec, ConsensusEngineId, Parameter,
 };
 use log;
@@ -133,7 +133,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(_: BlockNumberFor<T>) -> Weight {
-			if let Some(predigest) = Self::current_slot_from_digests() {
+			if let Some(predigest) = Self::current_predigest_from_digests() {
 
 				let new_secret = predigest.secret;
 				let new_slot = predigest.slot;
@@ -257,7 +257,7 @@ impl<T: Config> Pallet<T> {
 
 	/// TODO: refactor name
 	/// Get the current slot from the pre-runtime digests.
-	pub fn current_slot_from_digests() -> Option<PreDigest> {
+	pub fn current_predigest_from_digests() -> Option<PreDigest> {
 		frame_system::Pallet::<T>::digest()
 			.logs
 			.iter()
@@ -311,7 +311,7 @@ impl<T: Config> Pallet<T> {
 		// We don't have any guarantee that we are already after `on_initialize` and thus we have to
 		// check the current slot from the digest or take the last known slot.
 		let current_slot = 
-			Self::current_slot_from_digests()
+			Self::current_predigest_from_digests()
 				.map_or_else(|| CurrentSlot::<T>::get(), |predigest| predigest.slot);
 		// Check that the current slot is less than the maximal slot number, unless we allow for
 		// multiple blocks per slot.
