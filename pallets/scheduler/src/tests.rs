@@ -19,7 +19,7 @@
 
 use super::*;
 use crate::mock::{
-	logger, new_test_ext, root, run_to_block, LoggerCall, RuntimeCall, Scheduler, Test, *,
+	logger, new_test_ext, root, run_to_block, LoggerCall, RuntimeCall, Scheduler, Aura, Test, *,
 };
 use frame_support::{
 	assert_err, assert_noop, assert_ok,
@@ -33,6 +33,7 @@ use ark_std::{
 	rand::SeedableRng, 
 	test_rng, 
 	ops::Mul,
+	One,
 };
 use ark_bls12_381::{Fr, G2Projective as G2};
 use ark_ff::UniformRand;
@@ -70,14 +71,14 @@ fn basic_scheduling_works() {
 		));
 
 		// `log` runtime call should not have executed yet
-		run_to_block(3);
+		run_to_block(3, None);
 		assert!(logger::log().is_empty());
 
-		run_to_block(4);
+		run_to_block(4, None);
 		// `log` runtime call should have executed at block 4
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
@@ -88,24 +89,31 @@ fn basic_scheduling_timelock_works() {
 	let mut rng = ChaCha20Rng::from_seed([4;32]);
 
 	let ids = vec![
-		b"id1".to_vec(), 
+		4u64.to_string().as_bytes().to_vec(), 
 	];
 	let t = 1;
 
 	let ibe_pp: G2 = G2::generator().into();
-	let s = Fr::rand(&mut test_rng());
+	let s = Fr::one();
 	let p_pub: G2 = ibe_pp.mul(s).into();
 
 	let ibe_pp_bytes = convert_to_bytes::<G2, 96>(ibe_pp);
 	let p_pub_bytes = convert_to_bytes::<G2, 96>(p_pub);
-	// Q: how can we mock the decryption trait so that we can do whatever?
+
+	// Q: how can we mock the decryption trait so that we can d1o whatever?
 	// probably don't really need to perform decryption here?
 	new_test_ext().execute_with(|| {
+
+		Etf::set_ibe_params(
+			// RuntimeOrigin::root(), 
+			&vec![], 
+			&ibe_pp_bytes.into(), 
+			&p_pub_bytes.into()
+		);
+
 		// Call to schedule
 		let call =
 			RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
-
-		// let scale_encoded_call: Vec<u8> = call.encode();
 		// // then we convert to bytes and encrypt the call
 		let ct: etf_crypto_primitives::client::etf_client::AesIbeCt = 
 			DefaultEtfClient::<BfIbe>::encrypt(
@@ -115,39 +123,49 @@ fn basic_scheduling_timelock_works() {
 				ids,
 				t,
 				&mut rng,
-			);
+			).unwrap();
 
 
-		// let bounded_ct = 
+		let mut bounded_ct: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		ct.aes_ct.ciphertext.iter().enumerate().for_each(|(idx, i)| {
+			bounded_ct.try_insert(idx, *i);
+		});
 
-		// let ciphertext = Ciphertext {
-		// 	ciphertext: BoundedVec::from_vec(ct.aes_ct.ciphertext).unwrap(),
-		// 	nonce: BoundedVec::from_vec(ct.aes_ct.nonce).unwrap(),
-		// 	capsule: BoundedVec::from_vec(ct.etf_ct).unwrap(),
-		// };
+		let mut bounded_nonce: BoundedVec<u8, ConstU32<96>> = BoundedVec::new();
+		ct.aes_ct.nonce.iter().enumerate().for_each(|(idx, i)| {
+			bounded_nonce.try_insert(idx, *i);
+		});
 
-		// // BaseCallFilter should be implemented to accept `Logger::log` runtime call which is
-		// // implemented for `BaseFilter` in the mock runtime
-		// assert!(!<Test as frame_system::Config>::BaseCallFilter::contains(&call));
+		let mut bounded_capsule: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		// assumes we only care about a single point in the future
+		ct.etf_ct[0].iter().enumerate().for_each(|(idx, i)| {
+			bounded_capsule.try_insert(idx, *i);
+		});
 
-		// // Schedule call to be executed at the 4th block
-		// assert_ok!(Scheduler::do_schedule_sealed(
-		// 	DispatchTime::At(4),
-		// 	127,
-		// 	root(),
-		// 	ciphertext,
-		// ));
+		let ciphertext = Ciphertext {
+			ciphertext: bounded_ct,
+			nonce: bounded_nonce,
+			capsule: bounded_capsule,
+		};
 
-		// // `log` runtime call should not have executed yet
-		// run_to_block(3);
-		// assert!(logger::log().is_empty());
+		// Schedule call to be executed at the 4th block
+		assert_ok!(Scheduler::do_schedule_sealed(
+			DispatchTime::At(4),
+			127,
+			root(),
+			ciphertext,
+		));
 
-		// run_to_block(4);
-		// // `log` runtime call should have executed at block 4
-		// assert_eq!(logger::log(), vec![(root(), 42u32)]);
+		// `log` runtime call should not have executed yet
+		run_to_block(3, None);
+		assert!(logger::log().is_empty());
 
-		// run_to_block(100);
-		// assert_eq!(logger::log(), vec![(root(), 42u32)]);
+		run_to_block(4, Some(s));
+		// `log` runtime call should have executed at block 4
+		assert_eq!(logger::log(), vec![(root(), 42u32)]);
+
+		run_to_block(100, None);
+		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
 
@@ -175,17 +193,17 @@ fn scheduling_with_preimages_works() {
 		assert!(Preimage::is_requested(&hash));
 
 		// `log` runtime call should not have executed yet
-		run_to_block(3);
+		run_to_block(3, None);
 		assert!(logger::log().is_empty());
 
-		run_to_block(4);
+		run_to_block(4, None);
 		// preimage should not have been removed when executed by the scheduler
 		assert!(!Preimage::len(&hash).is_some());
 		assert!(!Preimage::is_requested(&hash));
 		// `log` runtime call should have executed at block 4
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
@@ -193,7 +211,7 @@ fn scheduling_with_preimages_works() {
 #[test]
 fn schedule_after_works() {
 	new_test_ext().execute_with(|| {
-		run_to_block(2);
+		run_to_block(2, None);
 		let call =
 			RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
 		assert!(!<Test as frame_system::Config>::BaseCallFilter::contains(&call));
@@ -205,11 +223,11 @@ fn schedule_after_works() {
 			root(),
 			Preimage::bound(call).unwrap()
 		));
-		run_to_block(5);
+		run_to_block(5, None);
 		assert!(logger::log().is_empty());
-		run_to_block(6);
+		run_to_block(6, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
@@ -217,7 +235,7 @@ fn schedule_after_works() {
 #[test]
 fn schedule_after_zero_works() {
 	new_test_ext().execute_with(|| {
-		run_to_block(2);
+		run_to_block(2, None);
 		let call =
 			RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
 		assert!(!<Test as frame_system::Config>::BaseCallFilter::contains(&call));
@@ -229,9 +247,9 @@ fn schedule_after_zero_works() {
 			Preimage::bound(call).unwrap()
 		));
 		// Will trigger on the next block.
-		run_to_block(3);
+		run_to_block(3, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
@@ -251,19 +269,19 @@ fn periodic_scheduling_works() {
 			}))
 			.unwrap()
 		));
-		run_to_block(3);
+		run_to_block(3, None);
 		assert!(logger::log().is_empty());
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
-		run_to_block(6);
+		run_to_block(6, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
-		run_to_block(7);
+		run_to_block(7, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32), (root(), 42u32)]);
-		run_to_block(9);
+		run_to_block(9, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32), (root(), 42u32)]);
-		run_to_block(10);
+		run_to_block(10, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32), (root(), 42u32), (root(), 42u32)]);
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32), (root(), 42u32), (root(), 42u32)]);
 	});
 }
@@ -286,7 +304,7 @@ fn reschedule_works() {
 			(4, 0)
 		);
 
-		run_to_block(3);
+		run_to_block(3, None);
 		assert!(logger::log().is_empty());
 
 		assert_eq!(Scheduler::do_reschedule((4, 0), DispatchTime::At(6)).unwrap(), (6, 0));
@@ -296,13 +314,13 @@ fn reschedule_works() {
 			Error::<Test>::RescheduleNoChange
 		);
 
-		run_to_block(4);
+		run_to_block(4, None);
 		assert!(logger::log().is_empty());
 
-		run_to_block(6);
+		run_to_block(6, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
@@ -326,7 +344,7 @@ fn reschedule_named_works() {
 			(4, 0)
 		);
 
-		run_to_block(3);
+		run_to_block(3, None);
 		assert!(logger::log().is_empty());
 
 		assert_eq!(Scheduler::do_reschedule_named([1u8; 32], DispatchTime::At(6)).unwrap(), (6, 0));
@@ -336,13 +354,13 @@ fn reschedule_named_works() {
 			Error::<Test>::RescheduleNoChange
 		);
 
-		run_to_block(4);
+		run_to_block(4, None);
 		assert!(logger::log().is_empty());
 
-		run_to_block(6);
+		run_to_block(6, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
@@ -366,16 +384,16 @@ fn reschedule_named_perodic_works() {
 			(4, 0)
 		);
 
-		run_to_block(3);
+		run_to_block(3, None);
 		assert!(logger::log().is_empty());
 
 		assert_eq!(Scheduler::do_reschedule_named([1u8; 32], DispatchTime::At(5)).unwrap(), (5, 0));
 		assert_eq!(Scheduler::do_reschedule_named([1u8; 32], DispatchTime::At(6)).unwrap(), (6, 0));
 
-		run_to_block(5);
+		run_to_block(5, None);
 		assert!(logger::log().is_empty());
 
-		run_to_block(6);
+		run_to_block(6, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 
 		assert_eq!(
@@ -383,16 +401,16 @@ fn reschedule_named_perodic_works() {
 			(10, 0)
 		);
 
-		run_to_block(9);
+		run_to_block(9, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 
-		run_to_block(10);
+		run_to_block(10, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32), (root(), 42u32)]);
 
-		run_to_block(13);
+		run_to_block(13, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32), (root(), 42u32), (root(), 42u32)]);
 
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32), (root(), 42u32), (root(), 42u32)]);
 	});
 }
@@ -426,11 +444,11 @@ fn cancel_named_scheduling_works_with_normal_cancel() {
 			.unwrap(),
 		)
 		.unwrap();
-		run_to_block(3);
+		run_to_block(3, None);
 		assert!(logger::log().is_empty());
 		assert_ok!(Scheduler::do_cancel_named(None, [1u8; 32]));
 		assert_ok!(Scheduler::do_cancel(None, i));
-		run_to_block(100);
+		run_to_block(100, None);
 		assert!(logger::log().is_empty());
 	});
 }
@@ -480,13 +498,13 @@ fn cancel_named_periodic_scheduling_works() {
 			.unwrap(),
 		)
 		.unwrap();
-		run_to_block(3);
+		run_to_block(3, None);
 		assert!(logger::log().is_empty());
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
-		run_to_block(6);
+		run_to_block(6, None);
 		assert_ok!(Scheduler::do_cancel_named(None, [1u8; 32]));
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32), (root(), 69u32)]);
 	});
 }
@@ -512,9 +530,9 @@ fn scheduler_respects_weight_limits() {
 			Preimage::bound(call).unwrap(),
 		));
 		// 69 and 42 do not fit together
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
-		run_to_block(5);
+		run_to_block(5, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32), (root(), 69u32)]);
 	});
 }
@@ -533,7 +551,7 @@ fn scheduler_does_not_delete_permanently_overweight_call() {
 			Preimage::bound(call).unwrap(),
 		));
 		// Never executes.
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![]);
 
 		// Assert the `PermanentlyOverweight` event.
@@ -563,7 +581,7 @@ fn scheduler_handles_periodic_failure() {
 			bound.clone(),
 		));
 		// Executes 5 times till block 20.
-		run_to_block(20);
+		run_to_block(20, None);
 		assert_eq!(logger::log().len(), 5);
 
 		// Block 28 will already be full.
@@ -578,7 +596,7 @@ fn scheduler_handles_periodic_failure() {
 		}
 
 		// Going to block 24 will emit a `PeriodicFailed` event.
-		run_to_block(24);
+		run_to_block(24, None);
 		assert_eq!(logger::log().len(), 6);
 
 		assert_eq!(
@@ -616,14 +634,14 @@ fn scheduler_handles_periodic_unavailable_preimage() {
 		assert_ok!(Preimage::note_preimage(RuntimeOrigin::signed(1), call.encode()));
 
 		// Executes 1 times till block 4.
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log().len(), 1);
 
 		// Unnote the preimage
 		Preimage::unnote(&hash);
 
 		// Does not ever execute again.
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log().len(), 1);
 
 		// The preimage is not requested anymore.
@@ -651,7 +669,7 @@ fn scheduler_respects_priority_ordering() {
 			root(),
 			Preimage::bound(call).unwrap(),
 		));
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log(), vec![(root(), 69u32), (root(), 42u32)]);
 	});
 }
@@ -686,10 +704,10 @@ fn scheduler_respects_priority_ordering_with_soft_deadlines() {
 		));
 
 		// 2600 does not fit with 69 or 42, but has higher priority, so will go through
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log(), vec![(root(), 2600u32)]);
 		// 69 and 42 fit together
-		run_to_block(5);
+		run_to_block(5, None);
 		assert_eq!(logger::log(), vec![(root(), 2600u32), (root(), 69u32), (root(), 42u32)]);
 	});
 }
@@ -816,14 +834,14 @@ fn root_calls_works() {
 			Scheduler::schedule_named(RuntimeOrigin::root(), [1u8; 32], 4, None, 127, call,)
 		);
 		assert_ok!(Scheduler::schedule(RuntimeOrigin::root(), 4, None, 127, call2));
-		run_to_block(3);
+		run_to_block(3, None);
 		// Scheduled calls are in the agenda.
 		assert_eq!(Agenda::<Test>::get(4).len(), 2);
 		assert!(logger::log().is_empty());
 		assert_ok!(Scheduler::cancel_named(RuntimeOrigin::root(), [1u8; 32]));
 		assert_ok!(Scheduler::cancel(RuntimeOrigin::root(), 4, 1));
 		// Scheduled calls are made NONE, so should not effect state
-		run_to_block(100);
+		run_to_block(100, None);
 		assert!(logger::log().is_empty());
 	});
 }
@@ -831,7 +849,7 @@ fn root_calls_works() {
 #[test]
 fn fails_to_schedule_task_in_the_past() {
 	new_test_ext().execute_with(|| {
-		run_to_block(3);
+		run_to_block(3, None);
 
 		let call1 = Box::new(RuntimeCall::Logger(LoggerCall::log {
 			i: 69,
@@ -883,14 +901,14 @@ fn should_use_origin() {
 			call,
 		));
 		assert_ok!(Scheduler::schedule(system::RawOrigin::Signed(1).into(), 4, None, 127, call2,));
-		run_to_block(3);
+		run_to_block(3, None);
 		// Scheduled calls are in the agenda.
 		assert_eq!(Agenda::<Test>::get(4).len(), 2);
 		assert!(logger::log().is_empty());
 		assert_ok!(Scheduler::cancel_named(system::RawOrigin::Signed(1).into(), [1u8; 32]));
 		assert_ok!(Scheduler::cancel(system::RawOrigin::Signed(1).into(), 4, 1));
 		// Scheduled calls are made NONE, so should not effect state
-		run_to_block(100);
+		run_to_block(100, None);
 		assert!(logger::log().is_empty());
 	});
 }
@@ -944,7 +962,7 @@ fn should_check_origin_for_cancel() {
 			call,
 		));
 		assert_ok!(Scheduler::schedule(system::RawOrigin::Signed(1).into(), 4, None, 127, call2,));
-		run_to_block(3);
+		run_to_block(3, None);
 		// Scheduled calls are in the agenda.
 		assert_eq!(Agenda::<Test>::get(4).len(), 2);
 		assert!(logger::log().is_empty());
@@ -955,7 +973,7 @@ fn should_check_origin_for_cancel() {
 		assert_noop!(Scheduler::cancel(system::RawOrigin::Signed(2).into(), 4, 1), BadOrigin);
 		assert_noop!(Scheduler::cancel_named(system::RawOrigin::Root.into(), [1u8; 32]), BadOrigin);
 		assert_noop!(Scheduler::cancel(system::RawOrigin::Root.into(), 4, 1), BadOrigin);
-		run_to_block(5);
+		run_to_block(5, None);
 		assert_eq!(
 			logger::log(),
 			vec![
@@ -1143,7 +1161,7 @@ fn postponed_named_task_cannot_be_rescheduled() {
 		assert!(Lookup::<Test>::contains_key(name));
 
 		// Run to a very large block.
-		run_to_block(10);
+		run_to_block(10, None);
 		// It was not executed.
 		assert!(logger::log().is_empty());
 		assert!(Preimage::is_requested(&hash));
@@ -1168,7 +1186,7 @@ fn postponed_named_task_cannot_be_rescheduled() {
 
 		// Finally add the preimage.
 		assert_ok!(Preimage::note(call.encode().into()));
-		run_to_block(1000);
+		run_to_block(1000, None);
 		// It did not execute.
 		assert!(logger::log().is_empty());
 		assert!(Preimage::is_requested(&hash));
@@ -1204,14 +1222,14 @@ fn scheduler_v3_anon_basic_works() {
 		)
 		.unwrap();
 
-		run_to_block(3);
+		run_to_block(3, None);
 		// Did not execute till block 3.
 		assert!(logger::log().is_empty());
 		// Executes in block 4.
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 		// ... but not again.
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
@@ -1236,7 +1254,7 @@ fn scheduler_v3_anon_cancel_works() {
 		// Cancel the call.
 		assert_ok!(<Scheduler as Anon<_, _, _>>::cancel(address));
 		// It did not get executed.
-		run_to_block(100);
+		run_to_block(100, None);
 		assert!(logger::log().is_empty());
 		// Cannot cancel again.
 		assert_err!(<Scheduler as Anon<_, _, _>>::cancel(address), DispatchError::Unavailable);
@@ -1260,7 +1278,7 @@ fn scheduler_v3_anon_reschedule_works() {
 		)
 		.unwrap();
 
-		run_to_block(3);
+		run_to_block(3, None);
 		// Did not execute till block 3.
 		assert!(logger::log().is_empty());
 
@@ -1277,9 +1295,9 @@ fn scheduler_v3_anon_reschedule_works() {
 		// Re-schedule to block 5.
 		assert_ok!(<Scheduler as Anon<_, _, _>>::reschedule(address, DispatchTime::At(5)));
 		// Scheduled for block 5.
-		run_to_block(4);
+		run_to_block(4, None);
 		assert!(logger::log().is_empty());
-		run_to_block(5);
+		run_to_block(5, None);
 		// Does execute in block 5.
 		assert_eq!(logger::log(), vec![(root(), 42)]);
 		// Cannot re-schedule executed task.
@@ -1308,14 +1326,14 @@ fn scheduler_v3_anon_next_schedule_time_works() {
 		)
 		.unwrap();
 
-		run_to_block(3);
+		run_to_block(3, None);
 		// Did not execute till block 3.
 		assert!(logger::log().is_empty());
 
 		// Scheduled for block 4.
 		assert_eq!(<Scheduler as Anon<_, _, _>>::next_dispatch_time(address), Ok(4));
 		// Block 4 executes it.
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log(), vec![(root(), 42)]);
 
 		// It has no dispatch time anymore.
@@ -1345,7 +1363,7 @@ fn scheduler_v3_anon_reschedule_and_next_schedule_time_work() {
 		)
 		.unwrap();
 
-		run_to_block(3);
+		run_to_block(3, None);
 		// Did not execute till block 3.
 		assert!(logger::log().is_empty());
 
@@ -1359,10 +1377,10 @@ fn scheduler_v3_anon_reschedule_and_next_schedule_time_work() {
 		assert_eq!(<Scheduler as Anon<_, _, _>>::next_dispatch_time(address), Ok(5));
 
 		// Block 4 does nothing.
-		run_to_block(4);
+		run_to_block(4, None);
 		assert!(logger::log().is_empty());
 		// Block 5 executes it.
-		run_to_block(5);
+		run_to_block(5, None);
 		assert_eq!(logger::log(), vec![(root(), 42)]);
 	});
 }
@@ -1395,7 +1413,7 @@ fn scheduler_v3_anon_schedule_agenda_overflows() {
 			DispatchError::Exhausted
 		);
 
-		run_to_block(4);
+		run_to_block(4, None);
 		// All scheduled calls are executed.
 		assert_eq!(logger::log().len() as u32, max);
 	});
@@ -1444,7 +1462,7 @@ fn scheduler_v3_anon_cancel_and_schedule_fills_holes() {
 			assert_eq!(i, index);
 		}
 
-		run_to_block(4);
+		run_to_block(4, None);
 		// Maximum number of calls are executed.
 		assert_eq!(logger::log().len() as u32, max);
 	});
@@ -1490,7 +1508,7 @@ fn scheduler_v3_anon_reschedule_fills_holes() {
 			assert_eq!(new, want);
 		}
 
-		run_to_block(4);
+		run_to_block(4, None);
 		// Maximum number of calls are executed.
 		assert_eq!(logger::log().len() as u32, max);
 	});
@@ -1517,14 +1535,14 @@ fn scheduler_v3_named_basic_works() {
 		)
 		.unwrap();
 
-		run_to_block(3);
+		run_to_block(3, None);
 		// Did not execute till block 3.
 		assert!(logger::log().is_empty());
 		// Executes in block 4.
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 		// ... but not again.
-		run_to_block(100);
+		run_to_block(100, None);
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
@@ -1552,7 +1570,7 @@ fn scheduler_v3_named_cancel_named_works() {
 		// Cancel the call by name.
 		assert_ok!(<Scheduler as Named<_, _, _>>::cancel_named(name));
 		// It did not get executed.
-		run_to_block(100);
+		run_to_block(100, None);
 		assert!(logger::log().is_empty());
 		// Cannot cancel again.
 		assert_noop!(<Scheduler as Named<_, _, _>>::cancel_named(name), DispatchError::Unavailable);
@@ -1582,7 +1600,7 @@ fn scheduler_v3_named_cancel_without_name_works() {
 		// Cancel the call by address.
 		assert_ok!(<Scheduler as Anon<_, _, _>>::cancel(address));
 		// It did not get executed.
-		run_to_block(100);
+		run_to_block(100, None);
 		assert!(logger::log().is_empty());
 		// Cannot cancel again.
 		assert_err!(<Scheduler as Anon<_, _, _>>::cancel(address), DispatchError::Unavailable);
@@ -1609,7 +1627,7 @@ fn scheduler_v3_named_reschedule_named_works() {
 		)
 		.unwrap();
 
-		run_to_block(3);
+		run_to_block(3, None);
 		// Did not execute till block 3.
 		assert!(logger::log().is_empty());
 
@@ -1631,9 +1649,9 @@ fn scheduler_v3_named_reschedule_named_works() {
 		// Re-schedule to block 5.
 		assert_ok!(<Scheduler as Named<_, _, _>>::reschedule_named(name, DispatchTime::At(5)));
 		// Scheduled for block 5.
-		run_to_block(4);
+		run_to_block(4, None);
 		assert!(logger::log().is_empty());
-		run_to_block(5);
+		run_to_block(5, None);
 		// Does execute in block 5.
 		assert_eq!(logger::log(), vec![(root(), 42)]);
 		// Cannot re-schedule executed task.
@@ -1669,7 +1687,7 @@ fn scheduler_v3_named_next_schedule_time_works() {
 		)
 		.unwrap();
 
-		run_to_block(3);
+		run_to_block(3, None);
 		// Did not execute till block 3.
 		assert!(logger::log().is_empty());
 
@@ -1678,7 +1696,7 @@ fn scheduler_v3_named_next_schedule_time_works() {
 		// Also works by address.
 		assert_eq!(<Scheduler as Anon<_, _, _>>::next_dispatch_time(address), Ok(4));
 		// Block 4 executes it.
-		run_to_block(4);
+		run_to_block(4, None);
 		assert_eq!(logger::log(), vec![(root(), 42)]);
 
 		// It has no dispatch time anymore.
@@ -1870,7 +1888,7 @@ fn unavailable_call_is_detected() {
 		assert!(!Preimage::have(&bound));
 
 		// Executes in block 4.
-		run_to_block(4);
+		run_to_block(4, None);
 
 		assert_eq!(
 			System::events().last().unwrap().event,

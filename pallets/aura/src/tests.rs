@@ -26,6 +26,8 @@ use frame_support::traits::OnInitialize;
 use sp_consensus_etf_aura::{Slot, AURA_ENGINE_ID};
 use sp_runtime::{Digest, DigestItem};
 
+// TODO: these tests need to use udpated digests
+
 #[test]
 fn initial_values() {
 	new_test_ext(vec![0, 1, 2, 3]).execute_with(|| {

@@ -37,6 +37,28 @@ use sp_runtime::{
 };
 use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
 
+use ark_bls12_381::{Fr, G2Affine as G2};
+use etf_crypto_primitives::{
+	proofs::dleq::DLEQProof,
+	ibe::fullident::BfIbe,
+	client::etf_client::{DefaultEtfClient, EtfClient},
+	utils::hash_to_g1,
+};
+
+use pallet_etf::{TimelockError, TimelockEncryptionProvider};
+use rand_chacha::{
+	ChaCha20Rng,
+	rand_core::SeedableRng,
+};
+
+use sp_consensus_etf_aura::{OpaqueSecret, Slot};
+
+use ark_ec::AffineRepr;
+use ark_serialize::{CanonicalSerialize, CanonicalDeserialize};
+use ark_std::One as Won;
+use ark_ff::PrimeField;
+type K = ark_bls12_381::G1Affine;
+
 // Logger module to track execution.
 #[frame_support::pallet]
 pub mod logger {
@@ -105,6 +127,7 @@ frame_support::construct_runtime!(
 		Scheduler: scheduler::{Pallet, Call, Storage, Event<T>},
 		Preimage: pallet_preimage::{Pallet, Call, Storage, Event<T>, HoldReason},
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
+		Aura: pallet_etf_aura,
 		Etf: pallet_etf,
 	}
 );
@@ -187,7 +210,9 @@ impl pallet_etf::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Test>;
 	type Randomness = RandomnessCollectiveFlip;
+	type SlotSecretProvider = Aura;
 }
+
 pub struct TestWeightInfo;
 impl WeightInfo for TestWeightInfo {
 	fn service_agendas_base() -> Weight {
@@ -243,7 +268,7 @@ impl Config for Test {
 	type WeightInfo = TestWeightInfo;
 	type OriginPrivilegeCmp = EqualPrivilegeOnly;
 	type Preimages = Preimage;
-	type TlockProvider = Etf;
+	type TlockProvider = MockTlockProvider;
 }
 
 pub type LoggerCall = logger::Call<Test>;
@@ -253,7 +278,39 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	t.into()
 }
 
-pub fn run_to_block(n: u64) {
+pub fn run_to_block(n: u64, secret: Option<Fr>) {
+
+	// // assume we want to insert a secret for the current block (slot ~ block for testing)
+	// if let Some(sk) = secret {
+	// 	// panic!("setting aura slot {:?}", sk);
+	// 	let id = n.to_string().as_bytes().to_vec();
+	// 	let pk = hash_to_g1(&id);
+	// 	// let x: Fr = Fr::from_be_bytes_mod_order(secret);
+	// 	let generator: K = K::generator();
+	// 	let mut rng = ChaCha20Rng::seed_from_u64(n);
+	// 	let proof = DLEQProof::new(sk, pk, generator, id, &mut rng);
+	// 	let secret_bytes = convert_to_bytes::<K, 48>(proof.secret_commitment_g)
+	// 		.try_into()
+	// 		.expect("The slot secret should be valid; qed;");
+
+		// let pre_digest =
+		// 	Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())] };
+		// System::initialize(&42, &System::parent_hash(), &pre_digest);
+
+	// 	let pre_digest =
+	// 		sp_runtime::Digest { logs: vec![
+	// 			sp_runtime::DigestItem::PreRuntime(
+	// 				sp_consensus_etf_aura::AURA_ENGINE_ID, 
+	// 				sp_consensus_etf_aura::Slot::from(n).encode())
+	// 			]
+	// 	};
+
+	// 	System::reset_events();
+	// 	System::initialize(&n, &System::parent_hash(), &pre_digest);
+	// 	Aura::set_current_slot(sp_consensus_etf_aura::Slot::from(n));
+	// 	Aura::add_slot_secret(sp_consensus_etf_aura::Slot::from(n), secret_bytes);
+	// }
+
 	while System::block_number() < n {
 		Scheduler::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
@@ -261,6 +318,58 @@ pub fn run_to_block(n: u64) {
 	}
 }
 
+pub fn convert_to_bytes<E: CanonicalSerialize, const N: usize>(k: E) -> [u8;N] {
+	let mut out = Vec::with_capacity(k.compressed_size());
+	k.serialize_compressed(&mut out).unwrap_or(());
+	let o: [u8; N] = out.try_into().unwrap_or([0;N]);
+	o
+}
+
 pub fn root() -> OriginCaller {
 	system::RawOrigin::Root.into()
+}
+
+pub struct MockTlockProvider;
+
+impl TimelockEncryptionProvider for MockTlockProvider {
+	// decrypts at block number 4
+	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError> {
+		let sk = Fr::one();
+		let id = 4u64.to_string().as_bytes().to_vec();
+		let pk = hash_to_g1(&id);
+		let generator: K = K::generator();
+		let mut rng = ChaCha20Rng::seed_from_u64(4u64);
+		let proof = DLEQProof::new(sk, pk, generator, id, &mut rng);
+		let sk: [u8;48] = convert_to_bytes::<K, 48>(proof.secret_commitment_g)
+			.try_into()
+			.expect("The slot secret should be valid; qed;");
+
+		let ibe_pp_bytes: [u8;96] = convert_to_bytes::<G2, 96>(G2::generator())
+			.try_into()
+			.expect("The slot secret should be valid; qed;");
+		
+		// let (_, p, _) = Self::ibe_params();
+		// panic!("{:?}", p);
+		let pt = DefaultEtfClient::<BfIbe>::decrypt(
+			ibe_pp_bytes.to_vec(), 
+			ciphertext.ciphertext.to_vec(), 
+			ciphertext.nonce.to_vec(), 
+			vec![ciphertext.capsule.to_vec()], 
+			vec![sk.to_vec()],
+		).map_err(|err| TimelockError::DecryptionFailed)?;
+		Ok(pt)
+	}
+
+	// fn get() -> Option<OpaqueSecret> {
+		// let sk = Fr::one();
+		// let id = 4u64.to_string().as_bytes().to_vec();
+		// let pk = hash_to_g1(&id);
+		// let generator: K = K::generator();
+		// let mut rng = ChaCha20Rng::seed_from_u64(4u64);
+		// let proof = DLEQProof::new(sk, pk, generator, id, &mut rng);
+		// let sk = convert_to_bytes::<K, 48>(proof.secret_commitment_g)
+		// 	.try_into()
+		// 	.expect("The slot secret should be valid; qed;");
+		// sk
+	// }
 }

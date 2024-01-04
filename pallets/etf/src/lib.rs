@@ -39,11 +39,11 @@ use sp_consensus_etf_aura::{AURA_ENGINE_ID, digests::PreDigest, OpaqueSecret};
 #[derive(Debug, Clone, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo)]
 pub struct Ciphertext {
 	/// the (AES) ciphertext
-	ciphertext: BoundedVec<u8, ConstU32<512>>,
+	pub ciphertext: BoundedVec<u8, ConstU32<512>>,
 	/// the (AES) nonce
-	nonce: BoundedVec<u8, ConstU32<96>>,
+	pub nonce: BoundedVec<u8, ConstU32<96>>,
 	/// the IBE ciphertext(s): for now we assume a single point in the future is used
-	capsule: BoundedVec<u8, ConstU32<512>>,
+	pub capsule: BoundedVec<u8, ConstU32<512>>,
 }
 
 #[frame_support::pallet]
@@ -141,7 +141,7 @@ impl<T: Config> Pallet<T> {
 	/// `g`: A compressed and serialized element of G1
 	///
 	/// TODO: should also provide a DLEQ proof and verify it here
-	fn set_ibe_params(g: &Vec<u8>, ibe_pp_bytes: &Vec<u8>, ibe_commitment_bytes: &Vec<u8>) -> DispatchResult {
+	pub fn set_ibe_params(g: &Vec<u8>, ibe_pp_bytes: &Vec<u8>, ibe_commitment_bytes: &Vec<u8>) -> DispatchResult {
 		let _ = 
 			ark_bls12_381::G1Affine::deserialize_compressed(&g[..])
 			.map_err(|_| Error::<T>::G1DecodingFailure)?;
@@ -171,23 +171,9 @@ pub trait TimelockEncryptionProvider {
 impl<T:Config> TimelockEncryptionProvider for Pallet<T> {
 
 	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError> {
-		// instead, could pass the secrets as a param?
-		// let predigest = frame_system::Pallet::<T>::digest()
-		// 	.logs
-		// 	.iter()
-		// 	.filter_map(|d| d.as_pre_runtime())
-		// 	.filter_map(|(id, mut data)| {
-		// // for (id, mut data) in pre_runtime_digests {
-		// 	if id == AURA_ENGINE_ID {
-		// 		PreDigest::decode(&mut data).ok()
-		// 	} else {
-		// 		None
-		// 	}
-		// }).next();
-		// let slot_secret = pallet_etf_aura::SlotSecrets::<T>::get(pallet_etf_aura::CurrentSlot::<T>::get()).unwrap();
 		if let Some(secret) = T::SlotSecretProvider::get() {
-			let (g, p, p_pub) = Self::ibe_params();
-			// we need to convert the ciphertext to a 
+			let (_, p, _) = Self::ibe_params();
+			panic!("{:?}", p);
 			let pt = DefaultEtfClient::<BfIbe>::decrypt(
 				p, ciphertext.ciphertext.to_vec(), 
 				ciphertext.nonce.to_vec(), 
@@ -196,7 +182,6 @@ impl<T:Config> TimelockEncryptionProvider for Pallet<T> {
 			).map_err(|err| TimelockError::DecryptionFailed)?;
 			return Ok(pt);
 		}
-		
 		Err(TimelockError::MissingSecret)
 	}
 

@@ -138,8 +138,6 @@ pub mod pallet {
 				let new_secret = predigest.secret;
 				let new_slot = predigest.slot;
 
-				Self::add_slot_secret(new_slot, new_secret);
-
 				let current_slot = CurrentSlot::<T>::get();
 				
 				if T::AllowMultipleBlocksPerSlot::get() {
@@ -148,7 +146,8 @@ pub mod pallet {
 					assert!(current_slot < new_slot, "Slot must increase");
 				}
 
-				CurrentSlot::<T>::put(new_slot);
+				Self::add_slot_secret(new_slot, new_secret);
+				Self::set_current_slot(new_slot);
 
 				if let Some(n_authorities) = <Authorities<T>>::decode_len() {
 					let authority_index = *new_slot % n_authorities as u64;
@@ -165,7 +164,6 @@ pub mod pallet {
 
 				T::DbWeight::get().reads_writes(2, 1)
 			} else {
-				// panic!("{:?}", "could not decode slot");
 				T::DbWeight::get().reads(1)
 			}
 		}
@@ -346,6 +344,11 @@ impl<T: Config> Pallet<T> {
 		SlotSecrets::<T>::insert(slot, &secret);
 	}
 
+	/// a helper method to set the current slot
+	pub fn set_current_slot(new_slot: Slot) {
+		CurrentSlot::<T>::put(new_slot);
+	}
+
 }
 
 impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
@@ -463,6 +466,6 @@ pub trait SlotSecretProvider {
 
 impl<T: Config> SlotSecretProvider for Pallet<T> {
 	fn get() -> Option<OpaqueSecret> {
-		SlotSecrets::<T>::get(CurrentSlot::<T>::get())
+		SlotSecrets::<T>::get(Self::current_slot())
 	}
 }

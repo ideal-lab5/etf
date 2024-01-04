@@ -740,7 +740,6 @@ impl<T: Config> Pallet<T> {
 		ciphertext: Ciphertext,
 	) -> Result<TaskAddress<BlockNumberFor<T>>, DispatchError> {
 		let when = Self::resolve_time(when)?;
-		// let lookup_hash = call.lookup_hash();
 
 		let task = Scheduled {
 			maybe_id: None,
@@ -752,13 +751,6 @@ impl<T: Config> Pallet<T> {
 			_phantom: PhantomData,
 		};
 		let res = Self::place_task(when, task).map_err(|x| x.0)?;
-
-		// TODO: probably needs to be passed as a parameter
-		// if let Some(hash) = lookup_hash {
-		// 	// Request the call to be made available.
-		// 	T::Preimages::request(&hash);
-		// }
-
 		Ok(res)
 	}
 }
@@ -819,6 +811,7 @@ impl<T: Config> Pallet<T> {
 		let within_limit = weight
 			.try_consume(T::WeightInfo::service_agenda_base(ordered.len() as u32))
 			.is_ok();
+		// TODO: not a huge fan of that 
 		debug_assert!(within_limit, "weight limit should have been checked in advance");
 
 		// Items which we know can be executed and have postponed for execution in a later block.
@@ -831,6 +824,25 @@ impl<T: Config> Pallet<T> {
 				None => continue,
 				Some(t) => t,
 			};
+
+			// if let Some(ref ciphertext) = task.maybe_ciphertext {
+			// 	match T::TlockProvider::decrypt_current(ciphertext.clone()) {
+			// 		Ok(pt) => {
+			// 			panic!("decrypted {:?}", pt);
+			// 		},
+			// 		Err(_) => {
+			// 			panic!("{:?}", "something bad bad bad");
+			// 		}
+			// 	}
+			// 		// .and_then(|plaintext| {
+			// 		// 	let mut pt: &[u8] = plaintext.as_ref();
+			// 		// 	<T as Config>::RuntimeCall::decode(&mut pt)
+			// 		// 		.map_err(|_| pallet_etf::TimelockError::DecryptionFailed)
+			// 		// })
+			// 		// .and_then(|call| T::Preimages::bound(call)
+			// 		// 	.map_err(|_| pallet_etf::TimelockError::DecryptionFailed))
+			// 		// .ok();
+			// }
 
 			if let Some(ref ciphertext) = task.maybe_ciphertext {
 				task.maybe_call = T::TlockProvider::decrypt_current(ciphertext.clone())
