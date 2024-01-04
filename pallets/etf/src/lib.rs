@@ -173,9 +173,9 @@ impl<T:Config> TimelockEncryptionProvider for Pallet<T> {
 	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError> {
 		if let Some(secret) = T::SlotSecretProvider::get() {
 			let (_, p, _) = Self::ibe_params();
-			panic!("{:?}", p);
 			let pt = DefaultEtfClient::<BfIbe>::decrypt(
-				p, ciphertext.ciphertext.to_vec(), 
+				p, 
+				ciphertext.ciphertext.to_vec(), 
 				ciphertext.nonce.to_vec(), 
 				vec![ciphertext.capsule.to_vec()], 
 				vec![secret.to_vec()],

@@ -811,7 +811,6 @@ impl<T: Config> Pallet<T> {
 		let within_limit = weight
 			.try_consume(T::WeightInfo::service_agenda_base(ordered.len() as u32))
 			.is_ok();
-		// TODO: not a huge fan of that 
 		debug_assert!(within_limit, "weight limit should have been checked in advance");
 
 		// Items which we know can be executed and have postponed for execution in a later block.
@@ -825,38 +824,20 @@ impl<T: Config> Pallet<T> {
 				Some(t) => t,
 			};
 
-			// if let Some(ref ciphertext) = task.maybe_ciphertext {
-			// 	match T::TlockProvider::decrypt_current(ciphertext.clone()) {
-			// 		Ok(pt) => {
-			// 			panic!("decrypted {:?}", pt);
-			// 		},
-			// 		Err(_) => {
-			// 			panic!("{:?}", "something bad bad bad");
-			// 		}
-			// 	}
-			// 		// .and_then(|plaintext| {
-			// 		// 	let mut pt: &[u8] = plaintext.as_ref();
-			// 		// 	<T as Config>::RuntimeCall::decode(&mut pt)
-			// 		// 		.map_err(|_| pallet_etf::TimelockError::DecryptionFailed)
-			// 		// })
-			// 		// .and_then(|call| T::Preimages::bound(call)
-			// 		// 	.map_err(|_| pallet_etf::TimelockError::DecryptionFailed))
-			// 		// .ok();
-			// }
-
 			if let Some(ref ciphertext) = task.maybe_ciphertext {
 				task.maybe_call = T::TlockProvider::decrypt_current(ciphertext.clone())
-					.and_then(|plaintext| {
-						let mut pt: &[u8] = plaintext.as_ref();
-						<T as Config>::RuntimeCall::decode(&mut pt)
-							.map_err(|_| pallet_etf::TimelockError::DecryptionFailed)
+					.and_then(|bare| {
+						if let Ok(call) = <T as Config>::RuntimeCall::decode(&mut bare.as_slice()) {
+							Ok(call)
+						} else {
+							Err(pallet_etf::TimelockError::DecryptionFailed)
+						}
 					})
 					.and_then(|call| T::Preimages::bound(call)
-						.map_err(|_| pallet_etf::TimelockError::DecryptionFailed))
+					.map_err(|_| pallet_etf::TimelockError::DecryptionFailed))
 					.ok();
 			}
 
-			// if there is still no available task then move on to the next candidate
 			if task.maybe_call.is_none() {
 				continue
 			}

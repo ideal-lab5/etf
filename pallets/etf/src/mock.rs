@@ -89,6 +89,7 @@ impl pallet_etf::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Test>;
     type Randomness = TestRandomness<Self>;
+	type SlotSecretProvider = Aura;
 }
 
 // Build genesis storage according to the mock runtime.

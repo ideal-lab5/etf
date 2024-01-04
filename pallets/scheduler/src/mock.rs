@@ -171,6 +171,7 @@ impl system::Config for Test {
 	type OnSetCode = ();
 	type MaxConsumers = ConstU32<16>;
 }
+
 impl logger::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 }
@@ -278,39 +279,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	t.into()
 }
 
-pub fn run_to_block(n: u64, secret: Option<Fr>) {
-
-	// // assume we want to insert a secret for the current block (slot ~ block for testing)
-	// if let Some(sk) = secret {
-	// 	// panic!("setting aura slot {:?}", sk);
-	// 	let id = n.to_string().as_bytes().to_vec();
-	// 	let pk = hash_to_g1(&id);
-	// 	// let x: Fr = Fr::from_be_bytes_mod_order(secret);
-	// 	let generator: K = K::generator();
-	// 	let mut rng = ChaCha20Rng::seed_from_u64(n);
-	// 	let proof = DLEQProof::new(sk, pk, generator, id, &mut rng);
-	// 	let secret_bytes = convert_to_bytes::<K, 48>(proof.secret_commitment_g)
-	// 		.try_into()
-	// 		.expect("The slot secret should be valid; qed;");
-
-		// let pre_digest =
-		// 	Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())] };
-		// System::initialize(&42, &System::parent_hash(), &pre_digest);
-
-	// 	let pre_digest =
-	// 		sp_runtime::Digest { logs: vec![
-	// 			sp_runtime::DigestItem::PreRuntime(
-	// 				sp_consensus_etf_aura::AURA_ENGINE_ID, 
-	// 				sp_consensus_etf_aura::Slot::from(n).encode())
-	// 			]
-	// 	};
-
-	// 	System::reset_events();
-	// 	System::initialize(&n, &System::parent_hash(), &pre_digest);
-	// 	Aura::set_current_slot(sp_consensus_etf_aura::Slot::from(n));
-	// 	Aura::add_slot_secret(sp_consensus_etf_aura::Slot::from(n), secret_bytes);
-	// }
-
+pub fn run_to_block(n: u64) {
 	while System::block_number() < n {
 		Scheduler::on_finalize(System::block_number());
 		System::set_block_number(System::block_number() + 1);
@@ -328,6 +297,23 @@ pub fn convert_to_bytes<E: CanonicalSerialize, const N: usize>(k: E) -> [u8;N] {
 pub fn root() -> OriginCaller {
 	system::RawOrigin::Root.into()
 }
+
+// pub struct MockSlotSecretProvider;
+
+// impl pallet_etf_aura::SlotSecretProvider for MockSlotSecretProvider {
+// 	fn get() -> Option<OpaqueSecret> {
+// 		let sk = Fr::one();
+// 		let id = 4u64.to_string().as_bytes().to_vec();
+// 		let pk = hash_to_g1(&id);
+// 		let generator: K = K::generator();
+// 		let mut rng = ChaCha20Rng::seed_from_u64(4u64);
+// 		let proof = DLEQProof::new(sk, pk, generator, id, &mut rng);
+// 		let sk = convert_to_bytes::<K, 48>(proof.secret_commitment_g)
+// 			.try_into()
+// 			.expect("The slot secret should be valid; qed;");
+// 		Some(sk.to_vec())
+// 	}
+// }
 
 pub struct MockTlockProvider;
 
@@ -348,8 +334,6 @@ impl TimelockEncryptionProvider for MockTlockProvider {
 			.try_into()
 			.expect("The slot secret should be valid; qed;");
 		
-		// let (_, p, _) = Self::ibe_params();
-		// panic!("{:?}", p);
 		let pt = DefaultEtfClient::<BfIbe>::decrypt(
 			ibe_pp_bytes.to_vec(), 
 			ciphertext.ciphertext.to_vec(), 
@@ -359,17 +343,4 @@ impl TimelockEncryptionProvider for MockTlockProvider {
 		).map_err(|err| TimelockError::DecryptionFailed)?;
 		Ok(pt)
 	}
-
-	// fn get() -> Option<OpaqueSecret> {
-		// let sk = Fr::one();
-		// let id = 4u64.to_string().as_bytes().to_vec();
-		// let pk = hash_to_g1(&id);
-		// let generator: K = K::generator();
-		// let mut rng = ChaCha20Rng::seed_from_u64(4u64);
-		// let proof = DLEQProof::new(sk, pk, generator, id, &mut rng);
-		// let sk = convert_to_bytes::<K, 48>(proof.secret_commitment_g)
-		// 	.try_into()
-		// 	.expect("The slot secret should be valid; qed;");
-		// sk
-	// }
 }
