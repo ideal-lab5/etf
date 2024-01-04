@@ -257,27 +257,7 @@ impl<T: Config> Pallet<T> {
 		Authorities::<T>::decode_len().unwrap_or(0)
 	}
 
-	
-	// /// TODO: should be the entire predigest instead?
-	// /// Get the current slot from the pre-runtime digests.
-	// fn current_slot_and_secret_from_digests() -> Option<PreDigest> {
-	// 	frame_system::Pallet::<T>::digest()
-	// 		.logs
-	// 		.iter()
-	// 		.filter_map(|d| d.as_pre_runtime())
-	// 		.filter_map(|(id, mut data)| {
-	// 	// for (id, mut data) in pre_runtime_digests {
-	// 		if id == AURA_ENGINE_ID {
-	// 			PreDigest::decode(&mut data).ok()
-	// 		} else {
-	// 			None
-	// 		}
-	// 	}).next()
-
-	// 	// None
-	// }
-
-	/// TODO: should be the entire predigest instead?
+	/// TODO: refactor name
 	/// Get the current slot from the pre-runtime digests.
 	pub fn current_slot_from_digests() -> Option<PreDigest> {
 		frame_system::Pallet::<T>::digest()
@@ -473,5 +453,16 @@ impl<T: Config> OnTimestampSet<T::Moment> for Pallet<T> {
 			timestamp_slot,
 			"Timestamp slot must match `CurrentSlot`"
 		);
+	}
+}
+
+pub trait SlotSecretProvider {
+	/// get the latest (current) slot secret
+	fn get() -> Option<OpaqueSecret>;
+}
+
+impl<T: Config> SlotSecretProvider for Pallet<T> {
+	fn get() -> Option<OpaqueSecret> {
+		SlotSecrets::<T>::get(CurrentSlot::<T>::get())
 	}
 }

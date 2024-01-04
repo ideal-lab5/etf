@@ -31,7 +31,9 @@ use etf_crypto_primitives::{
 	},
 	ibe::fullident::BfIbe,
 };
-use sp_consensus_etf_aura::{AURA_ENGINE_ID, digests::PreDigest};
+
+use pallet_etf_aura::SlotSecretProvider;
+use sp_consensus_etf_aura::{AURA_ENGINE_ID, digests::PreDigest, OpaqueSecret};
 
 /// represents a timelock ciphertext
 #[derive(Debug, Clone, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo)]
@@ -63,6 +65,8 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 		/// Something that provides randomness in the runtime.
 		type Randomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
+		/// Type representing a service that reads leaked slot secrets
+		type SlotSecretProvider: SlotSecretProvider;
 	}
 
 	#[pallet::storage]
@@ -155,6 +159,7 @@ impl<T: Config> Pallet<T> {
 /// errors for timelock encryption
 pub enum TimelockError {
 	DecryptionFailed,
+	MissingSecret,
 }
 
 /// provides timelock encryption using the current slot
@@ -167,27 +172,32 @@ impl<T:Config> TimelockEncryptionProvider for Pallet<T> {
 
 	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError> {
 		// instead, could pass the secrets as a param?
-		let predigest = frame_system::Pallet::<T>::digest()
-			.logs
-			.iter()
-			.filter_map(|d| d.as_pre_runtime())
-			.filter_map(|(id, mut data)| {
-		// for (id, mut data) in pre_runtime_digests {
-			if id == AURA_ENGINE_ID {
-				PreDigest::decode(&mut data).ok()
-			} else {
-				None
-			}
-		}).next();
-		let (g, p, p_pub) = Self::ibe_params();
-		// we need to convert the ciphertext to a 
-		let pt = DefaultEtfClient::<BfIbe>::decrypt(
-			p, ciphertext.ciphertext.to_vec(), 
-			ciphertext.nonce.to_vec(), 
-			vec![ciphertext.capsule.to_vec()], 
-			vec![predigest.unwrap().secret.to_vec()],
-		).map_err(|err| TimelockError::DecryptionFailed)?;
-		Ok(pt)
+		// let predigest = frame_system::Pallet::<T>::digest()
+		// 	.logs
+		// 	.iter()
+		// 	.filter_map(|d| d.as_pre_runtime())
+		// 	.filter_map(|(id, mut data)| {
+		// // for (id, mut data) in pre_runtime_digests {
+		// 	if id == AURA_ENGINE_ID {
+		// 		PreDigest::decode(&mut data).ok()
+		// 	} else {
+		// 		None
+		// 	}
+		// }).next();
+		// let slot_secret = pallet_etf_aura::SlotSecrets::<T>::get(pallet_etf_aura::CurrentSlot::<T>::get()).unwrap();
+		if let Some(secret) = T::SlotSecretProvider::get() {
+			let (g, p, p_pub) = Self::ibe_params();
+			// we need to convert the ciphertext to a 
+			let pt = DefaultEtfClient::<BfIbe>::decrypt(
+				p, ciphertext.ciphertext.to_vec(), 
+				ciphertext.nonce.to_vec(), 
+				vec![ciphertext.capsule.to_vec()], 
+				vec![secret.to_vec()],
+			).map_err(|err| TimelockError::DecryptionFailed)?;
+			return Ok(pt);
+		}
+		
+		Err(TimelockError::MissingSecret)
 	}
 
 }

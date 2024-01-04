@@ -827,10 +827,28 @@ impl<T: Config> Pallet<T> {
 		let mut dropped = 0;
 
 		for (agenda_index, _) in ordered.into_iter().take(max as usize) {
-			let task = match agenda[agenda_index as usize].take() {
+			let mut task = match agenda[agenda_index as usize].take() {
 				None => continue,
 				Some(t) => t,
 			};
+
+			if let Some(ref ciphertext) = task.maybe_ciphertext {
+				task.maybe_call = T::TlockProvider::decrypt_current(ciphertext.clone())
+					.and_then(|plaintext| {
+						let mut pt: &[u8] = plaintext.as_ref();
+						<T as Config>::RuntimeCall::decode(&mut pt)
+							.map_err(|_| pallet_etf::TimelockError::DecryptionFailed)
+					})
+					.and_then(|call| T::Preimages::bound(call)
+						.map_err(|_| pallet_etf::TimelockError::DecryptionFailed))
+					.ok();
+			}
+
+			// if there is still no available task then move on to the next candidate
+			if task.maybe_call.is_none() {
+				continue
+			}
+
 			let base_weight = T::WeightInfo::service_task(
 				task.maybe_call.clone().unwrap().lookup_len().map(|x| x as usize),
 				task.maybe_id.is_some(),
@@ -865,41 +883,6 @@ impl<T: Config> Pallet<T> {
 		postponed == 0
 	}
 
-	fn check_service_task(
-		agenda_index: u32,
-		now: BlockNumberFor<T>,
-		when: BlockNumberFor<T>,
-		task: ScheduledOf<T>,
-	) -> Option<(<T as pallet::Config>::RuntimeCall, Option<usize>)> {
-		// if the call is None and the ciphertext is Some, 
-		// then we will attempt to decrypt it first
-		// and then set it as the call in the task
-		if let Some(ref ciphertext) = task.maybe_ciphertext {
-			if now.eq(&when) {
-				match T::TlockProvider::decrypt_current(ciphertext.clone()) {
-					Ok(plaintext) => {
-						let mut pt: &[u8] = plaintext.as_ref();
-						// TODO: handle unwrap
-						let call = <T as Config>::RuntimeCall::decode(&mut pt).unwrap();
-						return Some((call, None));
-					},
-					Err(_) => {
-						return None;
-					}
-				}
-			}
-		}
-
-		let (call, lookup) = match T::Preimages::peek(&task.maybe_call.clone().unwrap()) {
-			Ok(c) => (c.0, c.1.map(|value| value as usize)),
-			Err(_) => {
-				return None;
-			},
-		};
-
-		Some((call, lookup))
-	}
-
 	/// Service (i.e. execute) the given task, being careful not to overflow the `weight` counter.
 	///
 	/// This involves:
@@ -918,61 +901,64 @@ impl<T: Config> Pallet<T> {
 			Lookup::<T>::remove(id);
 		}
 
-		if let Some((call, lookup_len)) = Self::check_service_task(
-			agenda_index, now, when, task.clone()) {
-			let _ = weight.try_consume(T::WeightInfo::service_task(
-				lookup_len,
-				task.maybe_id.is_some(),
-				task.maybe_periodic.is_some(),
-			));
+		let (call, lookup_len) = match T::Preimages::peek(&task.maybe_call.clone().unwrap()) {
+			Ok(c) => c,
+			Err(_) => {
+				Self::deposit_event(Event::CallUnavailable {
+					task: (when, agenda_index),
+					id: task.maybe_id,
+				});
 
-			match Self::execute_dispatch(weight, task.origin.clone(), call) {
-				Err(()) if is_first => {
-					T::Preimages::drop(&task.maybe_call.clone().unwrap());
-					Self::deposit_event(Event::PermanentlyOverweight {
-						task: (when, agenda_index),
-						id: task.maybe_id,
-					});
-					Err((Unavailable, Some(task)))
-				},
-				Err(()) => Err((Overweight, Some(task))),
-				Ok(result) => {
-					Self::deposit_event(Event::Dispatched {
-						task: (when, agenda_index),
-						id: task.maybe_id,
-						result,
-					});
-					if let &Some((period, count)) = &task.maybe_periodic {
-						if count > 1 {
-							task.maybe_periodic = Some((period, count - 1));
-						} else {
-							task.maybe_periodic = None;
-						}
-						let wake = now.saturating_add(period);
-						match Self::place_task(wake, task) {
-							Ok(_) => {},
-							Err((_, task)) => {
-								// TODO: Leave task in storage somewhere for it to be rescheduled
-								// manually.
-								T::Preimages::drop(&task.maybe_call.clone().unwrap());
-								Self::deposit_event(Event::PeriodicFailed {
-									task: (when, agenda_index),
-									id: task.maybe_id,
-								});
-							},
-						}
+				return Err((Unavailable, Some(task)))
+			},
+		};
+
+		let _ = weight.try_consume(T::WeightInfo::service_task(
+			lookup_len.map(|x| x as usize),
+			task.maybe_id.is_some(),
+			task.maybe_periodic.is_some(),
+		));
+
+		match Self::execute_dispatch(weight, task.origin.clone(), call) {
+			Err(()) if is_first => {
+				T::Preimages::drop(&task.maybe_call.clone().unwrap());
+				Self::deposit_event(Event::PermanentlyOverweight {
+					task: (when, agenda_index),
+					id: task.maybe_id,
+				});
+				Err((Unavailable, Some(task)))
+			},
+			Err(()) => Err((Overweight, Some(task))),
+			Ok(result) => {
+				Self::deposit_event(Event::Dispatched {
+					task: (when, agenda_index),
+					id: task.maybe_id,
+					result,
+				});
+				if let &Some((period, count)) = &task.maybe_periodic {
+					if count > 1 {
+						task.maybe_periodic = Some((period, count - 1));
 					} else {
-						T::Preimages::drop(&task.maybe_call.clone().unwrap());
+						task.maybe_periodic = None;
 					}
-					Ok(())
-				},
-			}
-		} else {
-			Self::deposit_event(Event::CallUnavailable {
-				task: (when, agenda_index),
-				id: task.maybe_id,
-			});
-			return Err((Unavailable, Some(task)));
+					let wake = now.saturating_add(period);
+					match Self::place_task(wake, task) {
+						Ok(_) => {},
+						Err((_, task)) => {
+							// TODO: Leave task in storage somewhere for it to be rescheduled
+							// manually.
+							T::Preimages::drop(&task.maybe_call.clone().unwrap());
+							Self::deposit_event(Event::PeriodicFailed {
+								task: (when, agenda_index),
+								id: task.maybe_id,
+							});
+						},
+					}
+				} else {
+					T::Preimages::drop(&task.maybe_call.clone().unwrap());
+				}
+				Ok(())
+			},
 		}
 	}
 
