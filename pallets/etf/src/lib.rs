@@ -160,6 +160,8 @@ impl<T: Config> Pallet<T> {
 pub enum TimelockError {
 	DecryptionFailed,
 	MissingSecret,
+	BoundCallFailure,
+	DecodeFailure,
 }
 
 /// provides timelock encryption using the current slot

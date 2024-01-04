@@ -826,6 +826,7 @@ impl<T: Config> Pallet<T> {
 
 			if let Some(ref ciphertext) = task.maybe_ciphertext {
 				task.maybe_call = T::TlockProvider::decrypt_current(ciphertext.clone())
+					.map_err(|_| pallet_etf::TimelockError::DecryptionFailed)
 					.and_then(|bare| {
 						if let Ok(call) = <T as Config>::RuntimeCall::decode(&mut bare.as_slice()) {
 							Ok(call)
