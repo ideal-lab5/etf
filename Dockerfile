@@ -2,6 +2,10 @@ FROM paritytech/ci-linux:production as build
 
 WORKDIR /code
 COPY . .
+# the latest release of ahash uses build_hasher_simple_hash_one 
+# which was stabilized in 1.71 but the latest rustc version 
+# from the paritytech/ci-linux:production is 1.68.0.
+RUN cargo +nightly update -p ahash@0.8.7 --precise 0.8.6
 RUN cargo +nightly build --release
 
 FROM ubuntu:22.04

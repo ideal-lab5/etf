@@ -808,6 +808,8 @@ impl_runtime_apis! {
 	}
 }
 
+use sp_consensus_etf_aura::Slot;
+
 #[derive(Default)]
 pub struct ETFExtension;
 
@@ -828,16 +830,34 @@ impl ChainExtension<Runtime> for ETFExtension {
 			func_id
 		);
         match func_id {	
-			// check if the provided slot has a block in it 
+			// fetch a slot secret based on slot number
             1101 => {
                 let mut env = env.buf_in_buf_out();
-				let slot: u64 = env.read_as()?;
-				// get current slot from AURA
-				let current_slot = Aura::current_slot();
-				let is_block_authored: bool = current_slot < slot;
-				env.write(&is_block_authored.encode(), false, None).map_err(|_| {
-                    DispatchError::Other("ChainExtension failed to query AURA pallet")
-                })?;
+				let maybe_slot: Option<u64> = env.read_as()?;
+				
+				let mut slot = Aura::current_slot();
+
+				if let Some(s) = maybe_slot {
+					slot = Slot::from(s);
+				}
+				
+				// attempt to get the slot secret from the aura pallet
+				if let Some(secret) = Aura::slot_secrets(slot) {
+					env.write(&secret.encode(), false, None).map_err(|_| {
+						DispatchError::Other(
+							"ChainExtension failed to query the slot secret from the AURA pallet.\
+							Is the slot in the future?"
+						)
+					})?;
+				} else {
+					env.write(&[0;48], false, None).map_err(|_| {
+						DispatchError::Other(
+							"ChainExtension failed to query the slot secret from the AURA pallet.\
+							Is the slot in the future?"
+						)
+					})?;
+				}
+				
 				Ok(RetVal::Converging(0))
             },
             _ => {
