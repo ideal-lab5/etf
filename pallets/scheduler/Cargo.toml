@@ -21,6 +21,7 @@ sp-runtime = { default-features = false, git = "https://github.com/paritytech/po
 sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-weights = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 docify = "0.2.6"
+sha3 = "0.10.8"
 
 pallet-etf = { version = "4.0.0-dev", default-features = false, path = "../etf" }
 
