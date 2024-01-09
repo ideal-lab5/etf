@@ -3,7 +3,7 @@
   "id": "local_testnet",
   "chainType": "Local",
   "bootNodes": [
-    "/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWPyQwZxQTFHW7qr3c42yCtbYf6uwVMy1fnAntTDXTUgrX"
+    "/dns/etf0.idealabs.network/tcp/30334/wss/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp"
   ],
   "telemetryEndpoints": null,
   "protocolId": null,
