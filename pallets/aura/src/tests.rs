@@ -26,6 +26,8 @@ use frame_support::traits::OnInitialize;
 use sp_consensus_etf_aura::{Slot, AURA_ENGINE_ID};
 use sp_runtime::{Digest, DigestItem};
 
+// TODO: these tests need to use udpated digests
+
 #[test]
 fn initial_values() {
 	new_test_ext(vec![0, 1, 2, 3]).execute_with(|| {
@@ -42,8 +44,14 @@ fn disabled_validators_cannot_author_blocks() {
 	new_test_ext(vec![0, 1, 2, 3]).execute_with(|| {
 		// slot 1 should be authored by validator at index 1
 		let slot = Slot::from(1);
+		let etf_predigest = sp_consensus_etf_aura::digests::PreDigest {
+			slot: slot,
+			secret: [1;48],
+			proof: [2;224],
+		};
+
 		let pre_digest =
-			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())] };
+			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, etf_predigest.encode())] };
 
 		System::reset_events();
 		System::initialize(&42, &System::parent_hash(), &pre_digest);
@@ -63,8 +71,15 @@ fn pallet_requires_slot_to_increase_unless_allowed() {
 		crate::mock::AllowMultipleBlocksPerSlot::set(false);
 
 		let slot = Slot::from(1);
+
+		let etf_predigest = sp_consensus_etf_aura::digests::PreDigest {
+			slot: slot,
+			secret: [1;48],
+			proof: [2;224],
+		};
+
 		let pre_digest =
-			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())] };
+			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, etf_predigest.encode())] };
 
 		System::reset_events();
 		System::initialize(&42, &System::parent_hash(), &pre_digest);
@@ -79,8 +94,14 @@ fn pallet_requires_slot_to_increase_unless_allowed() {
 fn pallet_can_allow_unchanged_slot() {
 	new_test_ext(vec![0, 1, 2, 3]).execute_with(|| {
 		let slot = Slot::from(1);
+		let etf_predigest = sp_consensus_etf_aura::digests::PreDigest {
+			slot: slot,
+			secret: [1;48],
+			proof: [2;224],
+		};
+
 		let pre_digest =
-			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())] };
+			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, etf_predigest.encode())] };
 
 		System::reset_events();
 		System::initialize(&42, &System::parent_hash(), &pre_digest);
@@ -98,8 +119,14 @@ fn pallet_can_allow_unchanged_slot() {
 fn pallet_always_rejects_decreasing_slot() {
 	new_test_ext(vec![0, 1, 2, 3]).execute_with(|| {
 		let slot = Slot::from(2);
+		let etf_predigest = sp_consensus_etf_aura::digests::PreDigest {
+			slot: slot,
+			secret: [1;48],
+			proof: [2;224],
+		};
+
 		let pre_digest =
-			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())] };
+			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, etf_predigest.encode())] };
 
 		System::reset_events();
 		System::initialize(&42, &System::parent_hash(), &pre_digest);
@@ -110,8 +137,14 @@ fn pallet_always_rejects_decreasing_slot() {
 		System::finalize();
 
 		let earlier_slot = Slot::from(1);
+		let etf_predigest = sp_consensus_etf_aura::digests::PreDigest {
+			slot: earlier_slot,
+			secret: [1;48],
+			proof: [2;224],
+		};
+
 		let pre_digest =
-			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, earlier_slot.encode())] };
+			Digest { logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, etf_predigest.encode())] };
 		System::initialize(&43, &System::parent_hash(), &pre_digest);
 		Aura::on_initialize(43);
 	});

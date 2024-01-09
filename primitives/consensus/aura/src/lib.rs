@@ -67,6 +67,12 @@ pub use sp_consensus_slots::{Slot, SlotDuration};
 /// The `ConsensusEngineId` of AuRa.
 pub const AURA_ENGINE_ID: ConsensusEngineId = [b'a', b'u', b'r', b'a'];
 
+/// the (bounded) opaque type for slot secrets
+pub type OpaqueSecret = [u8;48];
+
+/// the (bounded) opaque type for DLEQ proofs
+pub type OpaqueProof = [u8;224];
+
 /// The index of an authority.
 pub type AuthorityIndex = u32;
 

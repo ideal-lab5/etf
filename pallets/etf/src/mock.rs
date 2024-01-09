@@ -1,11 +1,13 @@
 use crate as pallet_etf;
-use frame_support::traits::ConstU64;
+use frame_support::traits::{ConstBool, ConstU64};
 use sp_core::{ConstU32, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 };
 use frame_support_test::TestRandomness;
 use sp_runtime::BuildStorage;
+
+use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -15,6 +17,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system,
 		Balances: pallet_balances,
+		Aura: pallet_etf_aura,
 		Etf: pallet_etf,
 	}
 );
@@ -64,10 +67,29 @@ impl pallet_balances::Config for Test {
 	type MaxFreezes = ();
 }
 
+
+impl pallet_timestamp::Config for Test {
+	type Moment = u64;
+	type OnTimestampSet = Aura;
+	type MinimumPeriod = ConstU64<1>;
+	type WeightInfo = ();
+}
+
+impl pallet_etf_aura::Config for Test {
+	type AuthorityId = AuraId;
+	type DisabledValidators = ();
+	type MaxAuthorities = ConstU32<32>;
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+
+	#[cfg(feature = "experimental")]
+	type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Test>;
+}
+
 impl pallet_etf::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Test>;
     type Randomness = TestRandomness<Self>;
+	type SlotSecretProvider = Aura;
 }
 
 // Build genesis storage according to the mock runtime.

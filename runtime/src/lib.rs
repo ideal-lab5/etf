@@ -24,14 +24,14 @@ use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-
+use frame_system::{EnsureRoot, EnsureSigned};
 use frame_support::genesis_builder_helper::{build_config, create_default_config};
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
 		ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, KeyOwnerProofSystem, Randomness,
-		StorageInfo, Nothing,
+		StorageInfo, Nothing, LinearStoragePrice, fungible::HoldConsideration, EqualPrivilegeOnly,
 	},
 	weights::{
 		constants::{
@@ -315,6 +315,7 @@ impl pallet_etf::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Runtime>;
 	type Randomness = RandomnessCollectiveFlip;
+	type SlotSecretProvider = Aura;
 }
 
 pub enum AllowBalancesCall {}
@@ -323,6 +324,48 @@ impl frame_support::traits::Contains<RuntimeCall> for AllowBalancesCall {
 	fn contains(call: &RuntimeCall) -> bool {
 		matches!(call, RuntimeCall::Balances(BalancesCall::transfer_allow_death { .. }))
 	}
+}
+
+parameter_types! {
+	pub const PreimageBaseDeposit: Balance = deposit(2, 64);
+	pub const PreimageByteDeposit: Balance = deposit(0, 1);
+	pub const PreimageHoldReason: RuntimeHoldReason = RuntimeHoldReason::Preimage(pallet_preimage::HoldReason::Preimage);
+}
+
+impl pallet_preimage::Config for Runtime {
+	type WeightInfo = pallet_preimage::weights::SubstrateWeight<Runtime>;
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type ManagerOrigin = EnsureRoot<AccountId>;
+	type Consideration = HoldConsideration<
+		AccountId,
+		Balances,
+		PreimageHoldReason,
+		LinearStoragePrice<PreimageBaseDeposit, PreimageByteDeposit, Balance>,
+	>;
+}
+
+parameter_types! {
+	pub MaximumSchedulerWeight: Weight = 
+		Perbill::from_percent(80) * BlockWeights::get().max_block;
+}
+
+impl pallet_scheduler::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeOrigin = RuntimeOrigin;
+	type PalletsOrigin = OriginCaller;
+	type RuntimeCall = RuntimeCall;
+	type MaximumWeight = MaximumSchedulerWeight;
+	// type ScheduleOrigin = EnsureRoot<AccountId>;
+	type ScheduleOrigin = EnsureSigned<AccountId>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type MaxScheduledPerBlock = ConstU32<512>;
+	#[cfg(not(feature = "runtime-benchmarks"))]
+	type MaxScheduledPerBlock = ConstU32<50>;
+	type WeightInfo = pallet_scheduler::weights::SubstrateWeight<Runtime>;
+	type OriginPrivilegeCmp = EqualPrivilegeOnly;
+	type Preimages = Preimage;
+	type TlockProvider = Etf;
 }
 
 parameter_types! {
@@ -368,6 +411,7 @@ impl pallet_contracts::Config for Runtime {
 	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
 	type Debug = ();
 	type Environment = ();
+	type Xcm = ();
 }
 
 
@@ -384,6 +428,8 @@ construct_runtime!(
 		RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
 		Contracts: pallet_contracts,
 		Etf: pallet_etf,
+		Preimage: pallet_preimage,
+		Scheduler: pallet_scheduler,
 	}
 );
 
@@ -515,13 +561,13 @@ impl_runtime_apis! {
 		fn secret() -> [u8;32] {
 			// read master secret from somehwere else...
 			[2;32]
-			let key = context_block_number.to_string();
-			log::info!("Calling secret({:?})", key);
-			match StorageValueRef::persistent(key.as_bytes()).get::<[u8;32]>() {
-			// match StorageValueRef::persistent(b.).get::<[u8;32]>() {
-				Ok(Some(secret)) => secret,
-				_ => [0;32]
-			}
+			// let key = context_block_number.to_string();
+			// log::info!("Calling secret({:?})", key);
+			// match StorageValueRef::persistent(key.as_bytes()).get::<[u8;32]>() {
+			// // match StorageValueRef::persistent(b.).get::<[u8;32]>() {
+			// 	Ok(Some(secret)) => secret,
+			// 	_ => [0;32]
+			// }
 		}
 
 		fn ibe_params() -> Vec<u8> {
@@ -762,6 +808,8 @@ impl_runtime_apis! {
 	}
 }
 
+use sp_consensus_etf_aura::Slot;
+
 #[derive(Default)]
 pub struct ETFExtension;
 
@@ -782,16 +830,34 @@ impl ChainExtension<Runtime> for ETFExtension {
 			func_id
 		);
         match func_id {	
-			// check if the provided slot has a block in it 
+			// fetch a slot secret based on slot number
             1101 => {
                 let mut env = env.buf_in_buf_out();
-				let slot: u64 = env.read_as()?;
-				// get current slot from AURA
-				let current_slot = Aura::current_slot();
-				let is_block_authored: bool = current_slot < slot;
-				env.write(&is_block_authored.encode(), false, None).map_err(|_| {
-                    DispatchError::Other("ChainExtension failed to query AURA pallet")
-                })?;
+				let maybe_slot: Option<u64> = env.read_as()?;
+				
+				let mut slot = Aura::current_slot();
+
+				if let Some(s) = maybe_slot {
+					slot = Slot::from(s);
+				}
+				
+				// attempt to get the slot secret from the aura pallet
+				if let Some(secret) = Aura::slot_secrets(slot) {
+					env.write(&secret.encode(), false, None).map_err(|_| {
+						DispatchError::Other(
+							"ChainExtension failed to query the slot secret from the AURA pallet.\
+							Is the slot in the future?"
+						)
+					})?;
+				} else {
+					env.write(&[0;48], false, None).map_err(|_| {
+						DispatchError::Other(
+							"ChainExtension failed to query the slot secret from the AURA pallet.\
+							Is the slot in the future?"
+						)
+					})?;
+				}
+				
 				Ok(RetVal::Converging(0))
             },
             _ => {

@@ -44,7 +44,7 @@ use frame_support::{
 	BoundedSlice, BoundedVec, ConsensusEngineId, Parameter,
 };
 use log;
-use sp_consensus_etf_aura::{AuthorityIndex, ConsensusLog, Slot, AURA_ENGINE_ID};
+use sp_consensus_etf_aura::{AuthorityIndex, ConsensusLog, Slot, digests::PreDigest, AURA_ENGINE_ID, OpaqueSecret};
 use sp_runtime::{
 	generic::DigestItem,
 	traits::{IsMember, Member, SaturatedConversion, Saturating, Zero},
@@ -57,6 +57,9 @@ mod mock;
 mod tests;
 
 pub use pallet::*;
+
+/// the slot secret type 
+pub type Secret = [u8;48];
 
 const LOG_TARGET: &str = "runtime::aura";
 
@@ -130,16 +133,21 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(_: BlockNumberFor<T>) -> Weight {
-			if let Some(new_slot) = Self::current_slot_from_digests() {
-				let current_slot = CurrentSlot::<T>::get();
+			if let Some(predigest) = Self::current_predigest_from_digests() {
 
+				let new_secret = predigest.secret;
+				let new_slot = predigest.slot;
+
+				let current_slot = CurrentSlot::<T>::get();
+				
 				if T::AllowMultipleBlocksPerSlot::get() {
 					assert!(current_slot <= new_slot, "Slot must not decrease");
 				} else {
 					assert!(current_slot < new_slot, "Slot must increase");
 				}
 
-				CurrentSlot::<T>::put(new_slot);
+				Self::add_slot_secret(new_slot, new_secret);
+				Self::set_current_slot(new_slot);
 
 				if let Some(n_authorities) = <Authorities<T>>::decode_len() {
 					let authority_index = *new_slot % n_authorities as u64;
@@ -178,6 +186,17 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn current_slot)]
 	pub(super) type CurrentSlot<T: Config> = StorageValue<_, Slot, ValueQuery>;
+
+	/// A map between slot numbers and slot secrets
+	/// DLEQ proofs are stored in corresponding block headers
+	#[pallet::storage]
+	#[pallet::getter(fn slot_secrets)]
+	pub(super) type SlotSecrets<T: Config> = StorageMap<
+		_, 
+		Twox64Concat, 
+		Slot, 
+		OpaqueSecret
+	>;
 
 	#[pallet::genesis_config]
 	#[derive(frame_support::DefaultNoBound)]
@@ -222,6 +241,7 @@ impl<T: Config> Pallet<T> {
 	///
 	/// The authorities length must be equal or less than T::MaxAuthorities.
 	pub fn initialize_authorities(authorities: &[T::AuthorityId]) {
+		// panic!("{:?}", "could not decode slot");
 		if !authorities.is_empty() {
 			assert!(<Authorities<T>>::get().is_empty(), "Authorities are already initialized!");
 			let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(authorities)
@@ -235,19 +255,25 @@ impl<T: Config> Pallet<T> {
 		Authorities::<T>::decode_len().unwrap_or(0)
 	}
 
+	/// TODO: refactor name
 	/// Get the current slot from the pre-runtime digests.
-	fn current_slot_from_digests() -> Option<Slot> {
-		let digest = frame_system::Pallet::<T>::digest();
-		let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
-		for (id, mut data) in pre_runtime_digests {
+	pub fn current_predigest_from_digests() -> Option<PreDigest> {
+		frame_system::Pallet::<T>::digest()
+			.logs
+			.iter()
+			.filter_map(|d| d.as_pre_runtime())
+			.filter_map(|(id, mut data)| {
+		// for (id, mut data) in pre_runtime_digests {
 			if id == AURA_ENGINE_ID {
-				return Slot::decode(&mut data).ok()
+				PreDigest::decode(&mut data).ok()
+			} else {
+				None
 			}
-		}
+		}).next()
 
-		None
+		// None
 	}
-
+	
 	/// Determine the Aura slot-duration based on the Timestamp module configuration.
 	pub fn slot_duration() -> T::Moment {
 		#[cfg(feature = "experimental")]
@@ -284,9 +310,9 @@ impl<T: Config> Pallet<T> {
 	pub fn do_try_state() -> Result<(), sp_runtime::TryRuntimeError> {
 		// We don't have any guarantee that we are already after `on_initialize` and thus we have to
 		// check the current slot from the digest or take the last known slot.
-		let current_slot =
-			Self::current_slot_from_digests().unwrap_or_else(|| CurrentSlot::<T>::get());
-
+		let current_slot = 
+			Self::current_predigest_from_digests()
+				.map_or_else(|| CurrentSlot::<T>::get(), |predigest| predigest.slot);
 		// Check that the current slot is less than the maximal slot number, unless we allow for
 		// multiple blocks per slot.
 		if !T::AllowMultipleBlocksPerSlot::get() {
@@ -311,6 +337,18 @@ impl<T: Config> Pallet<T> {
 
 		Ok(())
 	}
+
+	/// add a new slot secret to runtime storage
+	/// we only store the secret here, not the entire proof (in block header)
+	pub fn add_slot_secret(slot: Slot, secret: OpaqueSecret) {
+		SlotSecrets::<T>::insert(slot, &secret);
+	}
+
+	/// a helper method to set the current slot
+	pub fn set_current_slot(new_slot: Slot) {
+		CurrentSlot::<T>::put(new_slot);
+	}
+
 }
 
 impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
@@ -418,5 +456,16 @@ impl<T: Config> OnTimestampSet<T::Moment> for Pallet<T> {
 			timestamp_slot,
 			"Timestamp slot must match `CurrentSlot`"
 		);
+	}
+}
+
+pub trait SlotSecretProvider {
+	/// get the latest (current) slot secret
+	fn get() -> Option<OpaqueSecret>;
+}
+
+impl<T: Config> SlotSecretProvider for Pallet<T> {
+	fn get() -> Option<OpaqueSecret> {
+		SlotSecrets::<T>::get(Self::current_slot())
 	}
 }
