@@ -27,7 +27,8 @@ use ark_serialize::CanonicalDeserialize;
 use etf_crypto_primitives::{
 	client::etf_client::{
 		DefaultEtfClient, 
-		EtfClient
+		EtfClient,
+		DecryptionResult,
 	},
 	ibe::fullident::BfIbe,
 };
@@ -167,12 +168,12 @@ pub enum TimelockError {
 /// provides timelock encryption using the current slot
 pub trait TimelockEncryptionProvider {
 	/// attempt to decrypt the ciphertext with the current slot secret
-	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError>;
+	fn decrypt_current(ciphertext: Ciphertext) -> Result<DecryptionResult, TimelockError>;
 }
 
 impl<T:Config> TimelockEncryptionProvider for Pallet<T> {
 
-	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError> {
+	fn decrypt_current(ciphertext: Ciphertext) -> Result<DecryptionResult, TimelockError> {
 		if let Some(secret) = T::SlotSecretProvider::get() {
 			let (_, p, _) = Self::ibe_params();
 			let pt = DefaultEtfClient::<BfIbe>::decrypt(
