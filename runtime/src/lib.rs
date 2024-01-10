@@ -369,11 +369,15 @@ impl pallet_scheduler::Config for Runtime {
 }
 
 parameter_types! {
-	pub const DepositPerItem: Balance = deposit(0, 1);
-	pub const DepositPerByte: Balance = deposit(1, 0);
-	pub const DefaultDepositLimit: Balance = deposit(128 * 1024, 2 * 1024 * 1024);
+	// pub const DepositPerItem: Balance = deposit(0, 1);
+	// pub const DepositPerByte: Balance = deposit(1, 0);
+	// pub const DefaultDepositLimit: Balance = deposit(128 * 1024, 2 * 1024 * 1024);
+	pub const DepositPerItem: Balance = deposit(0, 0);
+	pub const DepositPerByte: Balance = deposit(0, 0);
+	pub const DefaultDepositLimit: Balance = deposit(0, 0);
 	pub Schedule: pallet_contracts::Schedule<Runtime> = Default::default();
-	pub CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(30);
+	// pub CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(30);
+	pub CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(0);
 }
 
 impl pallet_contracts::Config for Runtime {
@@ -392,7 +396,7 @@ impl pallet_contracts::Config for Runtime {
 	type DepositPerItem = DepositPerItem;
 	type DepositPerByte = DepositPerByte;
 	type DefaultDepositLimit = DefaultDepositLimit;
-	type CallStack = [pallet_contracts::Frame<Self>; 5];
+	type CallStack = [pallet_contracts::Frame<Self>; 10];
 	type WeightPrice = pallet_transaction_payment::Pallet<Self>;
 	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
 	type ChainExtension = ETFExtension;
@@ -401,7 +405,7 @@ impl pallet_contracts::Config for Runtime {
 	type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
 	type MaxStorageKeyLen = ConstU32<128>;
 	type UnsafeUnstableInterface = ConstBool<false>;
-	type MaxDebugBufferLen = ConstU32<{ 2 * 1024 * 1024 }>;
+	type MaxDebugBufferLen = ConstU32<{ 1024 * 1024 * 1024 }>;
 	type RuntimeHoldReason = RuntimeHoldReason;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type Migrations = ();
@@ -833,30 +837,40 @@ impl ChainExtension<Runtime> for ETFExtension {
 			// fetch a slot secret based on slot number
             1101 => {
                 let mut env = env.buf_in_buf_out();
-				let maybe_slot: Option<u64> = env.read_as()?;
-				
-				let mut slot = Aura::current_slot();
+				let out = [1;48].encode();
 
-				if let Some(s) = maybe_slot {
-					slot = Slot::from(s);
-				}
+				env.write(&out, false, None).map_err(|_| {
+					DispatchError::Other(
+						"ChainExtension failed to query the slot secret from the AURA pallet.\
+						Is the slot in the future?"
+					)
+				})?;
+				
+				// // let maybe_slot: Option<u64> = env.read_as()?;
+				
+				// let slot = Aura::current_slot();
+
+				// // // if let Some(s) = maybe_slot {
+				// // // 	slot = Slot::from(s);
+				// // // }
 				
 				// attempt to get the slot secret from the aura pallet
-				if let Some(secret) = Aura::slot_secrets(slot) {
-					env.write(&secret.encode(), false, None).map_err(|_| {
-						DispatchError::Other(
-							"ChainExtension failed to query the slot secret from the AURA pallet.\
-							Is the slot in the future?"
-						)
-					})?;
-				} else {
-					env.write(&[0;48], false, None).map_err(|_| {
-						DispatchError::Other(
-							"ChainExtension failed to query the slot secret from the AURA pallet.\
-							Is the slot in the future?"
-						)
-					})?;
-				}
+				// if let Some(secret) = Aura::slot_secrets(slot) {
+				// 	env.write(&secret.encode(), false, None).map_err(|_| {
+				// 	// env.write(&1u32.encode(), false, None).map_err(|_| {
+				// 		DispatchError::Other(
+				// 			"ChainExtension failed to query the slot secret from the AURA pallet.\
+				// 			Is the slot in the future?"
+				// 		)
+				// 	})?;
+				// } else {
+				// 	env.write(&[0;48].encode(), false, None).map_err(|_| {
+				// 		DispatchError::Other(
+				// 			"ChainExtension failed to query the slot secret from the AURA pallet.\
+				// 			Is the slot in the future?"
+				// 		)
+				// 	})?;
+				// }
 				
 				Ok(RetVal::Converging(0))
             },
