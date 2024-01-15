@@ -51,6 +51,7 @@ use std::{fmt::Debug, marker::PhantomData, sync::Arc};
 /// containing the seal.
 ///
 /// This digest item will always return `Some` when used with `as_aura_seal`.
+#[allow(clippy::type_complexity)]
 fn check_header<C, B: BlockT, P: Pair>(
 	client: &C,
 	slot_now: Slot,
@@ -72,7 +73,7 @@ where
 
 	match check_result {
 		Ok((header, slot, seal)) => {
-			let expected_author = crate::standalone::slot_author::<P>(slot.slot, &authorities);
+			let expected_author = crate::standalone::slot_author::<P>(slot.slot, authorities);
 			let should_equiv_check = check_for_equivocation.check_for_equivocation();
 			if let (true, Some(expected)) = (should_equiv_check, expected_author) {
 				if let Some(equivocation_proof) =

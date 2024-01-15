@@ -34,7 +34,6 @@ use etf_crypto_primitives::{
 };
 
 use pallet_etf_aura::SlotSecretProvider;
-use sp_consensus_etf_aura::{AURA_ENGINE_ID, digests::PreDigest, OpaqueSecret};
 
 /// represents a timelock ciphertext
 #[derive(Debug, Clone, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo)]
@@ -182,7 +181,7 @@ impl<T:Config> TimelockEncryptionProvider for Pallet<T> {
 				ciphertext.nonce.to_vec(), 
 				vec![ciphertext.capsule.to_vec()], 
 				vec![secret.to_vec()],
-			).map_err(|err| TimelockError::DecryptionFailed)?;
+			).map_err(|_| TimelockError::DecryptionFailed)?;
 			return Ok(pt);
 		}
 		Err(TimelockError::MissingSecret)

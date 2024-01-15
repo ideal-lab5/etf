@@ -90,8 +90,8 @@ use frame_support::{
 	ensure,
 	traits::{
 		schedule::{self, DispatchTime, MaybeHashed},
-		Bounded, CallerTrait, EnsureOrigin, Get, IsType, OriginTrait, PalletInfoAccess,
-		PrivilegeCmp, QueryPreimage, StorageVersion, StorePreimage, ConstU32,
+		Bounded, CallerTrait, EnsureOrigin, Get, IsType, OriginTrait,
+		PrivilegeCmp, QueryPreimage, StorageVersion, StorePreimage,
 	},
 	weights::{Weight, WeightMeter},
 };
@@ -497,6 +497,7 @@ impl<T: Config> Pallet<T> {
 		Ok(when)
 	}
 
+	#[allow(clippy::result_large_err)]
 	fn place_task(
 		when: BlockNumberFor<T>,
 		what: ScheduledOf<T>,
@@ -511,6 +512,7 @@ impl<T: Config> Pallet<T> {
 		Ok(address)
 	}
 
+	#[allow(clippy::result_large_err)]
 	fn push_to_agenda(
 		when: BlockNumberFor<T>,
 		what: ScheduledOf<T>,
@@ -520,13 +522,11 @@ impl<T: Config> Pallet<T> {
 			// will always succeed due to the above check.
 			let _ = agenda.try_push(Some(what));
 			agenda.len() as u32 - 1
-		} else {
-			if let Some(hole_index) = agenda.iter().position(|i| i.is_none()) {
+		} else if let Some(hole_index) = agenda.iter().position(|i| i.is_none()) {
 				agenda[hole_index] = Some(what);
 				hole_index as u32
-			} else {
-				return Err((DispatchError::Exhausted, what))
-			}
+		} else {
+			return Err((DispatchError::Exhausted, what))
 		};
 		Agenda::<T>::insert(when, agenda);
 		Ok(index)
@@ -612,7 +612,7 @@ impl<T: Config> Pallet<T> {
 			Self::deposit_event(Event::Canceled { when, index });
 			Ok(())
 		} else {
-			return Err(Error::<T>::NotFound.into())
+			Err(Error::<T>::NotFound.into())
 		}
 	}
 
@@ -646,7 +646,7 @@ impl<T: Config> Pallet<T> {
 		call: BoundedCallOf<T>,
 	) -> Result<TaskAddress<BlockNumberFor<T>>, DispatchError> {
 		// ensure id it is unique
-		if Lookup::<T>::contains_key(&id) {
+		if Lookup::<T>::contains_key(id) {
 			return Err(Error::<T>::FailedToSchedule.into())
 		}
 
@@ -702,7 +702,7 @@ impl<T: Config> Pallet<T> {
 				Self::deposit_event(Event::Canceled { when, index });
 				Ok(())
 			} else {
-				return Err(Error::<T>::NotFound.into())
+				Err(Error::<T>::NotFound.into())
 			}
 		})
 	}
@@ -883,6 +883,7 @@ impl<T: Config> Pallet<T> {
 	/// - removing and potentially replacing the `Lookup` entry for the task.
 	/// - realizing the task's call which can include a preimage lookup.
 	/// - Rescheduling the task for execution in a later agenda if periodic.
+	#[allow(clippy::result_large_err)]
 	fn service_task(
 		weight: &mut WeightMeter,
 		now: BlockNumberFor<T>,

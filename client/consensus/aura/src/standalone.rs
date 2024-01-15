@@ -129,12 +129,12 @@ pub async fn claim_slot<B, P: Pair>(
 			let mut rng = ChaCha20Rng::seed_from_u64(s);
 			let proof = DLEQProof::new(x, pk, generator, id, &mut rng);
 			let mut out = Vec::new();
-			let _= proof.serialize_compressed(&mut out).unwrap();
+			// proof.serialize_compressed(&mut out).unwrap();
+			proof.serialize_compressed(&mut out).expect("The proof should be well formatted; qed");
 			let proof_bytes: [u8;224] = out.try_into().unwrap();
 			let pre_digest = PreDigest {
-				slot: slot, 
-				secret: convert_to_bytes::<K, 48>(proof.secret_commitment_g)
-					.try_into().expect("The slot secret should be valid; qed;"), // x*pk
+				slot, 
+				secret: convert_to_bytes::<K, 48>(proof.secret_commitment_g), // x*pk
 				proof: proof_bytes,
 			};
 			Some((pre_digest.clone(), p.clone()))
@@ -230,7 +230,7 @@ pub fn find_pre_digest<B: BlockT, Signature: Codec>(
 			(s, false) => pre_digest = s,
 		}
 	}
-	pre_digest.ok_or_else(|| PreDigestLookupError::NoDigestFound)
+	pre_digest.ok_or(PreDigestLookupError::NoDigestFound)
 }
 
 /// Fetch the current set of authorities from the runtime at a specific block.
@@ -358,7 +358,7 @@ where
 	// the slot cannot be in the future
 	if slot > slot_now {
 		header.digest_mut().push(seal);
-		return Err(SealVerificationError::Deferred(header, slot))
+		Err(SealVerificationError::Deferred(header, slot))
 	} else {
 		// verify the DLEQ proof
 		let expected_author =

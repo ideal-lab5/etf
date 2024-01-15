@@ -19,24 +19,25 @@
 
 use super::*;
 use crate::mock::{
-	logger, new_test_ext, root, run_to_block, LoggerCall, RuntimeCall, Scheduler, Preimage, Aura, Test, *,
+	logger, new_test_ext, root, run_to_block, LoggerCall, RuntimeCall, Scheduler, Preimage, Test, *,
 };
 use frame_support::{
 	assert_err, assert_noop, assert_ok,
-	traits::{Contains, GetStorageVersion, OnInitialize, QueryPreimage, StorePreimage},
+	traits::{
+		Contains, 
+		OnInitialize, QueryPreimage, 
+		StorePreimage, ConstU32},
 	Hashable,
 };
 use sp_runtime::traits::Hash;
 use substrate_test_utils::assert_eq_uvec;
 
 use ark_std::{
-	rand::SeedableRng, 
-	test_rng, 
+	rand::SeedableRng,
 	ops::Mul,
 	One,
 };
 use ark_bls12_381::{Fr, G2Projective as G2};
-use ark_ff::UniformRand;
 use ark_ec::Group;
 use etf_crypto_primitives::utils::convert_to_bytes;
 use etf_crypto_primitives::{
@@ -46,7 +47,6 @@ use etf_crypto_primitives::{
 	},
 	ibe::fullident::BfIbe,
 };
-use sp_consensus_etf_aura::{AURA_ENGINE_ID, digests::PreDigest};
 use rand_chacha::ChaCha20Rng;
 
 #[test]
@@ -82,94 +82,6 @@ fn basic_scheduling_works() {
 		assert_eq!(logger::log(), vec![(root(), 42u32)]);
 	});
 }
-
-#[test]
-#[docify::export]
-fn basic_scheduling_timelock_works() {
-	let mut rng = ChaCha20Rng::from_seed([4;32]);
-
-	let ids = vec![
-		4u64.to_string().as_bytes().to_vec(), 
-	];
-	let t = 1;
-
-	let ibe_pp: G2 = G2::generator().into();
-	let s = Fr::one();
-	let p_pub: G2 = ibe_pp.mul(s).into();
-
-	let ibe_pp_bytes = convert_to_bytes::<G2, 96>(ibe_pp);
-	let p_pub_bytes = convert_to_bytes::<G2, 96>(p_pub);
-
-	// Q: how can we mock the decryption trait so that we can d1o whatever?
-	// probably don't really need to perform decryption here?
-	new_test_ext().execute_with(|| {
-
-		Etf::set_ibe_params(
-			// RuntimeOrigin::root(), 
-			&vec![], 
-			&ibe_pp_bytes.into(), 
-			&p_pub_bytes.into()
-		);
-
-		// Call to schedule
-		let call =
-			RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
-
-		// // then we convert to bytes and encrypt the call
-		let ct: etf_crypto_primitives::client::etf_client::AesIbeCt = 
-			DefaultEtfClient::<BfIbe>::encrypt(
-				ibe_pp_bytes.to_vec(),
-				p_pub_bytes.to_vec(),
-				&call.encode(),
-				ids,
-				t,
-				&mut rng,
-			).unwrap();
-
-
-		let mut bounded_ct: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
-		ct.aes_ct.ciphertext.iter().enumerate().for_each(|(idx, i)| {
-			bounded_ct.try_insert(idx, *i);
-		});
-
-		let mut bounded_nonce: BoundedVec<u8, ConstU32<96>> = BoundedVec::new();
-		ct.aes_ct.nonce.iter().enumerate().for_each(|(idx, i)| {
-			bounded_nonce.try_insert(idx, *i);
-		});
-
-		let mut bounded_capsule: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
-		// assumes we only care about a single point in the future
-		ct.etf_ct[0].iter().enumerate().for_each(|(idx, i)| {
-			bounded_capsule.try_insert(idx, *i);
-		});
-
-		let ciphertext = Ciphertext {
-			ciphertext: bounded_ct,
-			nonce: bounded_nonce,
-			capsule: bounded_capsule,
-		};
-
-		// Schedule call to be executed at the 4th block
-		assert_ok!(Scheduler::do_schedule_sealed(
-			DispatchTime::At(4),
-			127,
-			root(),
-			ciphertext,
-		));
-
-		// `log` runtime call should not have executed yet
-		run_to_block(3);
-		assert!(logger::log().is_empty());
-
-		run_to_block(4);
-		// `log` runtime call should have executed at block 4
-		assert_eq!(logger::log(), vec![(root(), 42u32)]);
-
-		run_to_block(100);
-		assert_eq!(logger::log(), vec![(root(), 42u32)]);
-	});
-}
-
 
 #[test]
 #[docify::export]
@@ -1895,5 +1807,258 @@ fn unavailable_call_is_detected() {
 			System::events().last().unwrap().event,
 			crate::Event::CallUnavailable { task: (4, 0), id: Some(name) }.into()
 		);
+	});
+}
+
+#[test]
+#[docify::export]
+fn timelock_basic_scheduling_works() {
+	let mut rng = ChaCha20Rng::from_seed([4;32]);
+
+	let ids = vec![
+		4u64.to_string().as_bytes().to_vec(), 
+	];
+	let t = 1;
+
+	let ibe_pp: G2 = G2::generator().into();
+	let s = Fr::one();
+	let p_pub: G2 = ibe_pp.mul(s).into();
+
+	let ibe_pp_bytes = convert_to_bytes::<G2, 96>(ibe_pp);
+	let p_pub_bytes = convert_to_bytes::<G2, 96>(p_pub);
+
+	// Q: how can we mock the decryption trait so that we can d1o whatever?
+	// probably don't really need to perform decryption here?
+	new_test_ext().execute_with(|| {
+
+		let _ = Etf::set_ibe_params(
+			// RuntimeOrigin::root(), 
+			&vec![], 
+			&ibe_pp_bytes.into(), 
+			&p_pub_bytes.into()
+		);
+
+		// Call to schedule
+		let call =
+			RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
+
+		// // then we convert to bytes and encrypt the call
+		let ct: etf_crypto_primitives::client::etf_client::AesIbeCt = 
+			DefaultEtfClient::<BfIbe>::encrypt(
+				ibe_pp_bytes.to_vec(),
+				p_pub_bytes.to_vec(),
+				&call.encode(),
+				ids,
+				t,
+				&mut rng,
+			).unwrap();
+
+
+		let mut bounded_ct: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		ct.aes_ct.ciphertext.iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_ct.try_insert(idx, *i);
+		});
+
+		let mut bounded_nonce: BoundedVec<u8, ConstU32<96>> = BoundedVec::new();
+		ct.aes_ct.nonce.iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_nonce.try_insert(idx, *i);
+		});
+
+		let mut bounded_capsule: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		// assumes we only care about a single point in the future
+		ct.etf_ct[0].iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_capsule.try_insert(idx, *i);
+		});
+
+		let ciphertext = Ciphertext {
+			ciphertext: bounded_ct,
+			nonce: bounded_nonce,
+			capsule: bounded_capsule,
+		};
+
+		// Schedule call to be executed at the 4th block
+		assert_ok!(Scheduler::do_schedule_sealed(
+			DispatchTime::At(4),
+			127,
+			root(),
+			ciphertext,
+		));
+
+		// `log` runtime call should not have executed yet
+		run_to_block(3);
+		assert!(logger::log().is_empty());
+
+		run_to_block(4);
+		// `log` runtime call should have executed at block 4
+		assert_eq!(logger::log(), vec![(root(), 42u32)]);
+
+		run_to_block(100);
+		assert_eq!(logger::log(), vec![(root(), 42u32)]);
+	});
+}
+
+// TODO: ensure tx fees are properly charged?
+#[test]
+#[docify::export]
+fn timelock_undecryptable_ciphertext_no_execution() {
+	let mut rng = ChaCha20Rng::from_seed([4;32]);
+
+	let bad_ids = vec![
+		3u64.to_string().as_bytes().to_vec(), 
+	];
+
+	let t = 1;
+
+	let ibe_pp: G2 = G2::generator().into();
+	let s = Fr::one();
+	let p_pub: G2 = ibe_pp.mul(s).into();
+
+	let ibe_pp_bytes = convert_to_bytes::<G2, 96>(ibe_pp);
+	let p_pub_bytes = convert_to_bytes::<G2, 96>(p_pub);
+
+	new_test_ext().execute_with(|| {
+		let _ = Etf::set_ibe_params(
+			// RuntimeOrigin::root(), 
+			&vec![], 
+			&ibe_pp_bytes.into(), 
+			&p_pub_bytes.into()
+		);
+
+
+		// Call to schedule
+		let call =
+			RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
+
+		// encrypts the ciphertext for the wrong identity
+		let ct: etf_crypto_primitives::client::etf_client::AesIbeCt = 
+			DefaultEtfClient::<BfIbe>::encrypt(
+				ibe_pp_bytes.to_vec(),
+				p_pub_bytes.to_vec(),
+				&call.encode(),
+				bad_ids,
+				t,
+				&mut rng,
+			).unwrap();
+
+
+		let mut bounded_ct: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		ct.aes_ct.ciphertext.iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_ct.try_insert(idx, *i);
+		});
+
+		let mut bounded_nonce: BoundedVec<u8, ConstU32<96>> = BoundedVec::new();
+		ct.aes_ct.nonce.iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_nonce.try_insert(idx, *i);
+		});
+
+		let mut bounded_capsule: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		// assumes we only care about a single point in the future
+		ct.etf_ct[0].iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_capsule.try_insert(idx, *i);
+		});
+
+		let ciphertext = Ciphertext {
+			ciphertext: bounded_ct,
+			nonce: bounded_nonce,
+			capsule: bounded_capsule,
+		};
+
+		// Schedule call to be executed at the 4th block
+		assert_ok!(Scheduler::do_schedule_sealed(
+			DispatchTime::At(4),
+			127,
+			root(),
+			ciphertext,
+		));
+
+		// `log` runtime call should not have executed yet
+		run_to_block(3);
+		assert!(logger::log().is_empty());
+
+		run_to_block(4);
+		// `log` runtime call should NOT have executed at block 4
+		assert!(logger::log().is_empty());
+	});
+}
+
+#[test]
+#[docify::export]
+fn timelock_undecodable_runtime_call_no_execution() {
+	let mut rng = ChaCha20Rng::from_seed([4;32]);
+
+	let ids = vec![
+		4u64.to_string().as_bytes().to_vec(), 
+	];
+	let t = 1;
+
+	let ibe_pp: G2 = G2::generator().into();
+	let s = Fr::one();
+	let p_pub: G2 = ibe_pp.mul(s).into();
+
+	let ibe_pp_bytes = convert_to_bytes::<G2, 96>(ibe_pp);
+	let p_pub_bytes = convert_to_bytes::<G2, 96>(p_pub);
+
+	new_test_ext().execute_with(|| {
+		let _ = Etf::set_ibe_params(
+			// RuntimeOrigin::root(), 
+			&vec![], 
+			&ibe_pp_bytes.into(), 
+			&p_pub_bytes.into()
+		);
+
+
+		// Call to schedule
+		// let call =
+		// 	RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
+
+		// encrypts the ciphertext for the wrong identity
+		let ct: etf_crypto_primitives::client::etf_client::AesIbeCt = 
+			DefaultEtfClient::<BfIbe>::encrypt(
+				ibe_pp_bytes.to_vec(),
+				p_pub_bytes.to_vec(),
+				&b"bad-call-data".encode(),
+				ids,
+				t,
+				&mut rng,
+			).unwrap();
+
+
+		let mut bounded_ct: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		ct.aes_ct.ciphertext.iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_ct.try_insert(idx, *i);
+		});
+
+		let mut bounded_nonce: BoundedVec<u8, ConstU32<96>> = BoundedVec::new();
+		ct.aes_ct.nonce.iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_nonce.try_insert(idx, *i);
+		});
+
+		let mut bounded_capsule: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		// assumes we only care about a single point in the future
+		ct.etf_ct[0].iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_capsule.try_insert(idx, *i);
+		});
+
+		let ciphertext = Ciphertext {
+			ciphertext: bounded_ct,
+			nonce: bounded_nonce,
+			capsule: bounded_capsule,
+		};
+
+		// Schedule call to be executed at the 4th block
+		assert_ok!(Scheduler::do_schedule_sealed(
+			DispatchTime::At(4),
+			127,
+			root(),
+			ciphertext,
+		));
+
+		// `log` runtime call should not have executed yet
+		run_to_block(3);
+		assert!(logger::log().is_empty());
+
+		run_to_block(4);
+		// `log` runtime call should NOT have executed at block 4
+		assert!(logger::log().is_empty());
 	});
 }

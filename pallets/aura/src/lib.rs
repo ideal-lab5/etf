@@ -43,7 +43,7 @@ use frame_support::{
 	traits::{DisabledValidators, FindAuthor, Get, OnTimestampSet, OneSessionHandler},
 	BoundedSlice, BoundedVec, ConsensusEngineId, Parameter,
 };
-use log;
+// use log;
 use sp_consensus_etf_aura::{AuthorityIndex, ConsensusLog, Slot, digests::PreDigest, AURA_ENGINE_ID, OpaqueSecret};
 use sp_runtime::{
 	generic::DigestItem,
@@ -341,7 +341,7 @@ impl<T: Config> Pallet<T> {
 	/// add a new slot secret to runtime storage
 	/// we only store the secret here, not the entire proof (in block header)
 	pub fn add_slot_secret(slot: Slot, secret: OpaqueSecret) {
-		SlotSecrets::<T>::insert(slot, &secret);
+		SlotSecrets::<T>::insert(slot, secret);
 	}
 
 	/// a helper method to set the current slot

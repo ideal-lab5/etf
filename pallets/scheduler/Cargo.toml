@@ -21,7 +21,7 @@ sp-runtime = { default-features = false, git = "https://github.com/paritytech/po
 sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-weights = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 docify = "0.2.6"
-sha3 = "0.10.8"
+# sha3 = { version = "0.10.0", default-features = false }
 
 pallet-etf = { version = "4.0.0-dev", default-features = false, path = "../etf" }
 
@@ -52,6 +52,7 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"pallet-preimage/runtime-benchmarks",
+	"pallet-etf/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
 std = [
@@ -68,6 +69,8 @@ std = [
 	"sp-std/std",
 	"sp-weights/std",
 	"pallet-etf/std",
+	"pallet-timestamp/std",
+	# "sha3/std",
 ]
 try-runtime = [
 	"frame-support/try-runtime",

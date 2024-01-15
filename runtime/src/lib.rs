@@ -812,8 +812,6 @@ impl_runtime_apis! {
 	}
 }
 
-use sp_consensus_etf_aura::Slot;
-
 #[derive(Default)]
 pub struct ETFExtension;
 

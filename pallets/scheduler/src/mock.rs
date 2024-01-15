@@ -41,7 +41,7 @@ use ark_bls12_381::{Fr, G2Affine as G2};
 use etf_crypto_primitives::{
 	proofs::dleq::DLEQProof,
 	ibe::fullident::BfIbe,
-	client::etf_client::{DefaultEtfClient, EtfClient},
+	client::etf_client::{DecryptionResult, DefaultEtfClient, EtfClient},
 	utils::hash_to_g1,
 };
 
@@ -51,12 +51,9 @@ use rand_chacha::{
 	rand_core::SeedableRng,
 };
 
-use sp_consensus_etf_aura::{OpaqueSecret, Slot};
-
 use ark_ec::AffineRepr;
-use ark_serialize::{CanonicalSerialize, CanonicalDeserialize};
+use ark_serialize::CanonicalSerialize;
 use ark_std::One as Won;
-use ark_ff::PrimeField;
 type K = ark_bls12_381::G1Affine;
 
 // Logger module to track execution.
@@ -319,7 +316,7 @@ pub struct MockTlockProvider;
 
 impl TimelockEncryptionProvider for MockTlockProvider {
 	// decrypts at block number 4
-	fn decrypt_current(ciphertext: Ciphertext) -> Result<Vec<u8>, TimelockError> {
+	fn decrypt_current(ciphertext: Ciphertext) -> Result<DecryptionResult, TimelockError> {
 		let sk = Fr::one();
 		let id = 4u64.to_string().as_bytes().to_vec();
 		let pk = hash_to_g1(&id);
@@ -340,7 +337,7 @@ impl TimelockEncryptionProvider for MockTlockProvider {
 			ciphertext.nonce.to_vec(), 
 			vec![ciphertext.capsule.to_vec()], 
 			vec![sk.to_vec()],
-		).map_err(|err| TimelockError::DecryptionFailed)?;
+		).map_err(|_| TimelockError::DecryptionFailed)?;
 		Ok(pt)
 	}
 }

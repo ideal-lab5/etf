@@ -346,6 +346,7 @@ where
 
 	/// Add blocks to the peer -- edit the block before adding. The chain will
 	/// start at the given block iD.
+	#[allow(clippy::too_many_arguments)]
 	pub fn generate_blocks_at<F>(
 		&mut self,
 		at: BlockId<Block>,
@@ -1077,7 +1078,7 @@ pub trait TestNetFactory: Default + Sized + Send {
 					// polling a single instance.
 					let net_poll_future = peer.network.next_action();
 					pin_mut!(net_poll_future);
-					if let Poll::Pending = net_poll_future.poll(cx) {
+					if net_poll_future.poll(cx).is_pending() {
 						break
 					}
 				}

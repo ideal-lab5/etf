@@ -180,6 +180,7 @@ decl_runtime_apis! {
 		fn benchmark_add_one(val: &u64) -> u64;
 		/// A benchmark function that adds one to each value in the given vector and returns the
 		/// result.
+		#[allow(clippy::ptr_arg)]
 		fn benchmark_vector_add_one(vec: &Vec<u64>) -> Vec<u64>;
 		/// A function for that the signature changed in version `2`.
 		#[changed_in(2)]
@@ -376,7 +377,7 @@ pub mod currency {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: Balance = 1 * currency::DOLLARS;
+	pub const ExistentialDeposit: Balance = currency::DOLLARS;
 	// For weight estimation, we assume that the most locks on an individual account will be 50.
 	// This number may need to be adjusted in the future if this assumption no longer holds true.
 	pub const MaxLocks: u32 = 50;
@@ -625,7 +626,7 @@ impl_runtime_apis! {
 		}
 
 		fn authorities() -> Vec<AuraId> {
-			SubstrateTest::authorities().into_iter().map(|auth| AuraId::from(auth)).collect()
+			SubstrateTest::authorities().into_iter().map(AuraId::from).collect()
 		}
 
 		fn secret() -> [u8;32] {
@@ -857,6 +858,7 @@ pub mod storage_key_generator {
 		x.hex(Default::default())
 	}
 
+	#[allow(clippy::ptr_arg)]
 	fn concat_hashes(input: &Vec<&[u8]>) -> String {
 		input.iter().map(|s| sp_core::hashing::twox_128(s)).map(hex).collect()
 	}
@@ -895,7 +897,6 @@ pub mod storage_key_generator {
 		expected_keys.extend(literals.into_iter().map(hex));
 
 		let balances_map_keys = (0..16_usize)
-			.into_iter()
 			.map(|i| AccountKeyring::numeric(i).public().to_vec())
 			.chain(vec![
 				AccountKeyring::Alice.public().to_vec(),
