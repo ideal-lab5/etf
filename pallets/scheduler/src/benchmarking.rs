@@ -18,12 +18,12 @@
 //! Scheduler pallet benchmarking.
 
 use super::*;
-use frame_benchmarking::v1::{account, benchmarks, BenchmarkError};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::{
 	ensure,
-	traits::{schedule::Priority, BoundedInline},
+	traits::{schedule::Priority, BoundedInline, ConstU32},
 };
-use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
+use frame_system::{pallet_prelude::BlockNumberFor};
 use sp_std::{prelude::*, vec};
 
 use crate::Pallet as Scheduler;
@@ -33,7 +33,7 @@ const SEED: u32 = 0;
 
 const BLOCK_NUMBER: u32 = 2;
 
-type SystemOrigin<T> = <T as frame_system::Config>::RuntimeOrigin;
+// type SystemOrigin<T> = <T as frame_system::Config>::RuntimeOrigin;
 
 /// Add `n` items to the schedule.
 ///
@@ -58,6 +58,24 @@ fn fill_schedule<T: Config>(
 	Ok(())
 }
 
+fn fill_schedule_signed<T: Config>(
+	when: frame_system::pallet_prelude::BlockNumberFor<T>,
+	n: u32,
+) -> Result<(), &'static str> {
+	let t = DispatchTime::At(when);
+	let origin: <T as Config>::PalletsOrigin = 
+		frame_system::RawOrigin::Signed(account("origin", 0, SEED)).into();
+	for i in 0..n {
+		let call = make_call::<T>(None);
+		let period = Some(((i + 100).into(), 100));
+		let name = u32_to_name(i);
+		Scheduler::<T>::do_schedule_named(name, t, period, 0, origin.clone(), call)?;
+	}
+	ensure!(Agenda::<T>::get(when).len() == n as usize, "didn't fill schedule");
+	Ok(())
+}
+
+
 fn u32_to_name(i: u32) -> TaskName {
 	i.using_encoded(blake2_256)
 }
@@ -79,7 +97,15 @@ fn make_task<T: Config>(
 		false => None,
 	};
 	let origin = make_origin::<T>(signed);
-	Scheduled { maybe_id, priority, call, maybe_periodic, origin, _phantom: PhantomData }
+	Scheduled {
+		maybe_id,
+		priority,
+		maybe_ciphertext: None,
+		maybe_call: Some(call), 
+		maybe_periodic,
+		origin, 
+		_phantom: PhantomData
+	}
 }
 
 fn bounded<T: Config>(len: u32) -> Option<BoundedCallOf<T>> {
@@ -231,9 +257,10 @@ benchmarks! {
 		let priority = 0;
 		// Essentially a no-op call.
 		let call = Box::new(SystemCall::set_storage { items: vec![] }.into());
+		let origin = frame_system::RawOrigin::Signed(account("origin", 0, SEED));
 
 		fill_schedule::<T>(when, s)?;
-	}: _(RawOrigin::Root, when, periodic, priority, call)
+	}: _(origin, when, periodic, priority, call)
 	verify {
 		ensure!(
 			Agenda::<T>::get(when).len() == (s + 1) as usize,
@@ -245,11 +272,10 @@ benchmarks! {
 		let s in 1 .. T::MaxScheduledPerBlock::get();
 		let when = BLOCK_NUMBER.into();
 
-		fill_schedule::<T>(when, s)?;
+		fill_schedule_signed::<T>(when, s)?;
 		assert_eq!(Agenda::<T>::get(when).len(), s as usize);
-		let schedule_origin =
-			T::ScheduleOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
-	}: _<SystemOrigin<T>>(schedule_origin, when, 0)
+		let origin = frame_system::RawOrigin::Signed(account("origin", 0, SEED));
+	}: _(origin, when, 0)
 	verify {
 		ensure!(
 			s == 1 || Lookup::<T>::get(u32_to_name(0)).is_none(),
@@ -274,9 +300,9 @@ benchmarks! {
 		let priority = 0;
 		// Essentially a no-op call.
 		let call = Box::new(SystemCall::set_storage { items: vec![] }.into());
-
-		fill_schedule::<T>(when, s)?;
-	}: _(RawOrigin::Root, id, when, periodic, priority, call)
+		let origin = frame_system::RawOrigin::Signed(account("origin", 0, SEED));
+		fill_schedule_signed::<T>(when, s)?;
+	}: _(origin, id, when, periodic, priority, call)
 	verify {
 		ensure!(
 			Agenda::<T>::get(when).len() == (s + 1) as usize,
@@ -287,9 +313,9 @@ benchmarks! {
 	cancel_named {
 		let s in 1 .. T::MaxScheduledPerBlock::get();
 		let when = BLOCK_NUMBER.into();
-
-		fill_schedule::<T>(when, s)?;
-	}: _(RawOrigin::Root, u32_to_name(0))
+		let origin = frame_system::RawOrigin::Signed(account("origin", 0, SEED));
+		fill_schedule_signed::<T>(when, s)?;
+	}: _(origin, u32_to_name(0))
 	verify {
 		ensure!(
 			s == 1 || Lookup::<T>::get(u32_to_name(0)).is_none(),
@@ -303,6 +329,32 @@ benchmarks! {
 		ensure!(
 			s > 1 || Agenda::<T>::get(when).len() == 0,
 			"remove from schedule if only 1 task scheduled for `when`"
+		);
+	}
+
+	schedule_sealed {
+		let s in 0 .. (T::MaxScheduledPerBlock::get() - 1);
+		let when = BLOCK_NUMBER.into();
+		let periodic = Some((BlockNumberFor::<T>::one(), 100));
+		let priority = 0;
+
+		let bounded_ct: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		let bounded_nonce: BoundedVec<u8, ConstU32<96>> = BoundedVec::new();
+		let bounded_capsule: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		let origin = frame_system::RawOrigin::Signed(account("origin", 0, SEED));
+
+		let ciphertext = Ciphertext {
+			ciphertext: bounded_ct,
+			nonce: bounded_nonce,
+			capsule: bounded_capsule,
+		};
+
+		fill_schedule_signed::<T>(when, s)?;
+	}: _(origin, when, priority, ciphertext)
+	verify {
+		ensure!(
+			Agenda::<T>::get(when).len() == (s + 1) as usize,
+			"didn't add to schedule"
 		);
 	}
 

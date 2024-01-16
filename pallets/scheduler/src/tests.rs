@@ -2062,3 +2062,92 @@ fn timelock_undecodable_runtime_call_no_execution() {
 		assert!(logger::log().is_empty());
 	});
 }
+
+#[test]
+#[docify::export]
+fn timelock_cancel_works() {
+	let mut rng = ChaCha20Rng::from_seed([4;32]);
+
+	let ids = vec![
+		4u64.to_string().as_bytes().to_vec(), 
+	];
+	let t = 1;
+
+	let ibe_pp: G2 = G2::generator().into();
+	let s = Fr::one();
+	let p_pub: G2 = ibe_pp.mul(s).into();
+
+	let ibe_pp_bytes = convert_to_bytes::<G2, 96>(ibe_pp);
+	let p_pub_bytes = convert_to_bytes::<G2, 96>(p_pub);
+
+	// Q: how can we mock the decryption trait so that we can d1o whatever?
+	// probably don't really need to perform decryption here?
+	new_test_ext().execute_with(|| {
+
+		let _ = Etf::set_ibe_params(
+			// RuntimeOrigin::root(), 
+			&vec![], 
+			&ibe_pp_bytes.into(), 
+			&p_pub_bytes.into()
+		);
+
+		// Call to schedule
+		let call =
+			RuntimeCall::Logger(LoggerCall::log { i: 42, weight: Weight::from_parts(10, 0) });
+
+		// // then we convert to bytes and encrypt the call
+		let ct: etf_crypto_primitives::client::etf_client::AesIbeCt = 
+			DefaultEtfClient::<BfIbe>::encrypt(
+				ibe_pp_bytes.to_vec(),
+				p_pub_bytes.to_vec(),
+				&call.encode(),
+				ids,
+				t,
+				&mut rng,
+			).unwrap();
+
+
+		let mut bounded_ct: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		ct.aes_ct.ciphertext.iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_ct.try_insert(idx, *i);
+		});
+
+		let mut bounded_nonce: BoundedVec<u8, ConstU32<96>> = BoundedVec::new();
+		ct.aes_ct.nonce.iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_nonce.try_insert(idx, *i);
+		});
+
+		let mut bounded_capsule: BoundedVec<u8, ConstU32<512>> = BoundedVec::new();
+		// assumes we only care about a single point in the future
+		ct.etf_ct[0].iter().enumerate().for_each(|(idx, i)| {
+			let _= bounded_capsule.try_insert(idx, *i);
+		});
+
+		let ciphertext = Ciphertext {
+			ciphertext: bounded_ct,
+			nonce: bounded_nonce,
+			capsule: bounded_capsule,
+		};
+
+		// Schedule call to be executed at the 4th block
+		assert_ok!(Scheduler::do_schedule_sealed(
+			DispatchTime::At(4),
+			127,
+			root(),
+			ciphertext,
+		));
+
+		// `log` runtime call should not have executed yet
+		run_to_block(3);
+		assert!(logger::log().is_empty());
+
+
+		// now cancel
+		assert_ok!(Scheduler::do_cancel(
+			None, (4, 0),
+		));
+
+		run_to_block(4);
+		assert!(logger::log().is_empty());
+	});
+}

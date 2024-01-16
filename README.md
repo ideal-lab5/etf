@@ -37,3 +37,25 @@ cargo test
 ``` sh
 cargo test --features e2e
 ```
+
+**Benchmarks**
+
+Build with benchmarks using:
+``` sh
+cargo +nightly build --release --features runtime-benchmarks
+```
+
+and run them with:
+``` 
+# list all benchmarks
+./target/release/node benchmark pallet --chain dev --pallet "*" --extrinsic "*" --repeat 0
+# benchmark the etf pallet
+./target/release/node benchmark pallet \
+    --chain dev \
+    --wasm-execution=compiled \
+    --pallet pallet_etf \
+    --extrinsic "*" \
+    --steps 50 \
+    --repeat 20 \
+    --output /pallets/etf/src/weight.rs
+```

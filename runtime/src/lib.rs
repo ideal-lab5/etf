@@ -58,8 +58,8 @@ use pallet_contracts::chain_extension::{
 };
 use sp_core::crypto::UncheckedFrom;
 
-#[cfg(feature = "runtime-benchmarks")]
-use pallet_contracts::NoopMigration;
+// #[cfg(feature = "runtime-benchmarks")]
+// use pallet_contracts::NoopMigration;
 
 /// Import the etf pallet.
 pub use pallet_etf;
@@ -356,13 +356,13 @@ impl pallet_scheduler::Config for Runtime {
 	type PalletsOrigin = OriginCaller;
 	type RuntimeCall = RuntimeCall;
 	type MaximumWeight = MaximumSchedulerWeight;
-	// type ScheduleOrigin = EnsureRoot<AccountId>;
 	type ScheduleOrigin = EnsureSigned<AccountId>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type MaxScheduledPerBlock = ConstU32<512>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type MaxScheduledPerBlock = ConstU32<50>;
-	type WeightInfo = pallet_scheduler::weights::SubstrateWeight<Runtime>;
+	// type WeightInfo = pallet_scheduler::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = pallet_scheduler::weights::SubstrateWeightInfo<Runtime>;
 	type OriginPrivilegeCmp = EqualPrivilegeOnly;
 	type Preimages = Preimage;
 	type TlockProvider = Etf;
@@ -484,6 +484,7 @@ mod benches {
 		[pallet_sudo, Sudo]
 		[pallet_contracts, Contracts]
 		[pallet_etf, Etf]
+		[pallet_scheduler, Scheduler]
 	);
 }
 
@@ -835,40 +836,40 @@ impl ChainExtension<Runtime> for ETFExtension {
 			// fetch a slot secret based on slot number
             1101 => {
                 let mut env = env.buf_in_buf_out();
-				let out = [1;48].encode();
+				// let out = [1;48].encode();
 
-				env.write(&out, false, None).map_err(|_| {
-					DispatchError::Other(
-						"ChainExtension failed to query the slot secret from the AURA pallet.\
-						Is the slot in the future?"
-					)
-				})?;
+				// env.write(&out, false, None).map_err(|_| {
+				// 	DispatchError::Other(
+				// 		"ChainExtension failed to query the slot secret from the AURA pallet.\
+				// 		Is the slot in the future?"
+				// 	)
+				// })?;
 				
 				// // let maybe_slot: Option<u64> = env.read_as()?;
 				
-				// let slot = Aura::current_slot();
+				let slot = Aura::current_slot();
 
 				// // // if let Some(s) = maybe_slot {
 				// // // 	slot = Slot::from(s);
 				// // // }
 				
 				// attempt to get the slot secret from the aura pallet
-				// if let Some(secret) = Aura::slot_secrets(slot) {
-				// 	env.write(&secret.encode(), false, None).map_err(|_| {
-				// 	// env.write(&1u32.encode(), false, None).map_err(|_| {
-				// 		DispatchError::Other(
-				// 			"ChainExtension failed to query the slot secret from the AURA pallet.\
-				// 			Is the slot in the future?"
-				// 		)
-				// 	})?;
-				// } else {
-				// 	env.write(&[0;48].encode(), false, None).map_err(|_| {
-				// 		DispatchError::Other(
-				// 			"ChainExtension failed to query the slot secret from the AURA pallet.\
-				// 			Is the slot in the future?"
-				// 		)
-				// 	})?;
-				// }
+				if let Some(secret) = Aura::slot_secrets(slot) {
+					env.write(&secret.encode(), false, None).map_err(|_| {
+					// env.write(&1u32.encode(), false, None).map_err(|_| {
+						DispatchError::Other(
+							"ChainExtension failed to query the slot secret from the AURA pallet.\
+							Is the slot in the future?"
+						)
+					})?;
+				} else {
+					env.write(&[0;48].encode(), false, None).map_err(|_| {
+						DispatchError::Other(
+							"ChainExtension failed to query the slot secret from the AURA pallet.\
+							Is the slot in the future?"
+						)
+					})?;
+				}
 				
 				Ok(RetVal::Converging(0))
             },

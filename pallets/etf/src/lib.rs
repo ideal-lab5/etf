@@ -16,6 +16,7 @@ mod tests;
 mod benchmarking;
 pub mod weights;
 pub use weights::WeightInfo;
+
 use sp_std::{vec, vec::Vec, prelude::ToOwned};
 use frame_support::{
 	pallet_prelude::*,

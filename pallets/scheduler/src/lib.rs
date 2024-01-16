@@ -83,6 +83,7 @@ mod mock;
 #[cfg(test)]
 mod tests;
 pub mod weights;
+pub use weights::WeightInfo;
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
@@ -108,7 +109,6 @@ use sp_runtime::{
 use sp_std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, prelude::*};
 use pallet_etf::{Ciphertext, TimelockEncryptionProvider};
 pub use pallet::*;
-pub use weights::WeightInfo;
 
 /// Just a simple index for naming period tasks.
 pub type PeriodicIndex = u32;
@@ -149,6 +149,7 @@ pub type ScheduledOf<T> = Scheduled<
 	<T as frame_system::Config>::AccountId,
 >;
 
+// expected that WeightInfo is a struct and not a type
 pub(crate) trait MarginalWeightInfo: WeightInfo {
 	fn service_task(maybe_lookup_len: Option<usize>, named: bool, periodic: bool) -> Weight {
 		let base = Self::service_task_base();
@@ -421,7 +422,7 @@ pub mod pallet {
 
 		/// Anonymously schedule a timelocked task.
 		#[pallet::call_index(6)]
-		#[pallet::weight(<T as Config>::WeightInfo::schedule(T::MaxScheduledPerBlock::get()))]
+		#[pallet::weight(<T as Config>::WeightInfo::schedule_sealed(T::MaxScheduledPerBlock::get()))]
 		pub fn schedule_sealed(
 			origin: OriginFor<T>,
 			when: BlockNumberFor<T>,
@@ -604,7 +605,11 @@ impl<T: Config> Pallet<T> {
 			)
 		})?;
 		if let Some(s) = scheduled {
-			T::Preimages::drop(&s.maybe_call.clone().unwrap());
+
+			if s.maybe_ciphertext.is_none() && s.maybe_call.is_some() {
+				T::Preimages::drop(&s.maybe_call.clone().unwrap());
+			}
+	
 			if let Some(id) = s.maybe_id {
 				Lookup::<T>::remove(id);
 			}
