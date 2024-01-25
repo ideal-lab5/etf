@@ -314,7 +314,6 @@ impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 impl pallet_etf::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Runtime>;
-	type Randomness = RandomnessCollectiveFlip;
 	type SlotSecretProvider = Aura;
 }
 

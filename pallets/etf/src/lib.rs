@@ -64,8 +64,6 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		/// Type representing the weight of this pallet
 		type WeightInfo: WeightInfo;
-		/// Something that provides randomness in the runtime.
-		type Randomness: Randomness<Self::Hash, BlockNumberFor<Self>>;
 		/// Type representing a service that reads leaked slot secrets
 		type SlotSecretProvider: SlotSecretProvider;
 	}
