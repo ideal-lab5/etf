@@ -59,3 +59,21 @@ and run them with:
     --repeat 20 \
     --output /pallets/etf/src/weight.rs
 ```
+
+## CLI
+
+``` sh
+Key utilities for the cli
+
+Usage: node etf <COMMAND>
+
+Commands:
+  generate  Generate a random node key, write it to a file or stdout and write the corresponding peer-id to stderr
+  inspect   output the public key to a file or stdout 
+  init      The `init` command used to build shares for an initial committee (ACSS.Reshare)
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
+```

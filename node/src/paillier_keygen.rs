@@ -41,7 +41,7 @@ pub struct PaillierKeygenCmd {
 	/// Name of file to save secret key to.
 	/// If not given, the secret key is printed to stdout.
 	#[arg(long)]
-	file: Option<PathBuf>,
+	output: Option<PathBuf>,
 
 	#[allow(missing_docs)]
 	#[clap(flatten)]
@@ -69,7 +69,7 @@ impl PaillierKeygenCmd {
 			if let Ok(keys_bytes) = paillier_create_keys(keypair_bytes.clone()) {
 				let file_data = array_bytes::bytes2hex("", keys_bytes.clone().as_slice()).into_bytes();
 
-				match &self.file {
+				match &self.output {
 					Some(file) => fs::write(file, file_data).map_err(|_| Error::BadFile)?,
 					_ => {
 						std::io::stdout()

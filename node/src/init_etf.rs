@@ -33,17 +33,17 @@ use rand_chacha::{
 	rand_core::SeedableRng,
 };
 
-/// The `build-spec` command used to build a specification.
+/// The `init` command used to build shares for an initial committee (ACSS.Reshare)
 #[derive(Debug, Clone, Parser)]
 pub struct InitEtfCmd {
 	
 	/// A file to write the output shares to
 	#[arg(long)]
-	out: Option<PathBuf>,
+	output: Option<PathBuf>,
 
 	/// A file containing the public keys of the committee
 	#[arg(long)]
-	committee_file: PathBuf,
+	committee: PathBuf,
 
 	#[arg(long)]
 	pub seed: u64,
@@ -65,7 +65,7 @@ impl InitEtfCmd {
 	) -> Result<(), Error> {
 		info!("Generating secrets for initial committee: Running ACSS::reshare");
 
-		let filepath = self.committee_file.clone().into_os_string().into_string().unwrap();
+		let filepath = self.committee.clone().into_os_string().into_string().unwrap();
 		let committee: Vec<WrappedEncryptionKey> = 
 			read_to_string(filepath) 
 			.unwrap()
@@ -97,7 +97,7 @@ impl InitEtfCmd {
 		let bytes = bincode::serialize(&shares_map).unwrap();
 		let file_data = array_bytes::bytes2hex("", bytes).into_bytes();
 
-		match &self.out {
+		match &self.output {
 			Some(file) => fs::write(file, file_data).map_err(|_| Error::BadFile)?,
 			_ => {
 				std::io::stdout()

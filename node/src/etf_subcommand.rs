@@ -25,16 +25,17 @@ use crate::{
 use sc_cli::SubstrateCli;
 
 
-/// Key utilities for the cli.
+/// Key utilities for the ETF authorities.
 #[derive(Debug, clap::Subcommand)]
 pub enum EtfSubcommand {
-	/// Generate a random node key, write it to a file or stdout and write the
-	/// corresponding peer-id to stderr
+
+	/// Generate a random node key, write it to a file or stdout
 	Generate(PaillierKeygenCmd),
 
-    /// outputs the public key to stdout
+    /// output the public key to a file or stdout
     Inspect(PaillierInspectCmd),
 
+	/// The `init` command used to build shares for an initial committee (ACSS.Reshare)
 	Init(InitEtfCmd),
 }
 
