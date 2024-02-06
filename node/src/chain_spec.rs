@@ -4,6 +4,7 @@ use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use etf_crypto_primitives::dpss::acss::{Capsule, WrappedEncryptionKey};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -33,6 +34,12 @@ pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
 	(get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s))
 }
 
+// pub fn capsules_from_bytes(bytes: &[u8]) {
+// 	if let Ok(shares_map: BTreeMap<WrappedEncryptionKey, Capsule>) = bincode::deserialize(&bytes) {
+
+// 	}
+// }
+
 pub fn development_config() -> Result<ChainSpec, String> {
 	Ok(ChainSpec::builder(
 		WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?,
@@ -44,6 +51,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 	.with_genesis_config_patch(testnet_genesis(
 		// Initial PoA authorities
 		vec![authority_keys_from_seed("Alice")],
+		// initial capsules for etf
+		Vec::new(),
 		// Sudo account
 		get_account_id_from_seed::<sr25519::Public>("Alice"),
 		// Pre-funded accounts
@@ -69,6 +78,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 	.with_genesis_config_patch(testnet_genesis(
 		// Initial PoA authorities
 		vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
+		// Initial shares
+		Vec::new(),
 		// Sudo account
 		get_account_id_from_seed::<sr25519::Public>("Alice"),
 		// Pre-funded accounts
@@ -94,6 +105,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
 	initial_authorities: Vec<(AuraId, GrandpaId)>,
+	shares: Vec<Capsule>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 	_enable_println: bool,
@@ -105,6 +117,7 @@ fn testnet_genesis(
 		},
 		"aura": {
 			"authorities": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
+			"shares": shares.clone(),
 		},
 		"grandpa": {
 			"authorities": initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect::<Vec<_>>(),

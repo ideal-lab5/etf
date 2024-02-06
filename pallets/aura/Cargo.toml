@@ -26,6 +26,7 @@ sp-application-crypto = { default-features = false, git = "https://github.com/pa
 sp-consensus-etf-aura = { default-features = false, path = "../../primitives/consensus/aura" }
 sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+etf-crypto-primitives = {default-features =  false, git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss"}
 
 [dev-dependencies]
 sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }

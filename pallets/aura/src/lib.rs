@@ -50,6 +50,7 @@ use sp_runtime::{
 	traits::{IsMember, Member, SaturatedConversion, Saturating, Zero},
 	RuntimeAppPublic,
 };
+use etf_crypto_primitives::dpss::acss::{Capsule, WrappedEncryptionKey};
 use sp_std::prelude::*;
 
 pub mod migrations;
@@ -94,6 +95,7 @@ pub mod pallet {
 			+ RuntimeAppPublic
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen;
+
 		/// The maximum number of authorities that the pallet can hold.
 		type MaxAuthorities: Get<u32>;
 
@@ -132,6 +134,11 @@ pub mod pallet {
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+
+		fn offchain_worker(n: BlockNumberFor<T>) {
+			// try to get fetch decrypt/authenticate your secrets
+		}
+
 		fn on_initialize(_: BlockNumberFor<T>) -> Weight {
 			if let Some(predigest) = Self::current_predigest_from_digests() {
 
@@ -198,16 +205,25 @@ pub mod pallet {
 		OpaqueSecret
 	>;
 
+	/// A map of shares for the initial committee
+	/// TODO: this will undergo some changes later
+	#[pallet::storage]
+	#[pallet::getter(fn shares)]
+	pub(super) type Shares<T: Config> =
+		StorageValue<_, BoundedVec<Capsule, T::MaxAuthorities>, ValueQuery>;
+
 	#[pallet::genesis_config]
 	#[derive(frame_support::DefaultNoBound)]
 	pub struct GenesisConfig<T: Config> {
 		pub authorities: Vec<T::AuthorityId>,
+		pub shares: Vec<Capsule>
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			Pallet::<T>::initialize_authorities(&self.authorities);
+			Pallet::<T>::initialize_shares(&self.shares);
 		}
 	}
 }
@@ -241,12 +257,25 @@ impl<T: Config> Pallet<T> {
 	///
 	/// The authorities length must be equal or less than T::MaxAuthorities.
 	pub fn initialize_authorities(authorities: &[T::AuthorityId]) {
-		// panic!("{:?}", "could not decode slot");
 		if !authorities.is_empty() {
 			assert!(<Authorities<T>>::get().is_empty(), "Authorities are already initialized!");
 			let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(authorities)
 				.expect("Initial authority set must be less than T::MaxAuthorities");
 			<Authorities<T>>::put(bounded);
+		}
+	}
+
+	/// Initial shares
+	///
+	/// The storage will be applied immediately.
+	///
+	/// The shares length must be equal or less than T::MaxAuthorities.
+	pub fn initialize_shares(shares: &[Capsule]) {
+		if !shares.is_empty() {
+			assert!(<Shares<T>>::get().is_empty(), "Shares are already initialized!");
+			let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(shares)
+				.expect("Initial shares amount must be less than T::MaxAuthorities");
+			<Shares<T>>::put(bounded);
 		}
 	}
 
