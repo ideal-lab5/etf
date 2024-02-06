@@ -362,7 +362,8 @@ where
 	} else {
 		// verify the DLEQ proof
 		let expected_author =
-			slot_author::<P>(slot, authorities).ok_or(SealVerificationError::SlotAuthorNotFound)?;
+			slot_author::<P>(slot, authorities)
+				.ok_or(SealVerificationError::SlotAuthorNotFound)?;
 		let s = u64::from(slot);
 		let id = s.to_string().as_bytes().to_vec();
 		let pk = hash_to_g1(&id);

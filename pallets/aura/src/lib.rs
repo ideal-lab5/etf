@@ -255,7 +255,6 @@ impl<T: Config> Pallet<T> {
 		Authorities::<T>::decode_len().unwrap_or(0)
 	}
 
-	/// TODO: refactor name
 	/// Get the current slot from the pre-runtime digests.
 	pub fn current_predigest_from_digests() -> Option<PreDigest> {
 		frame_system::Pallet::<T>::digest()
@@ -263,30 +262,17 @@ impl<T: Config> Pallet<T> {
 			.iter()
 			.filter_map(|d| d.as_pre_runtime())
 			.filter_map(|(id, mut data)| {
-		// for (id, mut data) in pre_runtime_digests {
-			if id == AURA_ENGINE_ID {
-				PreDigest::decode(&mut data).ok()
-			} else {
-				None
-			}
+				if id == AURA_ENGINE_ID {
+					PreDigest::decode(&mut data).ok()
+				} else {
+					None
+				}
 		}).next()
-
-		// None
 	}
 	
 	/// Determine the Aura slot-duration based on the Timestamp module configuration.
 	pub fn slot_duration() -> T::Moment {
-		#[cfg(feature = "experimental")]
-		{
-			T::SlotDuration::get()
-		}
-
-		#[cfg(not(feature = "experimental"))]
-		{
-			// we double the minimum block-period so each author can always propose within
-			// the majority of its slot.
-			<T as pallet_timestamp::Config>::MinimumPeriod::get().saturating_mul(2u32.into())
-		}
+		<T as pallet_timestamp::Config>::MinimumPeriod::get().saturating_mul(2u32.into())
 	}
 
 	/// Ensure the correctness of the state of this pallet.

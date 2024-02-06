@@ -1,4 +1,6 @@
 use sc_cli::RunCmd;
+use node::etf_subcommand::EtfSubcommand;
+use node::init_etf::InitEtfCmd;
 
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
@@ -48,4 +50,7 @@ pub enum Subcommand {
 
 	/// Db meta columns information.
 	ChainInfo(sc_cli::ChainInfoCmd),
+
+	#[command(subcommand)]
+	Etf(EtfSubcommand),
 }
