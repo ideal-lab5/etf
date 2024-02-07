@@ -10,7 +10,6 @@ use sc_service::{
 	config::{MultiaddrWithPeerId, NetworkConfiguration},
 	ChainSpec,
 };
-use serde::{Serialize, Deserialize};
 use serde_json::{Value};
 use std::fs::read_to_string;
 use std::{
@@ -18,7 +17,6 @@ use std::{
 	io::{Read, Write},
 	path::PathBuf,
 };
-use paillier::{DecryptionKey, EncryptionKey, Keypair};
 use crate::errors::Error;
 
 use etf_crypto_primitives::dpss::acss::{

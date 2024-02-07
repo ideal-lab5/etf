@@ -21,7 +21,6 @@ use sc_cli::{
 };
 use clap::Parser;
 use log::info;
-use serde::{Serialize, Deserialize};
 use etf_crypto_primitives::utils::{
 	paillier_create_keypair, 
 	paillier_create_keys, 
@@ -50,12 +49,6 @@ pub struct PaillierKeygenCmd {
 	#[allow(missing_docs)]
 	#[clap(flatten)]
 	pub node_key_params: NodeKeyParams,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Output {
-	pub ek: Vec<u8>,
-	pub dk: Vec<u8>,
 }
 
 impl PaillierKeygenCmd {
