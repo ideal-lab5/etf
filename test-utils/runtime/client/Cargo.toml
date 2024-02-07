@@ -13,13 +13,13 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 futures = "0.3.21"
-sc-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
-sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
-sc-consensus = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
-sp-api = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
-sp-blockchain = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
-sp-consensus = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
-sp-core = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
-sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
-substrate-test-client = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sc-block-builder = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
+sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
+sc-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
+sp-api = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
+sp-blockchain = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
+sp-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
+sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
+sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
+substrate-test-client = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
 substrate-etf-test-runtime = { path = ".." }

@@ -13,23 +13,23 @@ readme = "README.md"
 codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = ["derive"] }
 log = { version = "0.4.17", default-features = false }
 scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
-frame-benchmarking = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" , optional = true }
-frame-support = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-frame-system = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-weights = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+frame-benchmarking = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" , optional = true }
+frame-support = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+frame-system = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+sp-io = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+sp-runtime = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+sp-std = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+sp-weights = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
 docify = "0.2.6"
 # sha3 = { version = "0.10.0", default-features = false }
 
 pallet-etf = { version = "4.0.0-dev", default-features = false, path = "../etf" }
 
 [dev-dependencies]
-pallet-preimage = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-substrate-test-utils = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+pallet-preimage = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+pallet-timestamp = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+sp-core = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+substrate-test-utils = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
 etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main" }
 ark-std = { version = "0.4.0", default-features = false }
 ark-ff = { version = "0.4.0", default-features = false }
@@ -41,7 +41,7 @@ ark-crypto-primitives = { version = "0.4.0", default-features = false, features 
 sp-consensus-etf-aura = { path = "../../primitives/consensus/aura" }
 pallet-etf = { version = "4.0.0-dev", default-features = false, path = "../etf" }
 pallet-etf-aura = { version = "4.0.0-dev", default-features = false, path = "../aura" }
-pallet-insecure-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
+pallet-insecure-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update"  }
 rand_chacha = { version = "0.3.1", default-features = false }
 
 [features]
