@@ -19,19 +19,19 @@ targets = ["x86_64-unknown-linux-gnu"]
 log = { version = "0.4.17", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
-frame-support = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
-frame-system = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
-pallet-timestamp = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
-sp-application-crypto = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+frame-support = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+frame-system = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+sp-application-crypto = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-consensus-etf-aura = { default-features = false, path = "../../primitives/consensus/aura" }
-sp-runtime = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
-sp-std = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
-etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss"}
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+# etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss" }
 
 [dev-dependencies]
-sp-core = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
-sp-io = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
-pallet-balances = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/simd-update" }
+sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+pallet-balances = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 
 [features]
 default = ["std"]

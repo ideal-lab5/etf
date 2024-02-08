@@ -22,19 +22,19 @@ libp2p = "0.51.3"
 log = "0.4.17"
 parking_lot = "0.12.1"
 rand = "0.8.5"
-sc-block-builder = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sc-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sc-network = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sc-network-common = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sc-utils = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sc-network-light = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sc-network-sync = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sc-service = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update", default-features = false, features = ["test-helpers"]}
-sp-blockchain = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sp-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
-sp-tracing = { git = "https://github.com/ideal-lab5/polkadot-sdk", branch = "tony/simd-update" }
+sc-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sc-consensus = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sc-network = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sc-network-common = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sc-utils = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sc-network-light = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sc-network-sync = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sc-service = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1", default-features = false, features = ["test-helpers"]}
+sp-blockchain = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sp-consensus = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sp-core = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sp-tracing = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
 substrate-etf-test-runtime = { path = "../../../test-utils/runtime" }
 substrate-etf-test-runtime-client = { path = "../../../test-utils/runtime/client" }

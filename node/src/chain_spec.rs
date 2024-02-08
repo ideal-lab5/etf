@@ -4,7 +4,7 @@ use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use etf_crypto_primitives::dpss::acss::{Capsule, WrappedEncryptionKey};
+// use etf_crypto_primitives::dpss::acss::{Capsule, WrappedEncryptionKey};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -52,7 +52,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// Initial PoA authorities
 		vec![authority_keys_from_seed("Alice")],
 		// initial capsules for etf
-		Vec::new(),
+		// Vec::new(),
 		// Sudo account
 		get_account_id_from_seed::<sr25519::Public>("Alice"),
 		// Pre-funded accounts
@@ -79,7 +79,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Initial PoA authorities
 		vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
 		// Initial shares
-		Vec::new(),
+		// Vec::new(),
 		// Sudo account
 		get_account_id_from_seed::<sr25519::Public>("Alice"),
 		// Pre-funded accounts
@@ -105,7 +105,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
 	initial_authorities: Vec<(AuraId, GrandpaId)>,
-	shares: Vec<Capsule>,
+	// shares: Vec<Capsule>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,
 	_enable_println: bool,
@@ -117,7 +117,7 @@ fn testnet_genesis(
 		},
 		"aura": {
 			"authorities": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
-			"shares": shares.clone(),
+			// "shares": shares.clone(),
 		},
 		"grandpa": {
 			"authorities": initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect::<Vec<_>>(),

@@ -24,6 +24,7 @@ use etf_crypto_primitives::dpss::acss::{
 	HighThresholdACSS, 
 	WrappedEncryptionKey
 };
+use paillier::EncryptionKey;
 use ark_ff::UniformRand;
 use ark_bls12_381::Fr;
 use rand_chacha::{
