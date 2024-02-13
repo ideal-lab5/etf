@@ -40,18 +40,20 @@
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
-	traits::{DisabledValidators, FindAuthor, Get, OnTimestampSet, OneSessionHandler},
+	traits::{DisabledValidators, FindAuthor, Get, OnTimestampSet, OneSessionHandler, ValidatorSet, ValidatorSetWithIdentification},
 	BoundedSlice, BoundedVec, ConsensusEngineId, Parameter,
 };
+use frame_system::pallet_prelude::{BlockNumberFor, HeaderFor};
 // use log;
 use sp_consensus_etf_aura::{AuthorityIndex, ConsensusLog, Slot, digests::PreDigest, AURA_ENGINE_ID, OpaqueSecret};
 use sp_runtime::{
 	generic::DigestItem,
-	traits::{IsMember, Member, SaturatedConversion, Saturating, Zero},
+	traits::{IsMember, Member, SaturatedConversion, Saturating, Zero, Convert},
 	RuntimeAppPublic,
 };
-// use etf_crypto_primitives::dpss::acss::{Capsule, WrappedEncryptionKey};
 use sp_std::prelude::*;
+
+use etf_crypto_primitives::dpss::acss::{Capsule, HighThresholdACSS};
 
 pub mod migrations;
 mod mock;
@@ -61,6 +63,11 @@ pub use pallet::*;
 
 /// the slot secret type 
 pub type Secret = [u8;48];
+
+/// Counter for the number of epochs that have passed.
+pub type EpochIndex = u32;
+
+pub type EncryptionKey = Vec<u8>;
 
 const LOG_TARGET: &str = "runtime::aura";
 
@@ -99,6 +106,12 @@ pub mod pallet {
 		/// The maximum number of authorities that the pallet can hold.
 		type MaxAuthorities: Get<u32>;
 
+		/// The amount of time, in slots, that each epoch should last.
+		/// NOTE: Currently it is not possible to change the epoch duration after
+		/// the chain has started. Attempting to do so will brick block production.
+		#[pallet::constant]
+		type EpochDuration: Get<u64>;
+
 		/// A way to check whether a given validator is disabled and should not be authoring blocks.
 		/// Blocks authored by a disabled validator will lead to a panic as part of this module's
 		/// initialization.
@@ -130,13 +143,17 @@ pub mod pallet {
 	}
 
 	#[pallet::pallet]
+	#[pallet::without_storage_info] // TODO
 	pub struct Pallet<T>(sp_std::marker::PhantomData<T>);
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 
-		fn offchain_worker(n: BlockNumberFor<T>) {
-			// try to get fetch decrypt/authenticate your secrets
+		fn offchain_worker(n: BlockNumber) {
+			// if you are a validator, try to recover your shares
+			if sp_io::offchain::is_validator() {
+				Self::acss();
+			}
 		}
 
 		fn on_initialize(_: BlockNumberFor<T>) -> Weight {
@@ -194,6 +211,11 @@ pub mod pallet {
 	#[pallet::getter(fn current_slot)]
 	pub(super) type CurrentSlot<T: Config> = StorageValue<_, Slot, ValueQuery>;
 
+	/// Current epoch index.
+	#[pallet::storage]
+	#[pallet::getter(fn epoch_index)]
+	pub type CurrentEpoch<T> = StorageValue<_, EpochIndex, ValueQuery>;
+
 	/// A map between slot numbers and slot secrets
 	/// DLEQ proofs are stored in corresponding block headers
 	#[pallet::storage]
@@ -205,25 +227,29 @@ pub mod pallet {
 		OpaqueSecret
 	>;
 
-	// /// A map of shares for the initial committee
-	// /// TODO: this will undergo some changes later
-	// #[pallet::storage]
-	// #[pallet::getter(fn shares)]
-	// pub(super) type Shares<T: Config> =
-	// 	StorageValue<_, BoundedVec<Capsule, T::MaxAuthorities>, ValueQuery>;
+	// serialized capsules (TODO)
+	#[pallet::storage]
+	#[pallet::getter(fn shares)]
+	pub(super) type Shares<T: Config> = StorageMap<
+		_, 
+		Twox64Concat, 
+		EncryptionKey, 
+		Vec<u8>, 
+		ValueQuery
+	>;
 
 	#[pallet::genesis_config]
 	#[derive(frame_support::DefaultNoBound)]
 	pub struct GenesisConfig<T: Config> {
+		pub shares: Vec<(EncryptionKey, Vec<u8>)>,
 		pub authorities: Vec<T::AuthorityId>,
-		// pub shares: Vec<Capsule>
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			Pallet::<T>::initialize_authorities(&self.authorities);
-			// Pallet::<T>::initialize_shares(&self.shares);
+			Pallet::<T>::initialize_shares(&self.shares);
 		}
 	}
 }
@@ -265,19 +291,21 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	// /// Initial shares
-	// ///
-	// /// The storage will be applied immediately.
-	// ///
-	// /// The shares length must be equal or less than T::MaxAuthorities.
-	// pub fn initialize_shares(shares: &[Capsule]) {
-	// 	if !shares.is_empty() {
-	// 		assert!(<Shares<T>>::get().is_empty(), "Shares are already initialized!");
-	// 		let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(shares)
-	// 			.expect("Initial shares amount must be less than T::MaxAuthorities");
-	// 		<Shares<T>>::put(bounded);
-	// 	}
-	// }
+	/// Initial shares
+	///
+	/// The storage will be applied immediately.
+	///
+	/// The shares length must be equal or less than T::MaxAuthorities.
+	pub fn initialize_shares(shares: &Vec<(EncryptionKey, Vec<u8>)>) {
+		if !shares.is_empty() {
+			// assert!(<Shares<T>>::keys().is_empty(), "Shares are already initialized!");
+			// let bounded = <BoundedSlice<'_, _, <T as pallet_etf_aura::Config>::MaxAuthorities>>::try_from(shares)
+			// 	.expect("Initial shares amount must be less than T::MaxAuthorities");
+			shares.iter().for_each(|(acct, bytes)| {
+				<Shares<T>>::insert(acct, &bytes);
+			});
+		}
+	}
 
 	/// Return current authorities length.
 	pub fn authorities_len() -> usize {
@@ -364,6 +392,15 @@ impl<T: Config> Pallet<T> {
 		CurrentSlot::<T>::put(new_slot);
 	}
 
+	pub fn acss() {
+		// find your public key (from offchain storage)
+		// if let Some(ek_bytes) = StorageValueRef::persistent(b"etf::ek") {
+		// // find your capsule 
+		// // run acss::authenticate 
+		// // store in offchain storage
+		// }
+	}
+
 }
 
 impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
@@ -412,6 +449,18 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 		<frame_system::Pallet<T>>::deposit_log(log);
 	}
 }
+
+
+// impl<T: Config> pallet_session::ShouldEndSession<BlockNumberFor<T>> for Pallet<T> {
+// 	fn should_end_session(now: BlockNumberFor<T>) -> bool {
+// 		// it might be (and it is in current implementation) that session module is calling
+// 		// `should_end_session` from it's own `on_initialize` handler, in which case it's
+// 		// possible that babe's own `on_initialize` has not run yet, so let's ensure that we
+// 		// have initialized the pallet and updated the current slot.
+// 		// Self::initialize(now);
+// 		// Self::should_epoch_change(now)
+// 	}
+// }
 
 impl<T: Config> FindAuthor<u32> for Pallet<T> {
 	fn find_author<'a, I>(digests: I) -> Option<u32>

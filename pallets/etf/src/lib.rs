@@ -21,6 +21,7 @@ use sp_std::{vec, vec::Vec, prelude::ToOwned};
 use frame_support::{
 	pallet_prelude::*,
 	traits::ConstU32,
+	BoundedSlice, BoundedVec,
 };
 use sp_runtime::DispatchResult;
 use ark_serialize::CanonicalDeserialize;
@@ -32,6 +33,7 @@ use etf_crypto_primitives::{
 		DecryptionResult,
 	},
 	ibe::fullident::BfIbe,
+	// dpss::acss::Capsule,
 };
 
 use pallet_etf_aura::SlotSecretProvider;
@@ -86,13 +88,13 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// the vector could not be decoded to an element of G1
 		G1DecodingFailure,
+		/// the vector could not be decoded to an element of G2
 		G2DecodingFailure,
 	}
 
 	#[pallet::genesis_config]
 	#[derive(frame_support::DefaultNoBound)]
 	pub struct GenesisConfig<T: Config> {
-		// SCALE encoded?
 		pub initial_ibe_params: Vec<u8>,
 		pub initial_ibe_pp: Vec<u8>,
 		pub initial_ibe_commitment: Vec<u8>, 
@@ -108,6 +110,9 @@ pub mod pallet {
 				.expect("The input should be a valid generator of G1; qed");
 		}
 	}
+
+	// #[pallet::hooks]
+	// impl<T:Config> Hooks<BlockNumberFor<T>> fo
  
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {

@@ -129,7 +129,6 @@ pub async fn claim_slot<B, P: Pair>(
 			let mut rng = ChaCha20Rng::seed_from_u64(s);
 			let proof = DLEQProof::new(x, pk, generator, id, &mut rng);
 			let mut out = Vec::new();
-			// proof.serialize_compressed(&mut out).unwrap();
 			proof.serialize_compressed(&mut out).expect("The proof should be well formatted; qed");
 			let proof_bytes: [u8;224] = out.try_into().unwrap();
 			let pre_digest = PreDigest {

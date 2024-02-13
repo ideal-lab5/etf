@@ -62,9 +62,6 @@ use sp_core::crypto::UncheckedFrom;
 // #[cfg(feature = "runtime-benchmarks")]
 // use pallet_contracts::NoopMigration;
 
-/// Import the etf pallet.
-pub use pallet_etf;
-
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -243,11 +240,35 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
+// parameter_types! {
+// 	pub const Period: u32 = MINUTES;
+// 	pub const Offset: u32 = 0;
+// }
+
+// impl pallet_session::Config for Runtime {
+// 	type ValidatorId = <Self as frame_system::Config>::AccountId;
+// 	type ValidatorIdOf = pallet_etf::ValidatorOf<Self>;
+// 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+// 	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+// 	type SessionManager = Aura;
+// 	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+// 	type Keys = opaque::SessionKeys;
+// 	type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+// 	type Event = Event;
+// }
+
+// impl pallet_session::historical::Config for Runtime {
+// 	type FullIdentification = pallet_staking::Exposure<AccountId, Balance>;
+// 	type FullIdentificationOf = pallet_staking::ExposureOf<Runtime>;
+// }
+
 impl pallet_etf_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<32>;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+	// 10 slots ~ 1 minute
+	type EpochDuration = ConstU64<10>;
 	// #[cfg(feature = "experimental")]
 	// type SlotDuration = SLOT_DURATION;
 	// type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Runtime>;
@@ -568,10 +589,11 @@ impl_runtime_apis! {
 		}
 
 		fn secret() -> [u8;32] {
-			match StorageValueRef::persistent(STORAGE_KEY).get::<[u8;32]>() {
-				Ok(Some(secret)) => secret,
-				_ => [0;32]
-			}
+			[2;32]
+			// match StorageValueRef::persistent(STORAGE_KEY).get::<[u8;32]>() {
+			// 	Ok(Some(secret)) => secret,
+			// 	_ => [0;32]
+			// }
 		}
 
 		fn ibe_params() -> Vec<u8> {
