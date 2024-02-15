@@ -30,7 +30,7 @@ pallet-preimage = { git = "https://github.com/paritytech/polkadot-sdk.git", tag 
 pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 substrate-test-utils = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main" }
+# etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main" }
 ark-std = { version = "0.4.0", default-features = false }
 ark-ff = { version = "0.4.0", default-features = false }
 ark-poly = { version = "0.4.0", default-features = false }

@@ -42,7 +42,7 @@ pub struct PaillierInspectCmd {
 
 	/// Name of file to read keypair bytes from
 	#[arg(long)]
-	input: Option<PathBuf>,
+	keys: PathBuf,
 
 	/// Name of the file to output the public key bytes to
 	/// if not given, the public key is printed
@@ -63,22 +63,13 @@ impl PaillierInspectCmd {
 	pub fn run(
 		&self,
 	) -> Result<(), Error> {
-		let mut file_data = match &self.input {
-			Some(file) => fs::read(&file).map_err(|_| Error::BadFile)?,
-			None => {
-				let mut buf = Vec::with_capacity(64);
-				io::stdin().lock().read_to_end(&mut buf)
-					.map_err(|_| Error::WriteError)?;
-				buf
-			},
-		};
-
+		let mut file_data = fs::read(&self.keys).map_err(|_| Error::BadFile)?;
 		if let Ok(kp_bytes) = array_bytes::hex2bytes(file_data) {
-			let kp: etf_crypto_primitives::utils::KeypairWrapper =
-				bincode::deserialize(&kp_bytes)
-				.map_err(|_| Error::WriteError)?;
-
-			let bytes = bincode::serialize(&kp.ek).unwrap();
+			// recover only the public key
+			let kp: etf_crypto_primitives::utils::KeypairWrapper = 
+				serde_json::from_slice(&kp_bytes)
+					.map_err(|_| Error::WriteError)?;
+			let bytes = serde_json::to_vec(&kp.ek).unwrap();
 			let file_data = array_bytes::bytes2hex("", bytes).into_bytes();
 
 			match &self.output {

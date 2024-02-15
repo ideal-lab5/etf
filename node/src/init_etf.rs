@@ -19,6 +19,7 @@ use std::{
 };
 use crate::errors::Error;
 
+use ark_serialize::CanonicalSerialize;
 use etf_crypto_primitives::dpss::acss::{
 	ACSSParams, 
 	HighThresholdACSS, 
@@ -38,7 +39,11 @@ pub struct InitEtfCmd {
 	
 	/// A file to write the output shares to
 	#[arg(long)]
-	output: Option<PathBuf>,
+	shares: Option<PathBuf>,
+
+	/// A file to write the output params to
+	#[arg(long)]
+	params: PathBuf,
 
 	/// A file containing the public keys of the committee
 	#[arg(long)]
@@ -71,7 +76,7 @@ impl InitEtfCmd {
 			.lines()
 			.map(|data| {
 				let bytes = array_bytes::hex2bytes(&data).unwrap();
-				let ek: EncryptionKey = bincode::deserialize(&bytes).unwrap();
+				let ek: EncryptionKey = serde_json::from_slice(&bytes).unwrap();
 				WrappedEncryptionKey(ek)
 			})
 			.collect::<Vec<_>>();
@@ -83,20 +88,25 @@ impl InitEtfCmd {
 		let msk_prime = Fr::rand(&mut rng);
 
 		let params = ACSSParams::rand(&mut rng);
+		let mut params_bytes = Vec::new();
+		params.serialize_compressed(&mut params_bytes).unwrap();
+		// write params to file
+		fs::write(self.params.clone(), array_bytes::bytes2hex("", params_bytes)).map_err(|_| Error::BadFile)?;
 
-		let shares_map = HighThresholdACSS::produce_shares(
+		// Vec<(EncryptionKey, Capsule)>
+		let shares = HighThresholdACSS::produce_shares(
 			params, 
 			msk, 
 			msk_prime,
 			&committee,
 			(committee.len() - 1) as u8,
 			&mut rng,
-		);
+		).into_iter().map(|s| (s.ek_n.clone(), s)).collect::<Vec<_>>();
 
-		let bytes = bincode::serialize(&shares_map).unwrap();
+		let bytes = serde_json::to_vec(&shares).unwrap();
 		let file_data = array_bytes::bytes2hex("", bytes).into_bytes();
 
-		match &self.output {
+		match &self.shares {
 			Some(file) => fs::write(file, file_data).map_err(|_| Error::BadFile)?,
 			_ => {
 				std::io::stdout()

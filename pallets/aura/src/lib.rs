@@ -50,10 +50,11 @@ use sp_runtime::{
 	generic::DigestItem,
 	traits::{IsMember, Member, SaturatedConversion, Saturating, Zero, Convert},
 	RuntimeAppPublic,
+	offchain::storage::StorageValueRef,
 };
 use sp_std::prelude::*;
 
-use etf_crypto_primitives::dpss::acss::{Capsule, HighThresholdACSS};
+// use etf_crypto_primitives::dpss::acss::{Capsule, HighThresholdACSS};
 
 pub mod migrations;
 mod mock;
@@ -64,10 +65,10 @@ pub use pallet::*;
 /// the slot secret type 
 pub type Secret = [u8;48];
 
+pub type EK = Vec<u8>;
+
 /// Counter for the number of epochs that have passed.
 pub type EpochIndex = u32;
-
-pub type EncryptionKey = Vec<u8>;
 
 const LOG_TARGET: &str = "runtime::aura";
 
@@ -149,12 +150,12 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 
-		fn offchain_worker(n: BlockNumber) {
-			// if you are a validator, try to recover your shares
-			if sp_io::offchain::is_validator() {
-				Self::acss();
-			}
-		}
+		// fn offchain_worker(n: BlockNumber) {
+		// 	// if you are a validator, try to recover your shares
+		// 	if sp_io::offchain::is_validator() {
+		// 		Self::acss();
+		// 	}
+		// }
 
 		fn on_initialize(_: BlockNumberFor<T>) -> Weight {
 			if let Some(predigest) = Self::current_predigest_from_digests() {
@@ -233,15 +234,21 @@ pub mod pallet {
 	pub(super) type Shares<T: Config> = StorageMap<
 		_, 
 		Twox64Concat, 
-		EncryptionKey, 
+		EK, 
 		Vec<u8>, 
-		ValueQuery
+		OptionQuery,
 	>;
+
+	/// the (serialized) ACSS Params, generators (G, H) of bls12-381
+	#[pallet::storage]
+	#[pallet::getter(fn acss_params)]
+	pub(super) type ACSSParams<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::genesis_config]
 	#[derive(frame_support::DefaultNoBound)]
 	pub struct GenesisConfig<T: Config> {
-		pub shares: Vec<(EncryptionKey, Vec<u8>)>,
+		pub shares: Vec<(EK, Vec<u8>)>,
+		pub acss_params: Vec<u8>,
 		pub authorities: Vec<T::AuthorityId>,
 	}
 
@@ -250,6 +257,7 @@ pub mod pallet {
 		fn build(&self) {
 			Pallet::<T>::initialize_authorities(&self.authorities);
 			Pallet::<T>::initialize_shares(&self.shares);
+			Pallet::<T>::initialize_acss(&self.acss_params);
 		}
 	}
 }
@@ -296,7 +304,7 @@ impl<T: Config> Pallet<T> {
 	/// The storage will be applied immediately.
 	///
 	/// The shares length must be equal or less than T::MaxAuthorities.
-	pub fn initialize_shares(shares: &Vec<(EncryptionKey, Vec<u8>)>) {
+	pub fn initialize_shares(shares: &Vec<(EK, Vec<u8>)>) {
 		if !shares.is_empty() {
 			// assert!(<Shares<T>>::keys().is_empty(), "Shares are already initialized!");
 			// let bounded = <BoundedSlice<'_, _, <T as pallet_etf_aura::Config>::MaxAuthorities>>::try_from(shares)
@@ -304,6 +312,19 @@ impl<T: Config> Pallet<T> {
 			shares.iter().for_each(|(acct, bytes)| {
 				<Shares<T>>::insert(acct, &bytes);
 			});
+		}
+	}
+
+	/// Initial the ACSS parameters
+	///
+	/// The storage will be applied immediately.
+	///
+	pub fn initialize_acss(bytes: &Vec<u8>) {
+		if !bytes.is_empty() {
+			assert!(<ACSSParams<T>>::get().is_empty(), "ACSS params are already initialized!");
+			// let bounded = <BoundedSlice<'_, _, <T as pallet_etf_aura::Config>::MaxAuthorities>>::try_from(shares)
+			// 	.expect("Initial shares amount must be less than T::MaxAuthorities");
+			<ACSSParams<T>>::put(bytes);
 		}
 	}
 
@@ -394,11 +415,14 @@ impl<T: Config> Pallet<T> {
 
 	pub fn acss() {
 		// find your public key (from offchain storage)
-		// if let Some(ek_bytes) = StorageValueRef::persistent(b"etf::ek") {
-		// // find your capsule 
-		// // run acss::authenticate 
-		// // store in offchain storage
-		// }
+		let ek_ref = StorageValueRef::persistent(b"etf::ek");
+		if let Ok(Some(ek)) = ek_ref.get::<EK>() {
+			// find your capsule 
+			if let Some(share) = Shares::<T>::get(ek) {
+			// run acss::authenticate 
+			// store in offchain storage	
+			}	
+		}
 	}
 
 }
@@ -416,6 +440,7 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 	{
 		let authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
 		Self::initialize_authorities(&authorities);
+		Self::acss();
 	}
 
 	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, _queued_validators: I)
@@ -438,6 +463,8 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 				Self::change_authorities(bounded);
 			}
 		}
+		// TODO
+		Self::acss();
 	}
 
 	fn on_disabled(i: u32) {

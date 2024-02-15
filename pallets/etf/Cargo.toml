@@ -13,16 +13,13 @@ repository = "https://github.com/ideal-lab5/etf/"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-# ahash = "0.8.7"
 array-bytes = "6.1.0"
 log = { version = "0.4.17", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = [
 	"derive",
 ] }
-getrandom = { version = "0.2", features = ["js"] }
 ark-serialize = { version = "0.4.0", features = [ "derive" ], default-features = false }
 ark-bls12-381 = { version = "0.4.0", features = ["curve"], default-features = false }
-sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 primitive-types = { version = "0.12.1", default-features = false }
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
 frame-benchmarking = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" , optional = true }
@@ -34,7 +31,10 @@ sp-std = { default-features = false, git = "https://github.com/paritytech/polkad
 sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 
+# curv = { version = "0.11.0", package = "curv-kzen", git = "https://github.com/ideal-lab5/curv", default-features = false }
 etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale", default-features = false }
+
+# etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main"}
 
 pallet-etf-aura = { default-features = false, path = "../aura"}
 
@@ -42,6 +42,7 @@ pallet-etf-aura = { default-features = false, path = "../aura"}
 frame-support-test = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 rand_chacha ="0.3.1"
 ark-std = { version = "0.4.0", default-features = false }
 hex = "0.4.3"
@@ -57,7 +58,6 @@ std = [
 	"primitive-types/std",
 	"sp-std/std",
 	"sp-runtime/std",
-	"sp-io/std",
 	"sp-core/std",
 	"ark-serialize/std",
 	"ark-bls12-381/std",

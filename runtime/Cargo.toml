@@ -20,7 +20,7 @@ scale-info = { version = "2.5.0", default-features = false, features = ["derive"
 pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 pallet-grandpa = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
-pallet-session = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
+# pallet-session = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 pallet-sudo = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 pallet-insecure-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
@@ -109,7 +109,6 @@ std = [
 	"pallet-contracts-primitives/std",
 	"pallet-preimage/std",
 	"pallet-scheduler/std",
-	"pallet-session/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
