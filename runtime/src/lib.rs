@@ -19,6 +19,7 @@ use sp_runtime::{
 	},
 	transaction_validity::{TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, MultiSignature,
+	offchain::storage::StorageValueRef,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -61,9 +62,6 @@ use sp_core::crypto::UncheckedFrom;
 // #[cfg(feature = "runtime-benchmarks")]
 // use pallet_contracts::NoopMigration;
 
-/// Import the etf pallet.
-pub use pallet_etf;
-
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -87,6 +85,8 @@ pub type EventRecord = frame_system::EventRecord<
 	<Runtime as frame_system::Config>::RuntimeEvent,
 	<Runtime as frame_system::Config>::Hash,
 >;
+
+pub type EncryptionKey = Vec<u8>;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -164,6 +164,8 @@ const fn deposit(items: u32, bytes: u32) -> Balance {
 	(items as Balance * CENTS + (bytes as Balance) * (5 * MILLICENTS / 100)) / 100
 }
 
+pub const STORAGE_KEY: &[u8; 8] = b"SK-STORE";
+
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
@@ -238,14 +240,38 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
+// parameter_types! {
+// 	pub const Period: u32 = MINUTES;
+// 	pub const Offset: u32 = 0;
+// }
+
+// impl pallet_session::Config for Runtime {
+// 	type ValidatorId = <Self as frame_system::Config>::AccountId;
+// 	type ValidatorIdOf = pallet_etf::ValidatorOf<Self>;
+// 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+// 	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+// 	type SessionManager = Aura;
+// 	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
+// 	type Keys = opaque::SessionKeys;
+// 	type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+// 	type Event = Event;
+// }
+
+// impl pallet_session::historical::Config for Runtime {
+// 	type FullIdentification = pallet_staking::Exposure<AccountId, Balance>;
+// 	type FullIdentificationOf = pallet_staking::ExposureOf<Runtime>;
+// }
+
 impl pallet_etf_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<32>;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-
-	#[cfg(feature = "experimental")]
-	type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Runtime>;
+	// 10 slots ~ 1 minute
+	type EpochDuration = ConstU64<10>;
+	// #[cfg(feature = "experimental")]
+	// type SlotDuration = SLOT_DURATION;
+	// type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Runtime>;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -563,12 +589,8 @@ impl_runtime_apis! {
 		}
 
 		fn secret() -> [u8;32] {
-			// read master secret from somehwere else...
 			[2;32]
-			// let key = context_block_number.to_string();
-			// log::info!("Calling secret({:?})", key);
-			// match StorageValueRef::persistent(key.as_bytes()).get::<[u8;32]>() {
-			// // match StorageValueRef::persistent(b.).get::<[u8;32]>() {
+			// match StorageValueRef::persistent(STORAGE_KEY).get::<[u8;32]>() {
 			// 	Ok(Some(secret)) => secret,
 			// 	_ => [0;32]
 			// }
