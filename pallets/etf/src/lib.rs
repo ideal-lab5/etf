@@ -20,7 +20,7 @@ pub use weights::WeightInfo;
 use sp_std::{vec, vec::Vec, prelude::ToOwned};
 use frame_support::{
 	pallet_prelude::*,
-	traits::{Randomness, ConstU32},
+	traits::ConstU32,
 };
 use sp_runtime::DispatchResult;
 use ark_serialize::CanonicalDeserialize;

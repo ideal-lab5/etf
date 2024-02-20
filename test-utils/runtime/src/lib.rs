@@ -398,7 +398,7 @@ impl pallet_balances::Config for Runtime {
 	type MaxFreezes = ();
 	type RuntimeHoldReason = RuntimeHoldReason;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
-	type MaxHolds = ConstU32<1>;
+	type MaxHolds = ConstU32<2>;
 }
 
 impl substrate_test_pallet::Config for Runtime {}

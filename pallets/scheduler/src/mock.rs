@@ -207,7 +207,6 @@ impl pallet_insecure_randomness_collective_flip::Config for Test {}
 impl pallet_etf::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Test>;
-	type Randomness = RandomnessCollectiveFlip;
 	type SlotSecretProvider = Aura;
 }
 
@@ -247,6 +246,9 @@ impl WeightInfo for TestWeightInfo {
 		Weight::from_parts(50, 0)
 	}
 	fn cancel_named(_s: u32) -> Weight {
+		Weight::from_parts(50, 0)
+	}
+	fn schedule_sealed(_s: u32) -> Weight {
 		Weight::from_parts(50, 0)
 	}
 }

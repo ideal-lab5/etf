@@ -1,4 +1,4 @@
-# Encryption to the Future
+# Encryption to the Future Node
 
 This repository contains implementations of the ETF consensus mechanism and a substrate node that uses it.
 
@@ -42,7 +42,7 @@ cargo test --features e2e
 
 Build with benchmarks using:
 ``` sh
-cargo +nightly build --release --features runtime-benchmarks
+cargo build --release --features runtime-benchmarks
 ```
 
 and run them with:

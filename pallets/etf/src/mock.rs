@@ -4,7 +4,6 @@ use sp_core::{ConstU32, H256};
 use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 };
-use frame_support_test::TestRandomness;
 use sp_runtime::BuildStorage;
 
 use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
@@ -88,7 +87,6 @@ impl pallet_etf_aura::Config for Test {
 impl pallet_etf::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Test>;
-    type Randomness = TestRandomness<Self>;
 	type SlotSecretProvider = Aura;
 }
 
