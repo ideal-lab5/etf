@@ -25,13 +25,14 @@ pallet-timestamp = { default-features = false, git = "https://github.com/parityt
 sp-application-crypto = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-consensus-etf-aura = { default-features = false, path = "../../primitives/consensus/aura" }
 sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-
+etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale"}
 # etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale", default-features = false }
+sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 
 [dev-dependencies]
-sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+# sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 
 [features]
@@ -46,6 +47,8 @@ std = [
 	"sp-consensus-etf-aura/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"sp-io/std",
+	"sp-core/std",
 	"pallet-balances/std"
 ]
 try-runtime = ["frame-support/try-runtime"]

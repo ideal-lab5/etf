@@ -1,7 +1,10 @@
 #!/bin/bash
-###################
-# Generate keys and shares for ETF network genesis state
-#################
+##########################################################
+# Generate keys and shares for ETF network genesis state #
+# author: Tony Riemer <driemworks@idealabs.network>      #
+##########################################################
+
+mkdir tmp
 for i in {1..3}; do
    ./target/debug/node etf generate --output tmp/keys.$i
    ./target/debug/node etf inspect --keys tmp/keys.$i --output tmp/pk.$i

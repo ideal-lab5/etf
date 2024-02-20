@@ -264,6 +264,7 @@ impl frame_system::Config for Runtime {
 
 impl pallet_etf_aura::Config for Runtime {
 	type AuthorityId = AuraId;
+	type PEK = EncryptionKey;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<32>;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;

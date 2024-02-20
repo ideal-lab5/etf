@@ -32,9 +32,9 @@ sp-runtime = { default-features = false, git = "https://github.com/paritytech/po
 sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 
 # curv = { version = "0.11.0", package = "curv-kzen", git = "https://github.com/ideal-lab5/curv", default-features = false }
-etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale", default-features = false }
+# etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale", default-features = false }
 
-# etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main"}
+etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale"}
 
 pallet-etf-aura = { default-features = false, path = "../aura"}
 
@@ -64,7 +64,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-etf-aura/std",
 	"sp-consensus-etf-aura/std",
-	"etf-crypto-primitives/std",
+	# "etf-crypto-primitives/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

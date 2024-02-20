@@ -43,7 +43,10 @@ use frame_support::{
 	traits::{DisabledValidators, FindAuthor, Get, OnTimestampSet, OneSessionHandler, ValidatorSet, ValidatorSetWithIdentification},
 	BoundedSlice, BoundedVec, ConsensusEngineId, Parameter,
 };
-use frame_system::pallet_prelude::{BlockNumberFor, HeaderFor};
+use frame_system::{
+	pallet_prelude::{BlockNumberFor, HeaderFor},
+	offchain::{CreateSignedTransaction, Signer, SendSignedTransaction},
+};
 // use log;
 use sp_consensus_etf_aura::{AuthorityIndex, ConsensusLog, Slot, digests::PreDigest, AURA_ENGINE_ID, OpaqueSecret};
 use sp_runtime::{
@@ -103,6 +106,17 @@ pub mod pallet {
 			+ RuntimeAppPublic
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen;
+		
+		// type TEST: Member
+		// + Parameter
+		// + RuntimeAppPublic
+		// + MaybeSerializeDeserialize
+		// + MaxEncodedLen;
+
+		/// the identifier for an authority's paillier encryption key
+		type PEK: Member
+			+ Parameter
+			+ MaybeSerializeDeserialize;
 
 		/// The maximum number of authorities that the pallet can hold.
 		type MaxAuthorities: Get<u32>;
@@ -150,10 +164,22 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 
-		// fn offchain_worker(n: BlockNumber) {
+		// fn offchain_worker(n: BlockNumberFor<T>) {
 		// 	// if you are a validator, try to recover your shares
 		// 	if sp_io::offchain::is_validator() {
-		// 		Self::acss();
+		// 		// Self::acss();
+		// 		let signer = Signer::<T, T::AuthorityId>::all_accounts();
+
+		// 		if !signer.can_sign() {
+		// 			log::warn!(
+		// 				target: LOG_TARGET,
+		// 				"Skipping offchain worker because no local account is available."
+		// 			);
+		// 			return;
+		// 		}
+
+		// 		// otherwise, we run the ACSS::Restore algorithm
+		// 		// and then send a signed transaction containing your 
 		// 	}
 		// }
 
@@ -205,6 +231,12 @@ pub mod pallet {
 	pub(super) type Authorities<T: Config> =
 		StorageValue<_, BoundedVec<T::AuthorityId, T::MaxAuthorities>, ValueQuery>;
 
+	/// the current authority set's paillier encryption keys
+	#[pallet::storage]
+	#[pallet::getter(fn paillier_authorities)]
+	pub(super) type PaillierAuthorities<T: Config> =
+		StorageValue<_, BoundedVec<T::PEK, T::MaxAuthorities>, ValueQuery>;
+
 	/// The current slot of this block.
 	///
 	/// This will be set in `on_initialize`.
@@ -249,13 +281,20 @@ pub mod pallet {
 	pub struct GenesisConfig<T: Config> {
 		pub shares: Vec<(EK, Vec<u8>)>,
 		pub acss_params: Vec<u8>,
-		pub authorities: Vec<T::AuthorityId>,
+		pub authorities: Vec<(T::AuthorityId, T::PEK)>,
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
-			Pallet::<T>::initialize_authorities(&self.authorities);
+			Pallet::<T>::initialize_authorities(&self.authorities
+				.iter()
+				.map(|a| a.0.clone())
+				.collect::<Vec<_>>());
+			Pallet::<T>::initialize_authorities_paillier(&self.authorities
+				.iter()
+				.map(|a| a.1.clone())
+				.collect::<Vec<_>>());
 			Pallet::<T>::initialize_shares(&self.shares);
 			Pallet::<T>::initialize_acss(&self.acss_params);
 		}
@@ -296,6 +335,20 @@ impl<T: Config> Pallet<T> {
 			let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(authorities)
 				.expect("Initial authority set must be less than T::MaxAuthorities");
 			<Authorities<T>>::put(bounded);
+		}
+	}
+
+	/// Initial authorities.
+	///
+	/// The storage will be applied immediately.
+	///
+	/// The authorities length must be equal or less than T::MaxAuthorities.
+	pub fn initialize_authorities_paillier(authorities: &[T::PEK]) {
+		if !authorities.is_empty() {
+			assert!(<PaillierAuthorities<T>>::get().is_empty(), "Paillier Authority keys are already initialized!");
+			let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(authorities)
+				.expect("Initial authority set must be less than T::MaxAuthorities");
+			<PaillierAuthorities<T>>::put(bounded);
 		}
 	}
 
@@ -414,15 +467,32 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub fn acss() {
-		// find your public key (from offchain storage)
-		let ek_ref = StorageValueRef::persistent(b"etf::ek");
-		if let Ok(Some(ek)) = ek_ref.get::<EK>() {
-			// find your capsule 
-			if let Some(share) = Shares::<T>::get(ek) {
-			// run acss::authenticate 
-			// store in offchain storage	
-			}	
+		if sp_io::offchain::is_validator() {
+			let signer = Signer::<T, T::AuthorityId>::all_accounts();
+
+			// if !signer.can_sign() {
+			// 	log::warn!(
+			// 		target: LOG_TARGET,
+			// 		"Skipping offchain worker because no local account is available."
+			// 	);
+			// 	return;
+			// }
+
+			// then use the signer to get the ek
+			// then use the ek to get the share (assume 1 per validator on genesis for now)
+			//  run the ACSS::Restore algorithm
+			// and send a signed transaction containing the commitment
+
+			// let ek_ref = StorageValueRef::persistent(b"etf::ek");
+			// if let Ok(Some(ek)) = ek_ref.get::<EK>() {
+			// 	// find your capsule 
+			// 	if let Some(share) = Shares::<T>::get(ek) {
+			// 	// run acss::authenticate 
+			// 	// store in offchain storage	
+			// 	}	
+			// }
 		}
+		// find your public key (from offchain storage)? i don't really love that
 	}
 
 }
@@ -438,9 +508,12 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 	where
 		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
 	{
+		// Q: Why do we need to initialize the authorities again on genesis, when we have already defined it explicitly?
+		// in our case, this will always happen at the same time as the genesis block
 		let authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
 		Self::initialize_authorities(&authorities);
-		Self::acss();
+		// we will set 'dummy' keys for the genesis session somehow
+		// probably something dumb like ([2;32], [3;32]) or w/e
 	}
 
 	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, _queued_validators: I)
@@ -449,6 +522,8 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 	{
 		// instant changes
 		if changed {
+			// TODO: at this point, the round of ACSS must be completed in order to procede
+			// so we just need to verify that it completed and we're good to go
 			let next_authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
 			let last_authorities = Self::authorities();
 			if last_authorities != next_authorities {
@@ -463,8 +538,6 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 				Self::change_authorities(bounded);
 			}
 		}
-		// TODO
-		Self::acss();
 	}
 
 	fn on_disabled(i: u32) {
