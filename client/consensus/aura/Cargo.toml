@@ -31,7 +31,7 @@ sha2 = { version = "0.10.2", default-features = false }
 sha3 = { version = "0.10.0", default-features = false }
 getrandom = { version = "0.2", default-features = false, features = ["js"] }
 rand_chacha = { version = "0.3.1", default-features = false }
-etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk/", branch = "dpss-noscale" }
+etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk/", branch = "main" }
 
 prometheus-endpoint = { package = "substrate-prometheus-endpoint", version = "0.10.0-dev" }
 sc-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1", version = "0.10.0-dev" }

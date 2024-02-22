@@ -205,6 +205,15 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 			.run(client.clone(), task_manager.spawn_handle())
 			.boxed(),
 		);
+
+		// // Initialize seed for signing transaction using offchain workers. This is a convenience
+		// // so learners can see the transactions submitted simply running the node.
+		// // Typically these keys should be inserted with RPC calls to `author_insertKey`.
+		// sp_keystore::Keystore::sr25519_generate_new(
+		// 	&keystore_container.keystore(),
+		// 	pallet_etf_aura::KEY_TYPE,
+		// 	Some("//Alice"),
+		// ).expect("Creating key with account Alice should succeed.");
 	}
 
 	let role = config.role.clone();

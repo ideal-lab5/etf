@@ -24,6 +24,29 @@ From the root directory, run:
 docker build .
 ```
 
+### Run
+
+To run a node as a validator, you first need to generate a new sr25519 keypair and insert it into the node. The guide [here](https://docs.substrate.io/tutorials/build-a-blockchain/add-trusted-nodes/) has detailed information on generating a key. 
+
+After building the codebase in release mode, run:
+
+``` sh
+./target/release/node key generate --scheme Sr25519 --password-interactive
+```
+
+This outputs a randomly generated sr25519 keypair that we will use for signing payloads with offchain workers.  
+
+Insert the key into your local keystore with the following command. Make sure to modify the base path to an appropriate directory. Also note that the key-type is `etfn`. The chain spec can either be a fresh chain spec locally generated, or else download the `etfDevSpecRaw` chainspec included in the main branch of this repo.
+
+``` sh
+./target/release/node key insert --base-path /tmp/node01 \
+  --chain customSpecRaw.json \
+  --scheme Sr25519 \
+  --suri <your-secret-seed> \
+  --password-interactive \
+  --key-type etfn
+```
+
 ### Testing
 
 **Unit Tests**
@@ -42,7 +65,7 @@ cargo test --features e2e
 
 Build with benchmarks using:
 ``` sh
-cargo +nightly build --release --features runtime-benchmarks
+cargo build --release --features runtime-benchmarks
 ```
 
 and run them with:

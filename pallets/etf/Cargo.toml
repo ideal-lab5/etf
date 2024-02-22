@@ -30,13 +30,17 @@ sp-consensus-etf-aura = { default-features = false, path = "../../primitives/con
 sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 
 # curv = { version = "0.11.0", package = "curv-kzen", git = "https://github.com/ideal-lab5/curv", default-features = false }
-# etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale", default-features = false }
+# etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main"}
 
-etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale"}
+getrandom = { version = "0.2", features = ["js"] }
 
-pallet-etf-aura = { default-features = false, path = "../aura"}
+# etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale", default-features = false}
+# etf-crypto-primitives = { path = "../../../etf-sdk/etf-crypto-primitives", default-features = false }
+curv = { package = "curv-kzen", path = "../../../curv" , default-features = false, features = ["num-bigint"]}
+# kzen-paillier = { version = "0.4.4", git = "https://github.com/ideal-lab5/rust-paillier", default-features = false }
 
 [dev-dependencies]
 frame-support-test = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
@@ -46,6 +50,7 @@ sp-io = { default-features = false, git = "https://github.com/paritytech/polkado
 rand_chacha ="0.3.1"
 ark-std = { version = "0.4.0", default-features = false }
 hex = "0.4.3"
+
 
 [features]
 default = ["std"]
@@ -61,16 +66,15 @@ std = [
 	"sp-core/std",
 	"ark-serialize/std",
 	"ark-bls12-381/std",
-	"pallet-balances/std",
-	"pallet-etf-aura/std",
 	"sp-consensus-etf-aura/std",
-	# "etf-crypto-primitives/std",
+	"sp-io/std",
+	"curv/std",
+	# "kzen-paillier/std",
+	# "etf-crypto-primitives/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
-	"pallet-balances/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
-	"pallet-balances/try-runtime"
 ]

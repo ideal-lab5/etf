@@ -45,17 +45,37 @@ use frame_support::{
 };
 use frame_system::{
 	pallet_prelude::{BlockNumberFor, HeaderFor},
-	offchain::{CreateSignedTransaction, Signer, SendSignedTransaction},
+	{self as system},
 };
 // use log;
-use sp_consensus_etf_aura::{AuthorityIndex, ConsensusLog, Slot, digests::PreDigest, AURA_ENGINE_ID, OpaqueSecret};
+use sp_consensus_etf_aura::{
+	AuthorityIndex, 
+	ConsensusLog, 
+	Slot, 
+	digests::PreDigest, 
+	AURA_ENGINE_ID, 
+	OpaqueSecret,
+};
 use sp_runtime::{
 	generic::DigestItem,
 	traits::{IsMember, Member, SaturatedConversion, Saturating, Zero, Convert},
 	RuntimeAppPublic,
 	offchain::storage::StorageValueRef,
 };
+use scale_info::TypeInfo;
+use sp_core::{crypto::KeyTypeId, ConstU32};
 use sp_std::prelude::*;
+
+use pallet_etf::IBEParamProvider;
+use etf_crypto_primitives::{
+	client::etf_client::{
+		DefaultEtfClient, 
+		EtfClient,
+		DecryptionResult,
+	},
+	ibe::fullident::BfIbe,
+	// dpss::acss::Capsule,
+};
 
 // use etf_crypto_primitives::dpss::acss::{Capsule, HighThresholdACSS};
 
@@ -67,8 +87,6 @@ pub use pallet::*;
 
 /// the slot secret type 
 pub type Secret = [u8;48];
-
-pub type EK = Vec<u8>;
 
 /// Counter for the number of epochs that have passed.
 pub type EpochIndex = u32;
@@ -95,28 +113,26 @@ impl<T: pallet_timestamp::Config> Get<T::Moment> for MinimumPeriodTimesTwo<T> {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_support::pallet_prelude::*;
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{CallerTrait, OriginTrait},
+		dispatch::{GetDispatchInfo, PostDispatchInfo},
+	};
 	use frame_system::pallet_prelude::*;
+	use sp_runtime::traits::Dispatchable;
 
 	#[pallet::config]
-	pub trait Config: pallet_timestamp::Config + frame_system::Config {
+	pub trait Config: frame_system::Config + pallet_timestamp::Config {
+		
 		/// The identifier type for an authority.
 		type AuthorityId: Member
 			+ Parameter
 			+ RuntimeAppPublic
 			+ MaybeSerializeDeserialize
 			+ MaxEncodedLen;
-		
-		// type TEST: Member
-		// + Parameter
-		// + RuntimeAppPublic
-		// + MaybeSerializeDeserialize
-		// + MaxEncodedLen;
 
-		/// the identifier for an authority's paillier encryption key
-		type PEK: Member
-			+ Parameter
-			+ MaybeSerializeDeserialize;
+		/// something that provides parameters for identity based encryption
+		type IBEParamProvider: pallet_etf::IBEParamProvider;
 
 		/// The maximum number of authorities that the pallet can hold.
 		type MaxAuthorities: Get<u32>;
@@ -164,28 +180,8 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 
-		// fn offchain_worker(n: BlockNumberFor<T>) {
-		// 	// if you are a validator, try to recover your shares
-		// 	if sp_io::offchain::is_validator() {
-		// 		// Self::acss();
-		// 		let signer = Signer::<T, T::AuthorityId>::all_accounts();
-
-		// 		if !signer.can_sign() {
-		// 			log::warn!(
-		// 				target: LOG_TARGET,
-		// 				"Skipping offchain worker because no local account is available."
-		// 			);
-		// 			return;
-		// 		}
-
-		// 		// otherwise, we run the ACSS::Restore algorithm
-		// 		// and then send a signed transaction containing your 
-		// 	}
-		// }
-
 		fn on_initialize(_: BlockNumberFor<T>) -> Weight {
 			if let Some(predigest) = Self::current_predigest_from_digests() {
-
 				let new_secret = predigest.secret;
 				let new_slot = predigest.slot;
 
@@ -231,12 +227,6 @@ pub mod pallet {
 	pub(super) type Authorities<T: Config> =
 		StorageValue<_, BoundedVec<T::AuthorityId, T::MaxAuthorities>, ValueQuery>;
 
-	/// the current authority set's paillier encryption keys
-	#[pallet::storage]
-	#[pallet::getter(fn paillier_authorities)]
-	pub(super) type PaillierAuthorities<T: Config> =
-		StorageValue<_, BoundedVec<T::PEK, T::MaxAuthorities>, ValueQuery>;
-
 	/// The current slot of this block.
 	///
 	/// This will be set in `on_initialize`.
@@ -260,45 +250,25 @@ pub mod pallet {
 		OpaqueSecret
 	>;
 
-	// serialized capsules (TODO)
-	#[pallet::storage]
-	#[pallet::getter(fn shares)]
-	pub(super) type Shares<T: Config> = StorageMap<
-		_, 
-		Twox64Concat, 
-		EK, 
-		Vec<u8>, 
-		OptionQuery,
-	>;
-
-	/// the (serialized) ACSS Params, generators (G, H) of bls12-381
-	#[pallet::storage]
-	#[pallet::getter(fn acss_params)]
-	pub(super) type ACSSParams<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
-
 	#[pallet::genesis_config]
 	#[derive(frame_support::DefaultNoBound)]
 	pub struct GenesisConfig<T: Config> {
-		pub shares: Vec<(EK, Vec<u8>)>,
-		pub acss_params: Vec<u8>,
-		pub authorities: Vec<(T::AuthorityId, T::PEK)>,
+		pub authorities: Vec<T::AuthorityId>,
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
-			Pallet::<T>::initialize_authorities(&self.authorities
-				.iter()
-				.map(|a| a.0.clone())
-				.collect::<Vec<_>>());
-			Pallet::<T>::initialize_authorities_paillier(&self.authorities
-				.iter()
-				.map(|a| a.1.clone())
-				.collect::<Vec<_>>());
-			Pallet::<T>::initialize_shares(&self.shares);
-			Pallet::<T>::initialize_acss(&self.acss_params);
+			Pallet::<T>::initialize_authorities(&self.authorities);
 		}
 	}
+
+	
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		// TODO
+	}
+
 }
 
 impl<T: Config> Pallet<T> {
@@ -335,49 +305,6 @@ impl<T: Config> Pallet<T> {
 			let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(authorities)
 				.expect("Initial authority set must be less than T::MaxAuthorities");
 			<Authorities<T>>::put(bounded);
-		}
-	}
-
-	/// Initial authorities.
-	///
-	/// The storage will be applied immediately.
-	///
-	/// The authorities length must be equal or less than T::MaxAuthorities.
-	pub fn initialize_authorities_paillier(authorities: &[T::PEK]) {
-		if !authorities.is_empty() {
-			assert!(<PaillierAuthorities<T>>::get().is_empty(), "Paillier Authority keys are already initialized!");
-			let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(authorities)
-				.expect("Initial authority set must be less than T::MaxAuthorities");
-			<PaillierAuthorities<T>>::put(bounded);
-		}
-	}
-
-	/// Initial shares
-	///
-	/// The storage will be applied immediately.
-	///
-	/// The shares length must be equal or less than T::MaxAuthorities.
-	pub fn initialize_shares(shares: &Vec<(EK, Vec<u8>)>) {
-		if !shares.is_empty() {
-			// assert!(<Shares<T>>::keys().is_empty(), "Shares are already initialized!");
-			// let bounded = <BoundedSlice<'_, _, <T as pallet_etf_aura::Config>::MaxAuthorities>>::try_from(shares)
-			// 	.expect("Initial shares amount must be less than T::MaxAuthorities");
-			shares.iter().for_each(|(acct, bytes)| {
-				<Shares<T>>::insert(acct, &bytes);
-			});
-		}
-	}
-
-	/// Initial the ACSS parameters
-	///
-	/// The storage will be applied immediately.
-	///
-	pub fn initialize_acss(bytes: &Vec<u8>) {
-		if !bytes.is_empty() {
-			assert!(<ACSSParams<T>>::get().is_empty(), "ACSS params are already initialized!");
-			// let bounded = <BoundedSlice<'_, _, <T as pallet_etf_aura::Config>::MaxAuthorities>>::try_from(shares)
-			// 	.expect("Initial shares amount must be less than T::MaxAuthorities");
-			<ACSSParams<T>>::put(bytes);
 		}
 	}
 
@@ -466,35 +393,6 @@ impl<T: Config> Pallet<T> {
 		CurrentSlot::<T>::put(new_slot);
 	}
 
-	pub fn acss() {
-		if sp_io::offchain::is_validator() {
-			let signer = Signer::<T, T::AuthorityId>::all_accounts();
-
-			// if !signer.can_sign() {
-			// 	log::warn!(
-			// 		target: LOG_TARGET,
-			// 		"Skipping offchain worker because no local account is available."
-			// 	);
-			// 	return;
-			// }
-
-			// then use the signer to get the ek
-			// then use the ek to get the share (assume 1 per validator on genesis for now)
-			//  run the ACSS::Restore algorithm
-			// and send a signed transaction containing the commitment
-
-			// let ek_ref = StorageValueRef::persistent(b"etf::ek");
-			// if let Ok(Some(ek)) = ek_ref.get::<EK>() {
-			// 	// find your capsule 
-			// 	if let Some(share) = Shares::<T>::get(ek) {
-			// 	// run acss::authenticate 
-			// 	// store in offchain storage	
-			// 	}	
-			// }
-		}
-		// find your public key (from offchain storage)? i don't really love that
-	}
-
 }
 
 impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
@@ -512,8 +410,6 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 		// in our case, this will always happen at the same time as the genesis block
 		let authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
 		Self::initialize_authorities(&authorities);
-		// we will set 'dummy' keys for the genesis session somehow
-		// probably something dumb like ([2;32], [3;32]) or w/e
 	}
 
 	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, _queued_validators: I)
@@ -623,13 +519,57 @@ impl<T: Config> OnTimestampSet<T::Moment> for Pallet<T> {
 	}
 }
 
-pub trait SlotSecretProvider {
-	/// get the latest (current) slot secret
-	fn get() -> Option<OpaqueSecret>;
+// pub trait SlotSecretProvider {
+// 	/// get the latest (current) slot secret
+// 	fn get() -> Option<OpaqueSecret>;
+// }
+
+// impl<T: Config> SlotSecretProvider for Pallet<T> {
+// 	fn get() -> Option<OpaqueSecret> {
+// 		SlotSecrets::<T>::get(Self::current_slot())
+// 	}
+// }
+
+/// represents a timelock ciphertext
+#[derive(Debug, Clone, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo)]
+pub struct Ciphertext {
+	/// the (AES) ciphertext
+	pub ciphertext: BoundedVec<u8, ConstU32<512>>,
+	/// the (AES) nonce
+	pub nonce: BoundedVec<u8, ConstU32<96>>,
+	/// the IBE ciphertext(s): for now we assume a single point in the future is used
+	pub capsule: BoundedVec<u8, ConstU32<512>>,
 }
 
-impl<T: Config> SlotSecretProvider for Pallet<T> {
-	fn get() -> Option<OpaqueSecret> {
-		SlotSecrets::<T>::get(Self::current_slot())
+/// errors for timelock encryption
+pub enum TimelockError {
+	DecryptionFailed,
+	MissingSecret,
+	BoundCallFailure,
+	DecodeFailure,
+}
+
+/// provides timelock encryption using the current slot
+pub trait TimelockEncryptionProvider {
+	/// attempt to decrypt the ciphertext with the current slot secret
+	fn decrypt_current(ciphertext: Ciphertext) -> Result<DecryptionResult, TimelockError>;
+}
+
+impl<T:Config> TimelockEncryptionProvider for Pallet<T> {
+
+	fn decrypt_current(ciphertext: Ciphertext) -> Result<DecryptionResult, TimelockError> {
+		if let Some(secret) = SlotSecrets::<T>::get(Self::current_slot()) {
+			let (_, p, _) = T::IBEParamProvider::get();
+			let pt = DefaultEtfClient::<BfIbe>::decrypt(
+				p, 
+				ciphertext.ciphertext.to_vec(), 
+				ciphertext.nonce.to_vec(), 
+				vec![ciphertext.capsule.to_vec()], 
+				vec![secret.to_vec()],
+			).map_err(|_| TimelockError::DecryptionFailed)?;
+			return Ok(pt);
+		}
+		Err(TimelockError::MissingSecret)
 	}
+
 }

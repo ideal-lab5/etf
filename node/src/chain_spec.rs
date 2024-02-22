@@ -1,11 +1,12 @@
 use node_runtime::{AccountId, RuntimeGenesisConfig, Signature, WASM_BINARY};
 use sc_service::ChainType;
 use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
+use pallet_etf::crypto::Public as ETFId;
 use sp_consensus_etf_aura::PEK;
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use etf_crypto_primitives::dpss::acss::Capsule;
+// use etf_crypto_primitives::dpss::acss::Capsule;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -32,8 +33,8 @@ where
 
 /// Generate an ETF/Aura authority key.
 /// pek_bytes: the paillier encryption key bytes (serialized => hex)
-pub fn authority_keys_from_seed(s: &str, pek_bytes: Vec<u8>) -> ((AuraId, PEK), GrandpaId) {
-	((get_from_seed::<AuraId>(s), pek_bytes), get_from_seed::<GrandpaId>(s))
+pub fn authority_keys_from_seed(s: &str, pek: Vec<u8>) -> (AuraId, GrandpaId, ETFId, PEK) {
+	(get_from_seed::<AuraId>(s), get_from_seed::<GrandpaId>(s), get_from_seed::<ETFId>(s), pek)
 }
 
 // pub fn genesis_shares(hex_bytes: &[u8]) -> Vec<Capsule> {
@@ -113,7 +114,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
-	initial_authorities: Vec<((AuraId, PEK), GrandpaId)>,
+	initial_authorities: Vec<(AuraId, GrandpaId, ETFId, PEK)>,
 	shares: Vec<(Vec<u8>, Vec<u8>)>,
 	acss_params: Vec<u8>,
 	root_key: AccountId,
@@ -127,8 +128,8 @@ fn testnet_genesis(
 		},
 		"aura": {
 			"authorities": initial_authorities.iter().map(|x| (x.0.clone())).collect::<Vec<_>>(),
-			"shares": shares,
-			"acssParams": acss_params,
+			// "shares": shares,
+			// "acssParams": acss_params,
 		},
 		"grandpa": {
 			"authorities": initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect::<Vec<_>>(),
@@ -138,6 +139,7 @@ fn testnet_genesis(
 			"key": Some(root_key),
 		},
 		"etf": {
+			"authorities": initial_authorities.iter().map(|x| (x.2.clone(), x.3.clone())).collect::<Vec<_>>(),
 			"initialIbeParams": array_bytes::hex2bytes_unchecked(
 				"a191b705ef18a6e4e5bd4cc56de0b8f94b1f3c908f3e3fcbd4d1dc12eb85059be7e7d801edc1856c8cfbe6d63a681c1f"),
 			"initialIbePp": array_bytes::hex2bytes_unchecked(

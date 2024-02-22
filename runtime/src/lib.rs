@@ -12,8 +12,11 @@ use sp_api::impl_runtime_apis;
 use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::{
+	generic::Era,
 	DispatchError,
+	SaturatedConversion,
 	create_runtime_str, generic, impl_opaque_keys,
+	traits,
 	traits::{
 		AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, One, Verify,
 	},
@@ -61,6 +64,8 @@ use sp_core::crypto::UncheckedFrom;
 
 // #[cfg(feature = "runtime-benchmarks")]
 // use pallet_contracts::NoopMigration;
+
+// pub mod pallet_etf_aura;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -263,8 +268,11 @@ impl frame_system::Config for Runtime {
 // }
 
 impl pallet_etf_aura::Config for Runtime {
+	// type RuntimeOrigin = RuntimeOrigin;
+	// type PalletsOrigin = OriginCaller;
+	// type RuntimeCall = RuntimeCall;
 	type AuthorityId = AuraId;
-	type PEK = EncryptionKey;
+	type IBEParamProvider = Etf;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<32>;
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
@@ -273,6 +281,18 @@ impl pallet_etf_aura::Config for Runtime {
 	// #[cfg(feature = "experimental")]
 	// type SlotDuration = SLOT_DURATION;
 	// type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Runtime>;
+}
+
+impl pallet_etf::Config for Runtime {
+	// type PalletsOrigin = OriginCaller;
+	// type RuntimeCall = RuntimeCall;
+	// type RuntimeOrigin = RuntimeOrigin;
+	type MaxAuthorities = ConstU32<32>;
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Runtime>;
+	type AuthorityId = pallet_etf::crypto::ETFAuthorityId;
+	type PEK = EncryptionKey;
+	// type SlotSecretProvider = Aura;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -338,12 +358,6 @@ impl pallet_sudo::Config for Runtime {
 
 impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
-impl pallet_etf::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Runtime>;
-	type SlotSecretProvider = Aura;
-}
-
 pub enum AllowBalancesCall {}
 
 impl frame_support::traits::Contains<RuntimeCall> for AllowBalancesCall {
@@ -391,7 +405,7 @@ impl pallet_scheduler::Config for Runtime {
 	type WeightInfo = pallet_scheduler::weights::SubstrateWeightInfo<Runtime>;
 	type OriginPrivilegeCmp = EqualPrivilegeOnly;
 	type Preimages = Preimage;
-	type TlockProvider = Etf;
+	type TlockProvider = Aura;
 }
 
 parameter_types! {
@@ -444,6 +458,60 @@ impl pallet_contracts::Config for Runtime {
 	type Xcm = ();
 }
 
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+where
+    RuntimeCall: From<LocalCall>,
+{
+    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+		call: RuntimeCall,
+       	public: <Signature as Verify>::Signer,
+	    account: AccountId,
+	    nonce: Nonce,
+     ) -> Option<(RuntimeCall, <UncheckedExtrinsic as traits::Extrinsic>::SignaturePayload)> {
+	     let tip = 0;
+	     // take the biggest period possible.
+	     let period =
+		      BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
+	     let current_block = System::block_number()
+		      .saturated_into::<u64>()
+		      // The `System::block_number` is initialized with `n+1`,
+		      // so the actual block number is `n`.
+		      .saturating_sub(1);
+	     let era = Era::mortal(period, current_block);
+	     let extra = (
+		      frame_system::CheckNonZeroSender::<Runtime>::new(),
+		      frame_system::CheckSpecVersion::<Runtime>::new(),
+		      frame_system::CheckTxVersion::<Runtime>::new(),
+		      frame_system::CheckGenesis::<Runtime>::new(),
+		      frame_system::CheckEra::<Runtime>::from(era),
+		      frame_system::CheckNonce::<Runtime>::from(nonce),
+		      frame_system::CheckWeight::<Runtime>::new(),
+		      pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+	     );
+	     let raw_payload = SignedPayload::new(call, extra)
+		      .map_err(|e| {
+			       log::warn!("Unable to create signed payload: {:?}", e);
+		      })
+		      .ok()?;
+	     let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+	     let address = account;
+	     let (call, extra, _) = raw_payload.deconstruct();
+	     Some((call, (sp_runtime::MultiAddress::Id(address), signature, extra)))
+   }
+}
+
+impl frame_system::offchain::SigningTypes for Runtime {
+    type Public = <Signature as traits::Verify>::Signer;
+    type Signature = Signature;
+}
+
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+where
+    RuntimeCall: From<C>,
+{
+    type Extrinsic = UncheckedExtrinsic;
+    type OverarchingCall = RuntimeCall;
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(

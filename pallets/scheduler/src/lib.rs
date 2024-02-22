@@ -107,7 +107,7 @@ use sp_runtime::{
 	BoundedVec, DispatchError, RuntimeDebug,
 };
 use sp_std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, prelude::*};
-use pallet_etf::{Ciphertext, TimelockEncryptionProvider};
+use pallet_etf_aura::{Ciphertext, TimelockEncryptionProvider};
 pub use pallet::*;
 
 /// Just a simple index for naming period tasks.
@@ -831,16 +831,16 @@ impl<T: Config> Pallet<T> {
 
 			if let Some(ref ciphertext) = task.maybe_ciphertext {
 				task.maybe_call = T::TlockProvider::decrypt_current(ciphertext.clone())
-					.map_err(|_| pallet_etf::TimelockError::DecryptionFailed)
+					.map_err(|_| pallet_etf_aura::TimelockError::DecryptionFailed)
 					.and_then(|bare| {
 						if let Ok(call) = <T as Config>::RuntimeCall::decode(&mut bare.message.as_slice()) {
 							Ok(call)
 						} else {
-							Err(pallet_etf::TimelockError::DecryptionFailed)
+							Err(pallet_etf_aura::TimelockError::DecryptionFailed)
 						}
 					})
 					.and_then(|call| T::Preimages::bound(call)
-					.map_err(|_| pallet_etf::TimelockError::DecryptionFailed))
+					.map_err(|_| pallet_etf_aura::TimelockError::DecryptionFailed))
 					.ok();
 			}
 
