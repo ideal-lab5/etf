@@ -18,6 +18,10 @@ log = { version = "0.4.17", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = [
 	"derive",
 ] }
+rand_chacha = { version = "0.3.1", default-features = false}
+
+# curve25519-dalek ={ version = "3", default-features = false, features = ["u64_backend"]}
+
 ark-serialize = { version = "0.4.0", features = [ "derive" ], default-features = false }
 ark-bls12-381 = { version = "0.4.0", features = ["curve"], default-features = false }
 primitive-types = { version = "0.12.1", default-features = false }
@@ -26,7 +30,7 @@ frame-benchmarking = { default-features = false, git = "https://github.com/parit
 frame-support = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 frame-system = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-consensus-etf-aura = { default-features = false, path = "../../primitives/consensus/aura" }
-
+sp-application-crypto = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
@@ -35,18 +39,25 @@ sp-io = { default-features = false, git = "https://github.com/paritytech/polkado
 # curv = { version = "0.11.0", package = "curv-kzen", git = "https://github.com/ideal-lab5/curv", default-features = false }
 # etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main"}
 
-getrandom = { version = "0.2", features = ["js"] }
+# getrandom = { version = "0.2", features = ["js"] }
 
 # etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "dpss-noscale", default-features = false}
-# etf-crypto-primitives = { path = "../../../etf-sdk/etf-crypto-primitives", default-features = false }
-curv = { package = "curv-kzen", path = "../../../curv" , default-features = false, features = ["num-bigint"]}
-# kzen-paillier = { version = "0.4.4", git = "https://github.com/ideal-lab5/rust-paillier", default-features = false }
+etf-crypto-primitives = { path = "../../../etf-sdk/etf-crypto-primitives", default-features = false }
+# kzen-paillier = { git = "https://github.com/ideal-lab5/rust-paillier", default-features = false }
+serde_json = { version = "1.0.108", default-features = false, features = ["alloc"] }
+# ff = { version = "0.13", features = ["derive"] }
+# ff = { path = "../../../ff-zeroize", default-features = false }
+
+# byteorder = { version = "1", default-features = false }
+# curv = { package = "curv-kzen", path = "../../../curv" , default-features = false, features = ["num-bigint"]}
+# kzen-paillier = { package = "kzen-paillier", path = "../../../rust-paillier", default-features = false }
+ark-ff = { version = "0.4.0", default-features = false }
 
 [dev-dependencies]
 frame-support-test = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 pallet-balances = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
+# sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 rand_chacha ="0.3.1"
 ark-std = { version = "0.4.0", default-features = false }
 hex = "0.4.3"
@@ -68,9 +79,13 @@ std = [
 	"ark-bls12-381/std",
 	"sp-consensus-etf-aura/std",
 	"sp-io/std",
-	"curv/std",
+	"sp-application-crypto/std",
+	# "curv/std",
 	# "kzen-paillier/std",
-	# "etf-crypto-primitives/std"
+	"etf-crypto-primitives/std",
+	"serde_json/std",
+	# "byteorder/std",
+	"ark-ff/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

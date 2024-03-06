@@ -399,7 +399,10 @@ where
 			slot,
 			header.hash(),
 			&aux.0, //authorities
+			&vec![], // next authorities
+			etf_crypto_primitives::dpss::acss::ACSSParams::rand(&mut ark_std::test_rng()),// acss params
 			&aux.1, // secret
+			&[2;32], // blinding
 			&aux.2, // generator
 			&self.keystore,
 		).await

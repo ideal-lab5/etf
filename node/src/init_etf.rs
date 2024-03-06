@@ -20,12 +20,15 @@ use std::{
 use crate::errors::Error;
 
 use ark_serialize::CanonicalSerialize;
-use etf_crypto_primitives::dpss::acss::{
-	ACSSParams, 
-	HighThresholdACSS, 
-	WrappedEncryptionKey
+use etf_crypto_primitives::{
+	PaillierEncryptionKey,
+	dpss::acss::{
+		ACSSParams, 
+		HighThresholdACSS, 
+		WrappedEncryptionKey
+	}
 };
-use paillier::EncryptionKey;
+// use paillier::EncryptionKey;
 use ark_ff::UniformRand;
 use ark_bls12_381::Fr;
 use rand_chacha::{
@@ -76,7 +79,7 @@ impl InitEtfCmd {
 			.lines()
 			.map(|data| {
 				let bytes = array_bytes::hex2bytes(&data).unwrap();
-				let ek: EncryptionKey = serde_json::from_slice(&bytes).unwrap();
+				let ek: PaillierEncryptionKey = serde_json::from_slice(&bytes).unwrap();
 				WrappedEncryptionKey(ek)
 			})
 			.collect::<Vec<_>>();

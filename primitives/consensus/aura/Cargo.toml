@@ -27,6 +27,7 @@ sp-inherents = { version = "4.0.0-dev", default-features = false, git = "https:/
 sp-runtime = { version = "24.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
 sp-std = { version = "8.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
 sp-timestamp = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
+sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk", tag = "v1.4.0-rc1" }
 
 [features]
 default = ["std"]
@@ -42,6 +43,7 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 	"sp-timestamp/std",
+	"sp-core/std",
 ]
 
 # Serde support without relying on std features.

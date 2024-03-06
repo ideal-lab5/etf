@@ -1,4 +1,4 @@
-Aura (Authority-round) consensus in substrate.
+ETF-Aura (Authority-round) consensus.
 
 Aura works by having a list of authorities A who are expected to roughly
 agree on the current time. Time is divided up into discrete slots of t

@@ -37,6 +37,7 @@
 //! consensus rounds (via `slots`).
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(missing_docs)]
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use frame_support::{
@@ -57,6 +58,7 @@ use sp_consensus_etf_aura::{
 	OpaqueSecret,
 };
 use sp_runtime::{
+	Perbill,
 	generic::DigestItem,
 	traits::{IsMember, Member, SaturatedConversion, Saturating, Zero, Convert},
 	RuntimeAppPublic,
@@ -77,7 +79,7 @@ use etf_crypto_primitives::{
 	// dpss::acss::Capsule,
 };
 
-// use etf_crypto_primitives::dpss::acss::{Capsule, HighThresholdACSS};
+// use etf_crypto_primitives::dpss::acss::Capsule;
 
 pub mod migrations;
 mod mock;
@@ -110,6 +112,27 @@ impl<T: pallet_timestamp::Config> Get<T::Moment> for MinimumPeriodTimesTwo<T> {
 	}
 }
 
+/// An ETF-Aura consensus digest item with MMR root hash.
+pub struct DepositEtfAuraDigest<T>(sp_std::marker::PhantomData<T>);
+
+impl<T> pallet_mmr::primitives::OnNewRoot<sp_consensus_etf_aura::MmrRootHash> for DepositEtfAuraDigest<T>
+where
+	T: pallet_mmr::Config<Hashing = sp_consensus_etf_aura::MmrHashing>,
+	T: crate::pallet::Config,
+{
+	fn on_new_root(root: &sp_consensus_etf_aura::MmrRootHash) {
+		let digest = sp_runtime::generic::DigestItem::Consensus(
+			sp_consensus_etf_aura::AURA_ENGINE_ID,
+			codec::Encode::encode(&sp_consensus_etf_aura::ConsensusLog::<
+				T::AuthorityId,
+			>::MmrRoot(*root)),
+		);
+		<frame_system::Pallet<T>>::deposit_log(digest);
+	}
+}
+
+type MerkleRootOf<T> = <<T as pallet_mmr::Config>::Hashing as sp_runtime::traits::Hash>::Output;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -122,7 +145,9 @@ pub mod pallet {
 	use sp_runtime::traits::Dispatchable;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + pallet_timestamp::Config {
+	pub trait Config: frame_system::Config 
+		+ pallet_timestamp::Config
+		+ pallet_mmr::Config {
 		
 		/// The identifier type for an authority.
 		type AuthorityId: Member
@@ -136,12 +161,6 @@ pub mod pallet {
 
 		/// The maximum number of authorities that the pallet can hold.
 		type MaxAuthorities: Get<u32>;
-
-		/// The amount of time, in slots, that each epoch should last.
-		/// NOTE: Currently it is not possible to change the epoch duration after
-		/// the chain has started. Attempting to do so will brick block production.
-		#[pallet::constant]
-		type EpochDuration: Get<u64>;
 
 		/// A way to check whether a given validator is disabled and should not be authoring blocks.
 		/// Blocks authored by a disabled validator will lead to a panic as part of this module's
@@ -161,6 +180,22 @@ pub mod pallet {
 		/// another pallet which enforces some limitation on the number of blocks authors can create
 		/// using the same slot.
 		type AllowMultipleBlocksPerSlot: Get<bool>;
+
+		/// the paillier encryption key type
+		type PEK: Member
+			+ Default
+			+ Parameter
+			+ MaybeSerializeDeserialize
+			+ AsRef<[u8]>;
+
+		/// Current leaf version.
+		///
+		/// Specifies the version number added to every leaf that get's appended to the MMR.
+		/// Read more in [`MmrLeafVersion`] docs about versioning leaves.
+		type LeafVersion: Get<MmrLeafVersion>;
+
+		// / the threshold of honest participants required per round
+		// type ThresholdPercent: Get<Perbill>;
 
 		/// The slot duration Aura should run with, expressed in milliseconds.
 		/// The effective value of this type should not change while the chain is running.
@@ -227,6 +262,21 @@ pub mod pallet {
 	pub(super) type Authorities<T: Config> =
 		StorageValue<_, BoundedVec<T::AuthorityId, T::MaxAuthorities>, ValueQuery>;
 
+	#[pallet::storage]
+	pub(super) type NextAuthorities<T: Config> =
+		StorageValue<_, BoundedVec<T::AuthorityId, T::MaxAuthorities>, ValueQuery>;
+
+	/// The current registered authorities (who can participate in the key handoff protocol)
+	#[pallet::storage]
+	pub(super) type RegisteredAuthority<T: Config> =
+		StorageMap<
+			_, 
+			Twox64Concat,
+			T::AuthorityId,
+			T::PEK,
+			ValueQuery
+		>;
+
 	/// The current slot of this block.
 	///
 	/// This will be set in `on_initialize`.
@@ -250,16 +300,32 @@ pub mod pallet {
 		OpaqueSecret
 	>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn ibe_params)]
+	pub(super) type IBEParams<T: Config> = StorageValue<
+		_, (Vec<u8>, Vec<u8>, Vec<u8>), ValueQuery,
+	>;
+
+	/// the (serialized) ACSS Params, generators (G, H) of bls12-381
+	#[pallet::storage]
+	#[pallet::getter(fn acss_params)]
+	pub(super) type ACSSParameters<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
+	
+
 	#[pallet::genesis_config]
 	#[derive(frame_support::DefaultNoBound)]
 	pub struct GenesisConfig<T: Config> {
-		pub authorities: Vec<T::AuthorityId>,
+		pub authorities: Vec<(T::AuthorityId, T::PEK)>,
+		pub initial_shares: Vec<(T::PEK, Vec<u8>)>,
+		pub serialized_acss_params: Vec<u8>,
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
-			Pallet::<T>::initialize_authorities(&self.authorities);
+			// Pallet::<T>::initialize_authorities(&self.authorities.iter().map(|a| a.0.clone()).collect::<Vec<_>>());
+			Pallet::<T>::register_authorities(&self.authorities);
+			// Pallet::<T>::initialize_mmr(&self.initial_shares);
 		}
 	}
 
@@ -267,8 +333,29 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		// TODO
+		// report_equivocation?
 	}
 
+}
+
+use pallet_mmr::{LeafDataProvider, ParentNumberAndHash};
+use sp_consensus_etf_aura::mmr::{MmrLeaf, MmrLeafVersion};
+
+impl<T: Config> LeafDataProvider for Pallet<T> {
+	type LeafData = MmrLeaf<
+		BlockNumberFor<T>,
+		<T as frame_system::Config>::Hash,
+		Vec<u8>,
+	>;
+
+	fn leaf_data() -> Self::LeafData {
+		MmrLeaf {
+			version: T::LeafVersion::get(),
+			parent_number_and_hash: ParentNumberAndHash::<T>::leaf_data(),
+			leaf_data: vec![],
+			// T::ETFDataProvider::extra_data(),
+		}
+	}
 }
 
 impl<T: Config> Pallet<T> {
@@ -301,10 +388,33 @@ impl<T: Config> Pallet<T> {
 	/// The authorities length must be equal or less than T::MaxAuthorities.
 	pub fn initialize_authorities(authorities: &[T::AuthorityId]) {
 		if !authorities.is_empty() {
-			assert!(<Authorities<T>>::get().is_empty(), "Authorities are already initialized!");
+			// assert!(<Authorities<T>>::get().is_empty(), "Authorities are already initialized!");
 			let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(authorities)
 				.expect("Initial authority set must be less than T::MaxAuthorities");
 			<Authorities<T>>::put(bounded);
+		}
+	}
+
+	pub fn register_authorities(authorities: &[(T::AuthorityId, T::PEK)]) {
+		if !authorities.is_empty() {
+			authorities.iter().map(|a| {
+				RegisteredAuthority::<T>::insert(a.0.clone(), &a.1);
+			});
+		}
+	}
+
+	// pub fn initialize_mmr(leaves: &[(T::PEK, Capsule)]) {
+	// 	// let keyset_commitment = binary_merkle_tree::merkle_root::<
+	// 	// 	<T as pallet_mmr::Config>::Hashing,
+	// 	// 	_,
+	// 	// >(beefy_addresses)
+	// 	// .into();
+	// }
+
+	pub fn initialize_acss_params(params: &[u8]) {
+		if !params.is_empty() {
+			assert!(<ACSSParameters<T>>::get().is_empty(), "ACSS params are already initialized!");
+			<ACSSParameters<T>>::put(params);
 		}
 	}
 
@@ -402,12 +512,22 @@ impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
 impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 	type Key = T::AuthorityId;
 
+	#[cfg(feature = "std")]
 	fn on_genesis_session<'a, I: 'a>(validators: I)
 	where
 		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
 	{
-		// Q: Why do we need to initialize the authorities again on genesis, when we have already defined it explicitly?
-		// in our case, this will always happen at the same time as the genesis block
+		log::info!("***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF");
+		let authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
+		Self::initialize_authorities(&authorities);
+	}
+
+	#[cfg(not(feature = "std"))]
+	fn on_genesis_session<'a, I: 'a>(validators: I)
+	where
+		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+	{
+		log::info!("AKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKA");
 		let authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
 		Self::initialize_authorities(&authorities);
 	}
@@ -416,6 +536,7 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 	where
 		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
 	{
+		log::info!("################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################");
 		// instant changes
 		if changed {
 			// TODO: at this point, the round of ACSS must be completed in order to procede

@@ -52,8 +52,9 @@ use super::{
 };
 use ark_bls12_381::Fr;
 use etf_crypto_primitives::{
+	dpss::acss::{ACSSParams, Capsule, HighThresholdACSS, WrappedEncryptionKey},
 	proofs::dleq::DLEQProof,
-	utils::hash_to_g1,
+	utils::{convert_from_bytes, hash_to_g1},
 };
 use rand_chacha::{
 	ChaCha20Rng,
@@ -112,7 +113,10 @@ pub async fn claim_slot<B, P: Pair>(
 	slot: Slot,
 	_block_hash: B::Hash,
 	authorities: &[AuthorityId<P>],
+	next_authorities: &[(AuthorityId<P>, WrappedEncryptionKey)], // TODO: get from runtime API (add to aura API)
+	params: ACSSParams,
 	secret: &[u8;32],
+	blinding_secret: &[u8;32], // TODO: get form Aura API 
 	g: &[u8;48],
 	keystore: &KeystorePtr,
 ) -> Option<(PreDigest, P::Public)> 
@@ -130,6 +134,21 @@ pub async fn claim_slot<B, P: Pair>(
 			let proof = DLEQProof::new(x, pk, generator, id, &mut rng);
 			let mut out = Vec::new();
 			proof.serialize_compressed(&mut out).expect("The proof should be well formatted; qed");
+
+			// produce shares for the next committee
+			// so 1) get next committee ids 2) run acss::reshare 3) build mmr 4) encode mmr root as inherent
+			let next_committee_shares: Vec<Capsule> = 
+				HighThresholdACSS::produce_shares(
+					params.clone(), 
+					convert_from_bytes::<ark_bls12_381::Fr, 32>(secret).unwrap(), 
+					convert_from_bytes::<ark_bls12_381::Fr, 32>(blinding_secret).unwrap(), 
+					&next_authorities.iter().map(|a| a.1.clone()).collect::<Vec<_>>(), 
+					next_authorities.len() as u8, 
+					ark_std::test_rng() // todo: an rng seeded with the newly created randomness
+				);
+
+			panic!("OMG WE DID IT: {:?}", next_committee_shares);
+			
 			let proof_bytes: [u8;224] = out.try_into().unwrap();
 			let pre_digest = PreDigest {
 				slot, 
@@ -386,11 +405,11 @@ where
 	}
 }
 
-// TODO: proper error handling
-/// a helper function to deserialize arkworks elements from bytes
-pub fn convert_from_bytes<E: CanonicalDeserialize, const N: usize>(bytes: &[u8; N]) -> Option<E> {
-	E::deserialize_compressed(&bytes[..]).ok()
-}
+// // TODO: proper error handling
+// /// a helper function to deserialize arkworks elements from bytes
+// pub fn convert_from_bytes<E: CanonicalDeserialize, const N: usize>(bytes: &[u8; N]) -> Option<E> {
+// 	E::deserialize_compressed(&bytes[..]).ok()
+// }
 
 // should it be an error instead?
 /// a helper function to serialize arkworks elements to bytes

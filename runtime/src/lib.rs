@@ -30,6 +30,7 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 use frame_system::{EnsureRoot, EnsureSigned};
 use frame_support::genesis_builder_helper::{build_config, create_default_config};
+use sp_consensus_etf_aura::mmr::{MmrLeaf, MmrLeafVersion};
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
 	construct_runtime, parameter_types,
@@ -245,54 +246,72 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-// parameter_types! {
-// 	pub const Period: u32 = MINUTES;
-// 	pub const Offset: u32 = 0;
-// }
+/// Special `ValidatorIdOf` implementation that is just returning the input as result.
+pub struct ValidatorIdOf;
+impl sp_runtime::traits::Convert<AccountId, Option<AccountId>> for ValidatorIdOf {
+	fn convert(a: AccountId) -> Option<AccountId> {
+		Some(a)
+	}
+}
 
-// impl pallet_session::Config for Runtime {
-// 	type ValidatorId = <Self as frame_system::Config>::AccountId;
-// 	type ValidatorIdOf = pallet_etf::ValidatorOf<Self>;
-// 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-// 	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-// 	type SessionManager = Aura;
-// 	type SessionHandler = <opaque::SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
-// 	type Keys = opaque::SessionKeys;
-// 	type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
-// 	type Event = Event;
-// }
+/// MMR helper types.
+mod mmr {
+	use super::Runtime;
+	pub use pallet_mmr::primitives::*;
 
-// impl pallet_session::historical::Config for Runtime {
-// 	type FullIdentification = pallet_staking::Exposure<AccountId, Balance>;
-// 	type FullIdentificationOf = pallet_staking::ExposureOf<Runtime>;
-// }
+	pub type Leaf = <<Runtime as pallet_mmr::Config>::LeafData as LeafDataProvider>::LeafData;
+	pub type Hashing = <Runtime as pallet_mmr::Config>::Hashing;
+	pub type Hash = <Hashing as sp_runtime::traits::Hash>::Output;
+}
+
+impl pallet_mmr::Config for Runtime {
+	const INDEXING_PREFIX: &'static [u8] = mmr::INDEXING_PREFIX;
+	type Hashing = sp_runtime::traits::Keccak256;
+	type OnNewRoot = pallet_etf_aura::DepositEtfAuraDigest<Runtime>;
+	type WeightInfo = ();
+	type LeafData = pallet_etf_aura::Pallet<Runtime>;
+}
+
+parameter_types! {
+	pub LeafVersion: MmrLeafVersion = MmrLeafVersion::new(0, 0);
+}
 
 impl pallet_etf_aura::Config for Runtime {
-	// type RuntimeOrigin = RuntimeOrigin;
-	// type PalletsOrigin = OriginCaller;
-	// type RuntimeCall = RuntimeCall;
 	type AuthorityId = AuraId;
 	type IBEParamProvider = Etf;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<32>;
+	type PEK = EncryptionKey;
+	// type ThresholdPercent = Perbill(70);
+	type LeafVersion = LeafVersion;	
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
 	// 10 slots ~ 1 minute
-	type EpochDuration = ConstU64<10>;
 	// #[cfg(feature = "experimental")]
 	// type SlotDuration = SLOT_DURATION;
 	// type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Runtime>;
 }
 
+parameter_types! {
+	pub const Period: u32 = MINUTES;
+	pub const Offset: u32 = 0;
+}
+
+impl pallet_session::Config for Runtime {
+	type ValidatorId = <Self as frame_system::Config>::AccountId;
+	type ValidatorIdOf = ValidatorIdOf;
+	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
+	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+	// type SessionManager = Aura;
+	type SessionManager = ();
+	type SessionHandler = <opaque::SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
+	type Keys = opaque::SessionKeys;
+	type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+	type RuntimeEvent = RuntimeEvent;
+}
+
 impl pallet_etf::Config for Runtime {
-	// type PalletsOrigin = OriginCaller;
-	// type RuntimeCall = RuntimeCall;
-	// type RuntimeOrigin = RuntimeOrigin;
-	type MaxAuthorities = ConstU32<32>;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Runtime>;
-	type AuthorityId = pallet_etf::crypto::ETFAuthorityId;
-	type PEK = EncryptionKey;
-	// type SlotSecretProvider = Aura;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -517,6 +536,7 @@ where
 construct_runtime!(
 	pub struct Runtime {
 		System: frame_system,
+		Session: pallet_session,
 		Timestamp: pallet_timestamp,
 		Aura: pallet_etf_aura,
 		Grandpa: pallet_grandpa,

@@ -52,9 +52,11 @@ sp-keyring = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1
 frame-system = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 pallet-transaction-payment = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
 
-etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk/", branch = "main" }
-# paillier = { package="kzen-paillier", git = "https://github.com/ideal-lab5/rust-paillier", default-features = false }
+# etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk/", branch = "dpss-noscale" }
+etf-crypto-primitives = { path = "../../etf-sdk/etf-crypto-primitives" }
+# paillier = { package = 'kzen-paillier', path = '../../rust-paillier', default-features = false }
 rand_chacha = { version = "0.3.1" }
+ark-std = { version = "0.4.0" }
 ark-bls12-381 = { version = "0.4.0", features = ["curve"]}
 ark-ff = { version = "0.4.0"}
 ark-serialize = { version = "0.4.0"}

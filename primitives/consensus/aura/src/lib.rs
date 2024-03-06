@@ -22,9 +22,12 @@
 use codec::{Codec, Decode, Encode};
 use sp_runtime::ConsensusEngineId;
 use sp_std::vec::Vec;
+use sp_core::H256;
+use sp_runtime::traits::{Hash, Keccak256, NumberFor};
 
 pub mod digests;
 pub mod inherents;
+pub mod mmr;
 
 /// the paillier encryption key type
 pub type PEK = Vec<u8>;
@@ -79,6 +82,11 @@ pub type OpaqueProof = [u8;224];
 /// The index of an authority.
 pub type AuthorityIndex = u32;
 
+/// The Hashing used within MMR.
+pub type MmrHashing = Keccak256;
+/// The type used to represent an MMR root hash.
+pub type MmrRootHash = H256;
+
 /// An consensus log item for Aura.
 #[derive(Decode, Encode)]
 pub enum ConsensusLog<AuthorityId: Codec> {
@@ -88,6 +96,9 @@ pub enum ConsensusLog<AuthorityId: Codec> {
 	/// Disable the authority with given index.
 	#[codec(index = 2)]
 	OnDisabled(AuthorityIndex),
+	/// MMR root hash.
+	#[codec(index = 3)]
+	MmrRoot(MmrRootHash),
 }
 
 sp_api::decl_runtime_apis! {

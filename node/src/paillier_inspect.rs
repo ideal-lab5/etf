@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
- 
 use sc_cli::{
     NodeKeyParams,
     SharedParams,
@@ -22,10 +20,13 @@ use sc_cli::{
 };
 use clap::Parser;
 use log::info;
-use etf_crypto_primitives::utils::{
-	paillier_create_keypair, 
-	paillier_create_keys, 
-	KeypairWrapper
+use etf_crypto_primitives::{
+	MinimalDecryptionKey,
+	utils::{
+		paillier_create_keypair, 
+		paillier_create_keys, 
+		KeypairWrapper,
+	}
 };
 use std::{
 	fs,
@@ -65,24 +66,28 @@ impl PaillierInspectCmd {
 	) -> Result<(), Error> {
 		let mut file_data = fs::read(&self.keys).map_err(|_| Error::BadFile)?;
 		if let Ok(kp_bytes) = array_bytes::hex2bytes(file_data) {
-			// recover only the public key
 			let kp: etf_crypto_primitives::utils::KeypairWrapper = 
 				serde_json::from_slice(&kp_bytes)
 					.map_err(|_| Error::WriteError)?;
+			// recover only the public key
 			let bytes = serde_json::to_vec(&kp.ek).unwrap();
 			let file_data = array_bytes::bytes2hex("", bytes).into_bytes();
 
 			match &self.output {
-				Some(file) => fs::write(file, file_data).map_err(|_| Error::BadFile)?,
+				Some(file) => {
+					let dk = MinimalDecryptionKey::from(&kp.dk);
+					let bytes = serde_json::to_vec(&dk).unwrap();
+					let hex = array_bytes::bytes2hex("", bytes);
+
+					std::io::stdout().write_all(&hex.as_bytes()).map_err(|_| Error::WriteError)?;
+					fs::write(file, file_data).map_err(|_| Error::BadFile)?;
+				},
 				_ => {
 					std::io::stdout()
 						.write_all(b"Failed to locate file, only printing public key")
 						.map_err(|_| Error::WriteError)?;
 				},
-			}		
-			
-			let json = serde_json::to_string(&kp.ek).unwrap();
-			std::io::stdout().write_all(&json.as_bytes()).map_err(|_| Error::WriteError)?;
+			}	
 		}
 		Ok(())
 	}
