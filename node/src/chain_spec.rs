@@ -20,6 +20,8 @@ use etf_crypto_primitives::{
 	}
 };
 
+use curv::arithmetic::traits::Converter;
+
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
@@ -140,7 +142,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 }
 
 fn build_dev_shares(initial_committee: Vec<PaillierEncryptionKey>)
-	-> (Vec<u8>, Vec<(BigInt, Capsule)>)  {
+	-> (Vec<u8>, Vec<Capsule>)  {
 	// generate msks
 	let mut rng = ark_std::test_rng();
 	let msk = Fr::rand(&mut rng);
@@ -158,10 +160,10 @@ fn build_dev_shares(initial_committee: Vec<PaillierEncryptionKey>)
 		params.clone(), 
 		msk, 
 		msk_prime, 
-		&initial_committee.iter().map(|c| WrappedEncryptionKey(c.clone())).collect::<Vec<_>>(), 
+		&initial_committee.iter().map(|c| WrappedEncryptionKey(c.n.to_bytes().clone())).collect::<Vec<_>>(), 
 		initial_committee_threshold as u8, 
 		&mut rng,
-	).into_iter().map(|s| (s.ek_n.clone(), s)).collect::<Vec<_>>();
+	);
 	(params_bytes, shares)
 }
 
@@ -185,7 +187,7 @@ fn testnet_genesis(
 		},
 		"aura": {
 			"authorities": initial_authorities.iter().map(|x| (x.0.clone(), x.2.clone())).collect::<Vec<_>>(),
-			// "initialShares": shares,
+			"initialShares": shares,
 			"serializedAcssParams": acss_params,
 		},
 		"grandpa": {

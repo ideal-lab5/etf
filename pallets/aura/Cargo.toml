@@ -30,6 +30,7 @@ sp-std = { default-features = false, git = "https://github.com/paritytech/polkad
 # etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main"}
 etf-crypto-primitives = { path = "../../../etf-sdk/etf-crypto-primitives", default-features = false }
 
+binary-merkle-tree = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 pallet-etf = { default-features = false, path = '../etf' }
 sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 pallet-mmr = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
@@ -54,5 +55,6 @@ std = [
 	"pallet-etf/std",
 	"etf-crypto-primitives/std",
 	"pallet-mmr/std",
+	"binary-merkle-tree/std"
 ]
 try-runtime = ["frame-support/try-runtime"]

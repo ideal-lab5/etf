@@ -28,6 +28,9 @@ use etf_crypto_primitives::{
 		WrappedEncryptionKey
 	}
 };
+
+use curv::arithmetic::traits::Converter;
+
 // use paillier::EncryptionKey;
 use ark_ff::UniformRand;
 use ark_bls12_381::Fr;
@@ -80,7 +83,7 @@ impl InitEtfCmd {
 			.map(|data| {
 				let bytes = array_bytes::hex2bytes(&data).unwrap();
 				let ek: PaillierEncryptionKey = serde_json::from_slice(&bytes).unwrap();
-				WrappedEncryptionKey(ek)
+				WrappedEncryptionKey(ek.n.to_bytes())
 			})
 			.collect::<Vec<_>>();
 

@@ -620,13 +620,17 @@ impl_runtime_apis! {
 	}
 
 	
-	impl sp_consensus_etf_aura::AuraApi<Block, AuraId> for Runtime {
+	impl sp_consensus_etf_aura::AuraApi<Block, AuraId, Vec<u8>> for Runtime {
 		fn slot_duration() -> sp_consensus_etf_aura::SlotDuration {
 			sp_consensus_etf_aura::SlotDuration::from_millis(1000)
 		}
 
 		fn authorities() -> Vec<AuraId> {
 			SubstrateTest::authorities().into_iter().map(AuraId::from).collect()
+		}
+
+		fn next_authorities() -> Vec<(AuraId, Vec<u8>)> {
+			vec![]
 		}
 
 		fn secret() -> [u8;32] {

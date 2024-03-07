@@ -61,6 +61,7 @@ use pallet_contracts::chain_extension::{
     RetVal,
     SysConfig,
 };
+use etf_crypto_primitives::dpss::acss::WrappedEncryptionKey;
 use sp_core::crypto::UncheckedFrom;
 
 // #[cfg(feature = "runtime-benchmarks")]
@@ -281,7 +282,7 @@ impl pallet_etf_aura::Config for Runtime {
 	type IBEParamProvider = Etf;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<32>;
-	type PEK = EncryptionKey;
+	type PEK = WrappedEncryptionKey;
 	// type ThresholdPercent = Perbill(70);
 	type LeafVersion = LeafVersion;	
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
@@ -668,13 +669,17 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl sp_consensus_etf_aura::AuraApi<Block, AuraId> for Runtime {
+	impl sp_consensus_etf_aura::AuraApi<Block, AuraId, WrappedEncryptionKey> for Runtime {
 		fn slot_duration() -> sp_consensus_etf_aura::SlotDuration {
 			sp_consensus_etf_aura::SlotDuration::from_millis(Aura::slot_duration())
 		}
 
 		fn authorities() -> Vec<AuraId> {
 			Aura::authorities().into_inner()
+		}
+
+		fn next_authorities() -> Vec<(AuraId, WrappedEncryptionKey)> {
+			Aura::next_authorities().into_inner()
 		}
 
 		fn secret() -> [u8;32] {

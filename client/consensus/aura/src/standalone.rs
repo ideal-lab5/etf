@@ -70,7 +70,7 @@ where
 	A: Codec,
 	B: BlockT,
 	C: AuxStore + ProvideRuntimeApi<B> + UsageProvider<B>,
-	C::Api: AuraApi<B, A>,
+	C::Api: AuraApi<B, A, WrappedEncryptionKey>,
 {
 	slot_duration_at(client, client.usage_info().chain.best_hash)
 }
@@ -81,7 +81,7 @@ where
 	A: Codec,
 	B: BlockT,
 	C: AuxStore + ProvideRuntimeApi<B>,
-	C::Api: AuraApi<B, A>,
+	C::Api: AuraApi<B, A, WrappedEncryptionKey>,
 {
 	client.runtime_api().slot_duration(block_hash).map_err(|err| err.into())
 }
@@ -134,20 +134,19 @@ pub async fn claim_slot<B, P: Pair>(
 			let proof = DLEQProof::new(x, pk, generator, id, &mut rng);
 			let mut out = Vec::new();
 			proof.serialize_compressed(&mut out).expect("The proof should be well formatted; qed");
-
 			// produce shares for the next committee
-			// so 1) get next committee ids 2) run acss::reshare 3) build mmr 4) encode mmr root as inherent
-			let next_committee_shares: Vec<Capsule> = 
-				HighThresholdACSS::produce_shares(
-					params.clone(), 
-					convert_from_bytes::<ark_bls12_381::Fr, 32>(secret).unwrap(), 
-					convert_from_bytes::<ark_bls12_381::Fr, 32>(blinding_secret).unwrap(), 
-					&next_authorities.iter().map(|a| a.1.clone()).collect::<Vec<_>>(), 
-					next_authorities.len() as u8, 
-					ark_std::test_rng() // todo: an rng seeded with the newly created randomness
-				);
+			// // so 1) get next committee ids 2) run acss::reshare 3) build mmr 4) encode mmr root as inherent
+			// let next_committee_shares: Vec<Capsule> = 
+			// 	HighThresholdACSS::produce_shares(
+			// 		params.clone(), 
+			// 		convert_from_bytes::<ark_bls12_381::Fr, 32>(secret).unwrap(), 
+			// 		convert_from_bytes::<ark_bls12_381::Fr, 32>(blinding_secret).unwrap(), 
+			// 		&next_authorities.iter().map(|a| a.1.clone()).collect::<Vec<_>>(), 
+			// 		next_authorities.len() as u8, 
+			// 		ark_std::test_rng() // todo: an rng seeded with the newly created randomness
+			// 	);
 
-			panic!("OMG WE DID IT: {:?}", next_committee_shares);
+			// panic!("OMG WE DID IT: {:?}", next_committee_shares);
 			
 			let proof_bytes: [u8;224] = out.try_into().unwrap();
 			let pre_digest = PreDigest {
@@ -266,7 +265,7 @@ where
 	A: Codec + Debug,
 	B: BlockT,
 	C: ProvideRuntimeApi<B>,
-	C::Api: AuraApi<B, A>,
+	C::Api: AuraApi<B, A, WrappedEncryptionKey>,
 {
 	let runtime_api = client.runtime_api();
 
@@ -305,7 +304,7 @@ where
 	A: Codec + Debug,
 	B: BlockT,
 	C: ProvideRuntimeApi<B>,
-	C::Api: AuraApi<B, A>,
+	C::Api: AuraApi<B, A, WrappedEncryptionKey>,
 {
 	client
 		.runtime_api()

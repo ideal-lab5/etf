@@ -54,6 +54,8 @@ use sp_inherents::CreateInherentDataProviders;
 use sp_keystore::KeystorePtr;
 use sp_runtime::traits::{Block as BlockT, Header, Member, NumberFor};
 
+use etf_crypto_primitives::dpss::acss::WrappedEncryptionKey;
+
 mod import_queue;
 pub mod standalone;
 
@@ -73,6 +75,14 @@ pub use sp_consensus_etf_aura::{
 const LOG_TARGET: &str = "aura";
 
 type AuthorityId<P> = <P as Pair>::Public;
+
+type EncryptionKey = WrappedEncryptionKey;
+struct EtfAuxData<AuthorityId> {
+	authorities: Vec<AuthorityId>,
+	secret: [u8;32],
+	ibe_params: [u8;48],
+	next_authorities: Vec<(AuthorityId, EncryptionKey)>
+}
 
 /// Run `AURA` in a compatibility mode.
 ///
@@ -178,7 +188,7 @@ where
 	P::Signature: TryFrom<Vec<u8>> + Member + Codec,
 	B: BlockT,
 	C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
-	C::Api: AuraApi<B, AuthorityId<P>>,
+	C::Api: AuraApi<B, AuthorityId<P>, WrappedEncryptionKey>,
 	SC: SelectChain<B>,
 	I: BlockImport<B> + Send + Sync + 'static,
 	PF: Environment<B, Error = Error> + Send + Sync + 'static,
@@ -274,12 +284,12 @@ pub fn build_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
 	SyncOracle = SO,
 	JustificationSyncLink = L,
 	Claim = (PreDigest, P::Public),
-	AuxData = (Vec<AuthorityId<P>>, [u8;32], [u8;48]),
+	AuxData = EtfAuxData<AuthorityId<P>>,
 >
 where
 	B: BlockT,
 	C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
-	C::Api: AuraApi<B, AuthorityId<P>>,
+	C::Api: AuraApi<B, AuthorityId<P>, WrappedEncryptionKey>,
 	PF: Environment<B, Error = Error> + Send + Sync + 'static,
 	PF::Proposer: Proposer<B, Error = Error>,
 	P: Pair,
@@ -330,7 +340,7 @@ impl<B, C, E, I, P, Error, SO, L, BS> sc_consensus_slots::SimpleSlotWorker<B>
 where
 	B: BlockT,
 	C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-	C::Api: AuraApi<B, AuthorityId<P>>,
+	C::Api: AuraApi<B, AuthorityId<P>, WrappedEncryptionKey>,
 	E: Environment<B, Error = Error> + Send + Sync,
 	E::Proposer: Proposer<B, Error = Error>,
 	I: BlockImport<B> + Send + Sync + 'static,
@@ -349,7 +359,7 @@ where
 		Pin<Box<dyn Future<Output = Result<E::Proposer, ConsensusError>> + Send + 'static>>;
 	type Proposer = E::Proposer;
 	type Claim = (PreDigest, P::Public);
-	type AuxData = (Vec<AuthorityId<P>>, [u8;32], [u8;48]);
+	type AuxData = EtfAuxData<AuthorityId<P>>;
 
 	fn logging_target(&self) -> &'static str {
 		"aura"
@@ -360,33 +370,48 @@ where
 	}
 
 	fn aux_data(&self, header: &B::Header, _slot: Slot) -> Result<Self::AuxData, ConsensusError> {
-		let secret = secret(
+		// let secret = secret(
+		// 	self.client.as_ref(),
+		// 	header.hash(),
+		// 	*header.number(),
+		// 	&self.compatibility_mode,
+		// )?;
+		// let authorities = authorities(
+		// 	self.client.as_ref(),
+		// 	header.hash(),
+		// 	*header.number() + 1u32.into(),
+		// 	&self.compatibility_mode,
+		// )?;
+		// let ibe_params = ibe_params(
+		// 	self.client.as_ref(),
+		// 	header.hash(),
+		// 	*header.number(),
+		// 	&self.compatibility_mode,
+		// )?;
+		// let next_authorities = next_authorities(
+		// 	self.client.as_ref(),
+		// 	header.hash(),
+		// 	*header.number(),
+		// 	&self.compatibility_mode,
+		// );
+		let aux_data = try_load_aux_data(
 			self.client.as_ref(),
 			header.hash(),
 			*header.number(),
 			&self.compatibility_mode,
 		)?;
-		let authorities = authorities(
-			self.client.as_ref(),
-			header.hash(),
-			*header.number() + 1u32.into(),
-			&self.compatibility_mode,
-		)?;
-		let ibe_params = ibe_params(
-			self.client.as_ref(),
-			header.hash(),
-			*header.number(),
-			&self.compatibility_mode,
-		)?;
-		Ok((
-			authorities, 
-			secret, 
-			ibe_params.try_into().expect("A generator should be known; qed;"),
-		))
+		Ok(aux_data)
+		// 	(
+		// 	authorities, 
+		// 	secret, 
+		// 	ibe_params.try_into().expect("A generator should be known; qed;"),
+		// 	next_authorities,
+		// )
+	// )
 	}
 
-	fn authorities_len(&self, authorities: &Self::AuxData) -> Option<usize> {
-		Some(authorities.0.len())
+	fn authorities_len(&self, aux_data: &Self::AuxData) -> Option<usize> {
+		Some(aux_data.authorities.len())
 	}
 
 	async fn claim_slot(
@@ -398,12 +423,12 @@ where
 		crate::standalone::claim_slot::<B, P>(
 			slot,
 			header.hash(),
-			&aux.0, //authorities
-			&vec![], // next authorities
+			&aux.authorities, //authorities
+			aux.next_authorities.as_slice(), // next authorities
 			etf_crypto_primitives::dpss::acss::ACSSParams::rand(&mut ark_std::test_rng()),// acss params
-			&aux.1, // secret
-			&[2;32], // blinding
-			&aux.2, // generator
+			&aux.secret, // secret
+			&aux.secret, // blinding secret
+			&aux.ibe_params,
 			&self.keystore,
 		).await
 	}
@@ -536,6 +561,68 @@ impl<B: BlockT> From<crate::standalone::PreDigestLookupError> for Error<B> {
 	}
 }
 
+fn try_load_aux_data<A, B, C>(
+	client: &C,
+	parent_hash: B::Hash,
+	context_block_number: NumberFor<B>,
+	compatibility_mode: &CompatibilityMode<NumberFor<B>>,
+) -> Result<EtfAuxData<A>, ConsensusError>
+where
+	A: Codec + Debug,
+	B: BlockT,
+	C: ProvideRuntimeApi<B>,
+	C::Api: AuraApi<B, A, WrappedEncryptionKey>,
+{
+	let runtime_api = client.runtime_api();
+
+	match compatibility_mode {
+		CompatibilityMode::None => {},
+		// Use `initialize_block` until we hit the block that should disable the mode.
+		CompatibilityMode::UseInitializeBlock { until } =>
+			if *until > context_block_number {
+				runtime_api
+					.initialize_block(
+						parent_hash,
+						&B::Header::new(
+							context_block_number,
+							Default::default(),
+							Default::default(),
+							parent_hash,
+							Default::default(),
+						),
+					)
+					.map_err(|_| ConsensusError::InvalidAuthoritiesSet)?;
+			},
+	}
+
+	let authorities = runtime_api
+		.authorities(parent_hash)
+		.ok()
+		.ok_or(ConsensusError::InvalidAuthoritiesSet)?;
+
+	// TODO: This is the wrong type of error
+	let s = runtime_api
+		.secret(parent_hash).ok()
+		.ok_or(ConsensusError::Other(Box::new(Error::<B>::InvalidDLEQProof(parent_hash))))?;
+
+	let ibe_params = runtime_api
+		.ibe_params(parent_hash)
+		.ok()
+		.ok_or(ConsensusError::InvalidAuthoritiesSet)?;
+
+	let next_authorities = runtime_api
+		.next_authorities(parent_hash)
+		.ok()
+		.ok_or(ConsensusError::InvalidAuthoritiesSet)?;
+
+	Ok(EtfAuxData { 
+		authorities, 
+		secret: s, 
+		ibe_params: ibe_params.try_into().expect("A generator should be know; qed"), 
+		next_authorities,
+	})
+}
+
 fn authorities<A, B, C>(
 	client: &C,
 	parent_hash: B::Hash,
@@ -546,7 +633,7 @@ where
 	A: Codec + Debug,
 	B: BlockT,
 	C: ProvideRuntimeApi<B>,
-	C::Api: AuraApi<B, A>,
+	C::Api: AuraApi<B, A, WrappedEncryptionKey>,
 {
 	let runtime_api = client.runtime_api();
 
@@ -587,7 +674,7 @@ where
 	A: Codec + Debug,
 	B: BlockT,
 	C: ProvideRuntimeApi<B>,
-	C::Api: AuraApi<B, A>,
+	C::Api: AuraApi<B, A, WrappedEncryptionKey>,
 {
 	let runtime_api = client.runtime_api();
 
@@ -627,7 +714,7 @@ where
 	A: Codec + Debug,
 	B: BlockT,
 	C: ProvideRuntimeApi<B>,
-	C::Api: AuraApi<B, A>,
+	C::Api: AuraApi<B, A, WrappedEncryptionKey>,
 {
 	let runtime_api = client.runtime_api();
 	match compatibility_mode {

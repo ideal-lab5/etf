@@ -79,7 +79,8 @@ use etf_crypto_primitives::{
 	// dpss::acss::Capsule,
 };
 
-// use etf_crypto_primitives::dpss::acss::Capsule;
+#[cfg(feature = "std")]
+use etf_crypto_primitives::dpss::acss::Capsule;
 
 pub mod migrations;
 mod mock;
@@ -215,6 +216,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 
+		#[cfg(feature = "std")]
 		fn on_initialize(_: BlockNumberFor<T>) -> Weight {
 			if let Some(predigest) = Self::current_predigest_from_digests() {
 				let new_secret = predigest.secret;
@@ -263,8 +265,9 @@ pub mod pallet {
 		StorageValue<_, BoundedVec<T::AuthorityId, T::MaxAuthorities>, ValueQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn next_authorities)]
 	pub(super) type NextAuthorities<T: Config> =
-		StorageValue<_, BoundedVec<T::AuthorityId, T::MaxAuthorities>, ValueQuery>;
+		StorageValue<_, BoundedVec<(T::AuthorityId, T::PEK), T::MaxAuthorities>, ValueQuery>;
 
 	/// The current registered authorities (who can participate in the key handoff protocol)
 	#[pallet::storage]
@@ -316,16 +319,16 @@ pub mod pallet {
 	#[derive(frame_support::DefaultNoBound)]
 	pub struct GenesisConfig<T: Config> {
 		pub authorities: Vec<(T::AuthorityId, T::PEK)>,
-		pub initial_shares: Vec<(T::PEK, Vec<u8>)>,
+		pub initial_shares: Vec<Capsule>,
 		pub serialized_acss_params: Vec<u8>,
 	}
 
+	#[cfg(feature = "std")]
 	#[pallet::genesis_build]
 	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
-			// Pallet::<T>::initialize_authorities(&self.authorities.iter().map(|a| a.0.clone()).collect::<Vec<_>>());
 			Pallet::<T>::register_authorities(&self.authorities);
-			// Pallet::<T>::initialize_mmr(&self.initial_shares);
+			Pallet::<T>::initialize_mmr(&self.initial_shares);
 		}
 	}
 
@@ -398,18 +401,22 @@ impl<T: Config> Pallet<T> {
 	pub fn register_authorities(authorities: &[(T::AuthorityId, T::PEK)]) {
 		if !authorities.is_empty() {
 			authorities.iter().map(|a| {
-				RegisteredAuthority::<T>::insert(a.0.clone(), &a.1);
+				RegisteredAuthority::<T>::insert(a.0.clone(), &a.1.clone());
 			});
+			let bounded = <BoundedSlice<'_, _, T::MaxAuthorities>>::try_from(authorities)
+				.expect("Initial authority set must be less than T::MaxAuthorities");
+			NextAuthorities::<T>::put(bounded);
 		}
 	}
 
-	// pub fn initialize_mmr(leaves: &[(T::PEK, Capsule)]) {
-	// 	// let keyset_commitment = binary_merkle_tree::merkle_root::<
-	// 	// 	<T as pallet_mmr::Config>::Hashing,
-	// 	// 	_,
-	// 	// >(beefy_addresses)
-	// 	// .into();
-	// }
+	#[cfg(feature = "std")]
+	pub fn initialize_mmr(leaves: &[Capsule]) {
+		let keyset_commitment = binary_merkle_tree::merkle_root::<
+			<T as pallet_mmr::Config>::Hashing,
+			_,
+		>(leaves)
+		.into();
+	}
 
 	pub fn initialize_acss_params(params: &[u8]) {
 		if !params.is_empty() {
@@ -517,17 +524,6 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 	where
 		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
 	{
-		log::info!("***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF***********************ASDFKLADSFKJLHASDFLKJHASDFJLKASDFLKJASDFLKJASDFJLK:ASDF");
-		let authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
-		Self::initialize_authorities(&authorities);
-	}
-
-	#[cfg(not(feature = "std"))]
-	fn on_genesis_session<'a, I: 'a>(validators: I)
-	where
-		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
-	{
-		log::info!("AKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKAAKAKAKAKAKAKA");
 		let authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
 		Self::initialize_authorities(&authorities);
 	}
@@ -536,7 +532,6 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 	where
 		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
 	{
-		log::info!("################################################################################################################################################################################################################################################################################################################################################################################################################################################################################################");
 		// instant changes
 		if changed {
 			// TODO: at this point, the round of ACSS must be completed in order to procede

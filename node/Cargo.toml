@@ -1,8 +1,8 @@
 [package]
 name = "node"
 version = "4.0.0-dev"
-description = "A fresh FRAME-based Substrate node, ready for hacking."
-authors = ["Substrate DevHub <https://github.com/substrate-developer-hub>"]
+description = "An ETF node"
+authors = ["Ideal Labs <https://github.com/ideal-lab5>"]
 homepage = "https://substrate.io/"
 edition = "2021"
 license = "MIT-0"
@@ -79,6 +79,7 @@ frame-benchmarking-cli = { git = "https://github.com/paritytech/polkadot-sdk.git
 node-runtime = { version = "4.0.0-dev", path = "../runtime" }
 pallet-etf-aura = { default-features = false, path = "../pallets/aura"  }
 pallet-etf = { default-features = false, path = "../pallets/etf"  }
+curv = { package = "curv-kzen", path = "../../curv", features = ["num-bigint"]}
 
 # CLI-specific dependencies
 try-runtime-cli = { optional = true, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }

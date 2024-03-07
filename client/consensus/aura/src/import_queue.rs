@@ -44,6 +44,8 @@ use sp_runtime::{
 	traits::{Block as BlockT, Header, NumberFor},
 	DigestItem,
 };
+
+use etf_crypto_primitives::dpss::acss::WrappedEncryptionKey;
 use std::{fmt::Debug, marker::PhantomData, sync::Arc};
 
 /// check a header has been signed by the right key. If the slot is too far in the future, an error
@@ -171,7 +173,7 @@ where
 impl<B: BlockT, C, P, CIDP> Verifier<B> for AuraVerifier<C, P, CIDP, NumberFor<B>>
 where
 	C: ProvideRuntimeApi<B> + Send + Sync + sc_client_api::backend::AuxStore,
-	C::Api: BlockBuilderApi<B> + AuraApi<B, AuthorityId<P>> + ApiExt<B>,
+	C::Api: BlockBuilderApi<B> + AuraApi<B, AuthorityId<P>, WrappedEncryptionKey> + ApiExt<B>,
 	P: Pair,
 	P::Public: Codec + Debug,
 	P::Signature: Codec,
@@ -363,7 +365,7 @@ pub fn import_queue<P, Block, I, C, S, CIDP>(
 ) -> Result<DefaultImportQueue<Block>, sp_consensus::Error>
 where
 	Block: BlockT,
-	C::Api: BlockBuilderApi<Block> + AuraApi<Block, AuthorityId<P>> + ApiExt<Block>,
+	C::Api: BlockBuilderApi<Block> + AuraApi<Block, AuthorityId<P>, WrappedEncryptionKey> + ApiExt<Block>,
 	C: 'static
 		+ ProvideRuntimeApi<Block>
 		+ BlockOf

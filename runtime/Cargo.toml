@@ -1,9 +1,9 @@
 [package]
 name = "node-runtime"
 version = "4.0.0-dev"
-description = "A fresh FRAME-based Substrate node, ready for hacking."
-authors = ["Substrate DevHub <https://github.com/substrate-developer-hub>"]
-homepage = "https://substrate.io/"
+description = "The ETF network runtime"
+authors = ["Ideal Labs <https://github.com/ideal-lab5>"]
+homepage = "https://idealabs.network"
 edition = "2021"
 license = "MIT-0"
 publish = false
@@ -60,6 +60,7 @@ pallet-etf-aura = { default-features = false, path = "../pallets/aura"  }
 pallet-scheduler = { default-features = false, path = "../pallets/scheduler"  }
 pallet-etf = { version = "4.0.0-dev", default-features = false, path = "../pallets/etf" }
 node-primitives = { path = "../node-primitives", default-features = false }
+etf-crypto-primitives = { path = "../../etf-sdk/etf-crypto-primitives", default-features = false}
 
 # used for contracts
 pallet-contracts = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
@@ -112,6 +113,7 @@ std = [
 	"pallet-session/std",
 	"pallet-scheduler/std",
 	"pallet-mmr/std",
+	"etf-crypto-primitives/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

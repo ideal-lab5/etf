@@ -79,6 +79,8 @@ pub type OpaqueSecret = [u8;48];
 /// the (bounded) opaque type for DLEQ proofs
 pub type OpaqueProof = [u8;224];
 
+pub type OpaqueEncryptionKey = Vec<u8>;
+
 /// The index of an authority.
 pub type AuthorityIndex = u32;
 
@@ -103,7 +105,7 @@ pub enum ConsensusLog<AuthorityId: Codec> {
 
 sp_api::decl_runtime_apis! {
 	/// API necessary for block authorship with aura.
-	pub trait AuraApi<AuthorityId: Codec> {
+	pub trait AuraApi<AuthorityId: Codec, EncryptionKey: Codec> {
 		/// Returns the slot duration for Aura.
 		///
 		/// Currently, only the value provided by this type at genesis will be used.
@@ -111,6 +113,9 @@ sp_api::decl_runtime_apis! {
 
 		/// Return the current set of authorities.
 		fn authorities() -> Vec<AuthorityId>;
+
+		/// Return the current set of authorities.
+		fn next_authorities() -> Vec<(AuthorityId, EncryptionKey)>;
 
 		/// return the secret for the current slot
 		fn secret() -> [u8;32];
