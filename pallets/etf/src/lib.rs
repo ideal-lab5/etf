@@ -27,6 +27,7 @@ use ark_serialize::CanonicalDeserialize;
 
 use etf_crypto_primitives::{
 	client::etf_client::{
+		AesIbeCt,
 		DefaultEtfClient, 
 		EtfClient,
 		DecryptionResult,

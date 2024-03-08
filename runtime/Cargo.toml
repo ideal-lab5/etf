@@ -57,6 +57,8 @@ frame-system-benchmarking = { version = "4.0.0-dev", default-features = false, g
 # Local Dependencies
 pallet-etf-aura = { default-features = false, path = "../pallets/aura"  }
 pallet-scheduler = { default-features = false, path = "../pallets/scheduler"  }
+pallet-otp = { default-features = false, path = "../pallets/otp"  }
+pallet-proxy = { default-features = false, path = "../pallets/proxy"  }
 pallet-etf = { version = "4.0.0-dev", default-features = false, path = "../pallets/etf" }
 node-primitives = { path = "../node-primitives", default-features = false }
 
@@ -108,7 +110,8 @@ std = [
 	"pallet-contracts/std",
 	"pallet-contracts-primitives/std",
 	"pallet-preimage/std",
-	"pallet-scheduler/std"
+	"pallet-scheduler/std",
+	"pallet-proxy/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
