@@ -69,7 +69,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 			let ek: PaillierEncryptionKey = serde_json::from_slice(&bytes).unwrap();
 			ek
 	}).collect::<Vec<_>>();
-	let etf_params: (Vec<u8>, Vec<(BigInt, Capsule)>) 
+	let etf_params: (Vec<u8>, Vec<Capsule>) 
 		= build_dev_shares(paillier_encryption_keys);
 
 	Ok(ChainSpec::builder(
@@ -174,7 +174,7 @@ fn session_keys(aura: AuraId, grandpa: GrandpaId) -> SessionKeys {
 /// Configure initial storage state for FRAME modules.
 fn testnet_genesis(
 	initial_authorities: Vec<(AuraId, GrandpaId, PEK)>,
-	shares: Vec<(BigInt, Capsule)>,
+	shares: Vec<Capsule>,
 	acss_params: Vec<u8>,
 	root_key: AccountId,
 	endowed_accounts: Vec<AccountId>,

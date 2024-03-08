@@ -313,6 +313,9 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn acss_params)]
 	pub(super) type ACSSParameters<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	pub(super) type Root<T:Config> = StorageValue<_, MerkleRootOf<T>, ValueQuery>;
 	
 
 	#[pallet::genesis_config]
@@ -411,11 +414,11 @@ impl<T: Config> Pallet<T> {
 
 	#[cfg(feature = "std")]
 	pub fn initialize_mmr(leaves: &[Capsule]) {
-		let keyset_commitment = binary_merkle_tree::merkle_root::<
+		let root = binary_merkle_tree::merkle_root::<
 			<T as pallet_mmr::Config>::Hashing,
 			_,
-		>(leaves)
-		.into();
+		>(leaves);
+		Root::<T>::put(root);
 	}
 
 	pub fn initialize_acss_params(params: &[u8]) {
