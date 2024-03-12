@@ -389,6 +389,7 @@ impl pallet_proxy::Config for Runtime {
 impl pallet_otp::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
+	type TlockProvider = Etf;
 }
 
 pub enum AllowBalancesCall {}

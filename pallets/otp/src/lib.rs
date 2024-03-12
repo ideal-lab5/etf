@@ -26,7 +26,11 @@ use frame_support::{
 	dispatch::GetDispatchInfo,
 };
 use sp_runtime::{DispatchResult, traits::Dispatchable};
-
+use ckb_merkle_mountain_range::{
+	MerkleProof,
+    MMR, Merge, Result as MMRResult,
+    util::{MemMMR, MemStore},
+};
 // use rand_chacha::{
 //     ChaCha20Rng,
 //     rand_core::SeedableRng,
@@ -37,6 +41,8 @@ use etf_crypto_primitives::{
     client::etf_client::{AesIbeCt, DefaultEtfClient, EtfClient},
     utils::{convert_to_bytes, hash_to_g1},
 };
+
+use pallet_etf::{Ciphertext, TimelockEncryptionProvider};
 // use ark_serialize::CanonicalDeserialize;
 
 // use etf_crypto_primitives::{
@@ -52,22 +58,43 @@ use etf_crypto_primitives::{
 
 pub type Name = BoundedVec<u8, ConstU32<32>>;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Encode, Decode, TypeInfo)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Encode, Decode, TypeInfo, serde::Serialize, serde::Deserialize)]
 pub struct OtpProxyDetails<AccountId> {
 	pub address: AccountId,
 	pub root: Vec<u8>,
 }
 
-// /// represents a timelock ciphertext
-// #[derive(Debug, Clone, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo)]
-// pub struct Ciphertext {
-// 	/// the (AES) ciphertext
-// 	pub ciphertext: BoundedVec<u8, ConstU32<512>>,
-// 	/// the (AES) nonce
-// 	pub nonce: BoundedVec<u8, ConstU32<96>>,
-// 	/// the IBE ciphertext(s): for now we assume a single point in the future is used
-// 	pub capsule: BoundedVec<u8, ConstU32<512>>,
-// }
+// #[cfg(feature = "std")]
+// use blake2b_rs::{Blake2b, Blake2bBuilder};
+use sp_core::Bytes;
+use sha3::Digest;
+
+#[derive(Eq, PartialEq, Clone, Debug, Default)]
+struct Leaf(pub Vec<u8>);
+impl From<Vec<u8>> for Leaf {
+    fn from(data: Vec<u8>) -> Self {
+        // let mut hasher = new_blake2b();
+        let mut hasher = sha3::Sha3_256::default();
+        // let bytes = serde_json::to_vec(&data).unwrap();
+        hasher.update(&data);
+        let hash = hasher.finalize();
+        Leaf(hash.to_vec().into())
+        // NumberHash(num.into())
+    }
+}
+
+struct MergeLeaves;
+
+impl Merge for MergeLeaves {
+    type Item = Leaf;
+    fn merge(lhs: &Self::Item, rhs: &Self::Item) -> MMRResult<Self::Item> {
+		let mut hasher = sha3::Sha3_256::default();
+        hasher.update(&lhs.0);
+        hasher.update(&rhs.0);
+        let hash = hasher.finalize();
+        Ok(Leaf(hash.to_vec().into()))
+    }
+}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -96,8 +123,8 @@ pub mod pallet {
 			+ IsType<<Self as frame_system::Config>::RuntimeCall>;
 		// / Type representing the weight of this pallet
 		// type WeightInfo: WeightInfo;
-		// / Type representing a service that reads leaked slot secrets
-		// type SlotSecretProvider: SlotSecretProvider;
+		/// something that can decrypt messages locked for the current slot
+		type TlockProvider: TimelockEncryptionProvider;
 	}
 
 	/// a registry to track registered 'usernames' for OTP wallets
@@ -109,27 +136,31 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		OTPProxyCreated
+		OtpProxyCreated,
+		OtpProxyExecuted
 	}
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
+		BadCiphertext,
 		DuplicateName,
+		InvalidOTP,
+		InvalidMerkleProof,
 	}
  
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 
-		/// update the public parameters needed for the IBE scheme
+		/// Vreate a time-based proxy account
 		///
-		/// * `g`: A generator of G1
+		/// * `root`: 
 		///
 		#[pallet::weight(0)]
 		#[pallet::call_index(0)]
 		pub fn create(
 			origin: OriginFor<T>,
-			root: Vec<u8>, // should reall be T::Hash
+			root: Vec<u8>, // should really be T::Hash?
 			name: BoundedVec<u8, ConstU32<32>>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -149,30 +180,51 @@ pub mod pallet {
 
 			let address = pallet_proxy::Pallet::<T>::pure_account(&who, &T::ProxyType::default(), 0, None);
 			Registry::<T>::insert(name, &OtpProxyDetails { address, root });
-			Self::deposit_event(Event::OTPProxyCreated);
+			Self::deposit_event(Event::OtpProxyCreated);
 
 			Ok(())
 		}
 
+		/// this function probably seems a little odd at first
 		#[pallet::weight(0)]
 		#[pallet::call_index(1)]
 		pub fn proxy(
 			origin: OriginFor<T>,
 			name: BoundedVec<u8, ConstU32<32>>,
-			otp: [u8;6], // 6 digit otp codes? a zkp could be better no?
-			call: sp_std::boxed::Box<<T as Config>::RuntimeCall>,
+			position: u64, // the position of the leaf in the mmr
+			ciphertext: pallet_etf::Ciphertext, // the leaf of the mmr
+			proof: Vec<Vec<u8>>,
+			call: sp_std::boxed::Box<<T as pallet_proxy::Config>::RuntimeCall>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			// Q: can we perform timelock decryption here or should it be offchain only?
-			// let ct = DefaultEtfClient::<BfIbe>::decrypt(
-			// 	ibe_params.1.clone(),
-			// 	ibe_params.2.clone(),
-			// 	&otp_code.as_bytes(), 
-			// 	vec![id],
-			// 	1,
-			// 	&mut rng,
-			// ).unwrap();
+			if let Some(proxy_details) = Registry::<T>::get(name) {
+
+				// we expect that this value is the correct OTP code
+				let plaintext = T::TlockProvider::decrypt_current(ciphertext)
+					.map_err(|_| Error::<T>::BadCiphertext)?;
+				// verify the merkle proof
+				let leaves: Vec<Leaf> = proof.clone().into_iter().map(|p| Leaf::from(p)).collect::<Vec<_>>();
+				let merkle_proof = MerkleProof::<Leaf, MergeLeaves>::new(proof.len() as u64, leaves);
+				let root = Leaf::from(proxy_details.root);
+
+				ensure!(
+					merkle_proof.verify(root, vec![(position, Leaf::from(plaintext.message))]).unwrap(),
+					Error::<T>::InvalidMerkleProof,
+				);
+				
+				let signed_origin: T::RuntimeOrigin = frame_system::RawOrigin::Signed(who.clone()).into();
+				let def = pallet_proxy::Pallet::<T>::find_proxy(
+					&proxy_details.address, 
+					None, 
+					Some(T::ProxyType::default())
+				)?;
+				// ensure!(def.delay.is_zero(), Error::<T>::Unannounced);
+				pallet_proxy::Pallet::<T>::do_proxy(def, proxy_details.address, *call);
+				Self::deposit_event(Event::OtpProxyExecuted);
+			} else {
+				// an error
+			}
 
 			Ok(())
 		}

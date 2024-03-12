@@ -38,10 +38,10 @@ use etf_crypto_primitives::{
 use pallet_etf_aura::SlotSecretProvider;
 
 /// represents a timelock ciphertext
-#[derive(Debug, Clone, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo)]
+#[derive(Debug, Clone, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo)] 
 pub struct Ciphertext {
 	/// the (AES) ciphertext
-	pub ciphertext: BoundedVec<u8, ConstU32<512>>,
+	pub ciphertext: BoundedVec<u8, ConstU32<620>>,
 	/// the (AES) nonce
 	pub nonce: BoundedVec<u8, ConstU32<96>>,
 	/// the IBE ciphertext(s): for now we assume a single point in the future is used

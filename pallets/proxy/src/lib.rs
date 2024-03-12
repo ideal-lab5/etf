@@ -299,8 +299,14 @@ pub mod pallet {
 			let pure = Self::pure_account(&who, &proxy_type, index, None);
 			ensure!(!Proxies::<T>::contains_key(&pure), Error::<T>::Duplicate);
 
+			// if anonymous, then set no delegate
+			let delegate = match anonymous {
+				True => None,
+				False => Some(who.clone())
+			};
+
 			let proxy_def =
-				ProxyDefinition { delegate: Some(who.clone()), proxy_type: proxy_type.clone(), delay };
+				ProxyDefinition { delegate: delegate, proxy_type: proxy_type.clone(), delay };
 			let bounded_proxies: BoundedVec<_, T::MaxProxies> =
 				vec![proxy_def].try_into().map_err(|_| Error::<T>::TooMany)?;
 
@@ -771,7 +777,7 @@ impl<T: Config> Pallet<T> {
 		Ok(Proxies::<T>::get(real).0.into_iter().find(f).ok_or(Error::<T>::NotProxy)?)
 	}
 
-	fn do_proxy(
+	pub fn do_proxy(
 		def: ProxyDefinition<T::AccountId, T::ProxyType, BlockNumberFor<T>>,
 		real: T::AccountId,
 		call: <T as Config>::RuntimeCall,

@@ -18,6 +18,7 @@ log = { version = "0.4.17", default-features = false }
 codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = [
 	"derive",
 ] }
+serde = { version = "1.0.188", features = ["alloc", "derive"], default-features = false }
 ark-serialize = { version = "0.4.0", features = [ "derive" ], default-features = false }
 ark-bls12-381 = { version = "0.4.0", features = ["curve"], default-features = false }
 sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
@@ -32,8 +33,13 @@ sp-std = { default-features = false, git = "https://github.com/paritytech/polkad
 sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
 etf-crypto-primitives = {default-features =  false, git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main"}
+ckb-merkle-mountain-range = { version = "0.5.2", default-features = false }
+# blake2b-rs = "0.2.0"
+sha3 = { version = "0.10.8", default-features = false }
+# bytes = { version = "1.4.0", default-features = false }
 
 pallet-proxy = { default-features = false, path = "../proxy" }
+pallet-etf = { default-features = false, path = "../etf"}
 pallet-etf-aura = { default-features = false, path = "../aura"}
 
 [dev-dependencies]
@@ -48,6 +54,7 @@ hex = "0.4.3"
 default = ["std"]
 std = [
 	#"array-bytes",
+	"serde/std",
 	"codec/std",
 	"frame-benchmarking?/std",
 	"frame-support/std",
@@ -63,7 +70,11 @@ std = [
 	"pallet-balances/std",
 	"pallet-etf-aura/std",
 	"pallet-proxy/std",
-	"sp-consensus-etf-aura/std"
+	"pallet-etf/std",
+	"sp-consensus-etf-aura/std",
+	"ckb-merkle-mountain-range/std",
+	"sha3/std",
+	# "bytes/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
