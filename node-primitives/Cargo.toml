@@ -1,21 +1,24 @@
 [package]
 name = "node-primitives"
 version = "2.0.0"
-authors = ["Ideal Labs <driemworks@idealabs.network>"]
+authors.workspace = true
 description = "Substrate node low-level primitives."
-edition = "2021"
+edition.workspace = true
 license = "Apache-2.0"
-homepage = "https://idealabs.network"
-repository = "https://github.com/ideal-lab5/etf"
+homepage = "https://substrate.io"
+repository.workspace = true
 publish = false
+
+[lints]
+workspace = true
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-sp-runtime = { version = "24.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
-sp-core = { version = "21.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
+sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.8.0-rc1" }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.8.0-rc1" }
 
 [features]
-default = [ "std" ]
-std = [ "sp-core/std", "sp-runtime/std" ]
+default = ["std"]
+std = ["sp-core/std", "sp-runtime/std"]
