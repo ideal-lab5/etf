@@ -188,6 +188,8 @@ pub mod pallet {
 		/// *Note:* Ideally use block number where GRANDPA authorities are changed,
 		/// to guarantee the client gets a finality notification for exactly this block.
 		pub genesis_block: Option<BlockNumberFor<T>>,
+		/// (beefy id, commitment, BatchPoK (which technically contains the commitment...))
+		pub genesis_resharing: Vec<(T::BeefyId, Vec<u8>, Vec<u8>)>
 	}
 
 	impl<T: Config> Default for GenesisConfig<T> {
@@ -195,7 +197,7 @@ pub mod pallet {
 			// BEEFY genesis will be first BEEFY-MANDATORY block,
 			// use block number one instead of chain-genesis.
 			let genesis_block = Some(One::one());
-			Self { authorities: Vec::new(), genesis_block }
+			Self { authorities: Vec::new(), genesis_block, genesis_resharing: Vec::new() }
 		}
 	}
 
