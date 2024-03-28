@@ -20,7 +20,7 @@
 
 use beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId;
 use grandpa_primitives::AuthorityId as GrandpaId;
-use node_runtime::{
+use kitchensink_runtime::{
 	constants::currency::*, wasm_binary_unwrap, Block, MaxNominations, SessionKeys, StakerStatus,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -37,7 +37,7 @@ use sp_runtime::{
 	Perbill,
 };
 
-pub use node_runtime::RuntimeGenesisConfig;
+pub use kitchensink_runtime::RuntimeGenesisConfig;
 pub use node_primitives::{AccountId, Balance, Signature};
 
 type AccountPublic = <Signature as Verify>::Signer;
@@ -65,7 +65,7 @@ pub struct Extensions {
 pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig, Extensions>;
 /// Flaming Fir testnet generator
 pub fn flaming_fir_config() -> Result<ChainSpec, String> {
-	ChainSpec::from_json_bytes(&include_bytes!("./res/flaming-fir.json")[..])
+	ChainSpec::from_json_bytes(&include_bytes!("../res/flaming-fir.json")[..])
 }
 
 fn session_keys(
@@ -422,7 +422,7 @@ pub fn testnet_genesis(
 		},
 		"sudo": { "key": Some(root_key.clone()) },
 		"babe": {
-			"epochConfig": Some(node_runtime::BABE_GENESIS_EPOCH_CONFIG),
+			"epochConfig": Some(kitchensink_runtime::BABE_GENESIS_EPOCH_CONFIG),
 		},
 		"society": { "pot": 0 },
 		"assets": {
@@ -438,7 +438,11 @@ pub fn testnet_genesis(
 
 fn development_config_genesis_json() -> serde_json::Value {
 	testnet_genesis(
-		vec![authority_keys_from_seed("Alice")],
+		vec![
+			authority_keys_from_seed("Alice"), 
+			authority_keys_from_seed("Bob"), 
+			authority_keys_from_seed("Charlie")
+		],
 		vec![],
 		get_account_id_from_seed::<sr25519::Public>("Alice"),
 		None,

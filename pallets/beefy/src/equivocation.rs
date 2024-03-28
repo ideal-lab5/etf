@@ -111,6 +111,7 @@ where
 	}
 }
 
+
 /// BEEFY equivocation offence report system.
 ///
 /// This type implements `OffenceReportSystem` such that:
@@ -120,7 +121,6 @@ where
 ///   types implementing `KeyOwnerProofSystem` and `ReportOffence` traits.
 /// - Offence reporter for unsigned transactions is fetched via the the authorship pallet.
 pub struct EquivocationReportSystem<T, R, P, L>(sp_std::marker::PhantomData<(T, R, P, L)>);
-
 /// Equivocation evidence convenience alias.
 pub type EquivocationEvidenceFor<T> = (
 	EquivocationProof<
@@ -271,7 +271,39 @@ impl<T: Config> Pallet<T> {
 				// We don't propagate this. This can never be included on a remote node.
 				.propagate(false)
 				.build()
-		} else {
+		} else if let Call::report_commitment_unsigned { value } = call {
+			// discard equivocation report not coming from the local node
+			match source {
+				TransactionSource::Local | TransactionSource::InBlock => { /* allowed */ },
+				_ => {
+					log::warn!(
+						target: LOG_TARGET,
+						"rejecting unsigned report equivocation transaction because it is not local/in-block."
+					);
+					return InvalidTransaction::Call.into()
+				},
+			}
+
+			T::CommitmentReportSystem::check_evidence(*value)?;
+
+			let longevity =
+				<T::EquivocationReportSystem as OffenceReportSystem<_, _>>::Longevity::get();
+
+			ValidTransaction::with_tag_prefix("BeefyEquivocation")
+				// We assign the maximum priority for any equivocation report.
+				.priority(TransactionPriority::MAX)
+				// // Only one equivocation report for the same offender at the same slot.
+				// .and_provides((
+				// 	equivocation_proof.offender_id().clone(),
+				// 	equivocation_proof.set_id(),
+				// 	*equivocation_proof.round_number(),
+				// ))
+				.longevity(longevity)
+				// We don't propagate this. This can never be included on a remote node.
+				.propagate(false)
+				.build()
+		}
+		else {
 			InvalidTransaction::Call.into()
 		}
 	}
@@ -280,6 +312,8 @@ impl<T: Config> Pallet<T> {
 		if let Call::report_equivocation_unsigned { equivocation_proof, key_owner_proof } = call {
 			let evidence = (*equivocation_proof.clone(), key_owner_proof.clone());
 			T::EquivocationReportSystem::check_evidence(evidence)
+		} else if let Call::report_commitment_unsigned { value } = call {
+			T::CommitmentReportSystem::check_evidence(*value)
 		} else {
 			Err(InvalidTransaction::Call.into())
 		}

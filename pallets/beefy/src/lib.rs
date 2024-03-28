@@ -46,6 +46,7 @@ use sp_consensus_beefy::{
 };
 
 mod default_weights;
+mod dpss;
 mod equivocation;
 #[cfg(test)]
 mod mock;
@@ -55,7 +56,9 @@ mod tests;
 pub use crate::equivocation::{EquivocationOffence, EquivocationReportSystem, TimeSlot};
 pub use pallet::*;
 
-use crate::equivocation::EquivocationEvidenceFor;
+use crate::equivocation::{EquivocationEvidenceFor};
+pub use crate::dpss::CommitmentReportSystem;
+use crate::dpss::CommitmentFor;
 
 const LOG_TARGET: &str = "runtime::beefy";
 
@@ -113,6 +116,17 @@ pub mod pallet {
 			Option<Self::AccountId>,
 			EquivocationEvidenceFor<Self>,
 		>;
+
+		/// The commitment handling subsystem. 
+		/// these aren't really 'offences' in the traditional sense
+		/// because there really isn't anything 'wrong', we're really using this because
+		/// the workflow it uses matches our use case
+		///
+		/// Defines methods to publish, check and process ACSS commitments
+		type CommitmentReportSystem: OffenceReportSystem<
+			Option<Self::AccountId>,
+			CommitmentFor,
+		>;
 	}
 
 	#[pallet::pallet]
@@ -132,6 +146,18 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type NextAuthorities<T: Config> =
 		StorageValue<_, BoundedVec<T::BeefyId, T::MaxAuthorities>, ValueQuery>;
+
+	/// publicly verifiable shares for the current round (a resharing)
+	/// here we assume that they follow the same order as the Authorities storage value vec
+	/// later on we need to modify this to use merkle roots so we can change the ETF authority set
+	#[pallet::storage]
+	pub type Shares<T: Config> = 
+		StorageValue<_, BoundedVec<BoundedVec<u8, ConstU32<1024>>, T::MaxAuthorities>, ValueQuery>;
+
+	/// public commitments of the outputs of ACSS recovery for the current round
+	#[pallet::storage]
+	pub type Commitments<T: Config> = 
+		StorageValue<_, BoundedVec<u8, T::MaxAuthorities>, ValueQuery>;
 
 	/// A mapping from BEEFY set ID to the index of the *most recent* session for which its
 	/// members were responsible.
@@ -278,6 +304,23 @@ pub mod pallet {
 			GenesisBlock::<T>::put(Some(genesis_block));
 			Ok(())
 		}
+
+		#[pallet::call_index(3)]
+		#[pallet::weight(0)]
+		pub fn report_commitment_unsigned(
+			origin: OriginFor<T>,
+			value: u8,
+		) -> DispatchResult {
+			ensure_none(origin)?;
+			let _done = Commitments::<T>::try_mutate(
+				|commitments| -> Result<(), DispatchError> {
+					commitments.try_insert(commitments.len(), value)
+						.expect("we trust non-authorities to behave right now");
+				Ok(())
+			});
+
+			Ok(())
+		}
 	}
 
 	#[pallet::validate_unsigned]
@@ -294,12 +337,41 @@ pub mod pallet {
 	}
 }
 
+use log::{error};
+use frame_system::offchain::SubmitTransaction;
+
 impl<T: Config> Pallet<T> {
+
+	// /// try to read shares at a given index
+	// pub fn read_share(at: u8) -> Option<Vec<u8>> {
+	// 	// let shares = Shares::<T>::get();
+	// 	// if at as usize >= shares.len() {
+	// 	// 	return None;
+	// 	// }
+	// 	// Some(shares[at as usize].clone().into_inner())
+	// }
+
 	/// Return the current active BEEFY validator set.
 	pub fn validator_set() -> Option<ValidatorSet<T::BeefyId>> {
 		let validators: BoundedVec<T::BeefyId, T::MaxAuthorities> = Authorities::<T>::get();
 		let id: sp_consensus_beefy::ValidatorSetId = ValidatorSetId::<T>::get();
 		ValidatorSet::<T::BeefyId>::new(validators, id)
+	}
+
+	/// Submits an extrinsic to report a public commitment to the ACSS recovered shares
+	/// This method will create an unsigned extrinsic with a call to `report_commitment_unsigned` and
+	/// will push the transaction to the pool. Only useful in an offchain context.
+	pub fn submit_unsigned_commitment(
+		value: u8,
+	) -> Option<()> {
+		T::CommitmentReportSystem::publish_evidence(value).ok()
+		// let call = Call::report_commitment_unsigned { value };
+		// let res = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+		// match res {
+		// 	Ok(_) => info!(target: LOG_TARGET, "Submitted commitment."),
+		// 	Err(e) => error!(target: LOG_TARGET, "Error submitting commtiment: {:?}", e),
+		// }
+		// res
 	}
 
 	/// Submits an extrinsic to report an equivocation. This method will create

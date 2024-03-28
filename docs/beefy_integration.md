@@ -4,9 +4,9 @@
 Add the dependencies to `runtime/Cargo.toml`:
 
 ``` toml
-pallet-beefy = { path = "../../pallets/beefy", default-features = false }
-pallet-beefy-mmr = { path = "../../pallets/beefy-mmr", default-features = false }
-pallet-mmr = { path = "../../pallets/merkle-mountain-range", default-features = false }
+pallet-beefy = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
+pallet-beefy-mmr = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
+pallet-mmr = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
 ```
 
 We need to add BEEFY session keys to the OpauqeKeys types:

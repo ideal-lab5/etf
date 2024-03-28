@@ -25,7 +25,7 @@ use codec::Encode;
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
-use node_runtime::RuntimeApi;
+use kitchensink_runtime::RuntimeApi;
 use node_primitives::Block;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_babe::{self, SlotProportion};
@@ -93,46 +93,46 @@ pub fn fetch_nonce(client: &FullClient, account: sp_core::sr25519::Pair) -> u32 
 pub fn create_extrinsic(
 	client: &FullClient,
 	sender: sp_core::sr25519::Pair,
-	function: impl Into<node_runtime::RuntimeCall>,
+	function: impl Into<kitchensink_runtime::RuntimeCall>,
 	nonce: Option<u32>,
-) -> node_runtime::UncheckedExtrinsic {
+) -> kitchensink_runtime::UncheckedExtrinsic {
 	let function = function.into();
 	let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
 	let best_hash = client.chain_info().best_hash;
 	let best_block = client.chain_info().best_number;
 	let nonce = nonce.unwrap_or_else(|| fetch_nonce(client, sender.clone()));
 
-	let period = node_runtime::BlockHashCount::get()
+	let period = kitchensink_runtime::BlockHashCount::get()
 		.checked_next_power_of_two()
 		.map(|c| c / 2)
 		.unwrap_or(2) as u64;
 	let tip = 0;
-	let extra: node_runtime::SignedExtra =
+	let extra: kitchensink_runtime::SignedExtra =
 		(
-			frame_system::CheckNonZeroSender::<node_runtime::Runtime>::new(),
-			frame_system::CheckSpecVersion::<node_runtime::Runtime>::new(),
-			frame_system::CheckTxVersion::<node_runtime::Runtime>::new(),
-			frame_system::CheckGenesis::<node_runtime::Runtime>::new(),
-			frame_system::CheckEra::<node_runtime::Runtime>::from(generic::Era::mortal(
+			frame_system::CheckNonZeroSender::<kitchensink_runtime::Runtime>::new(),
+			frame_system::CheckSpecVersion::<kitchensink_runtime::Runtime>::new(),
+			frame_system::CheckTxVersion::<kitchensink_runtime::Runtime>::new(),
+			frame_system::CheckGenesis::<kitchensink_runtime::Runtime>::new(),
+			frame_system::CheckEra::<kitchensink_runtime::Runtime>::from(generic::Era::mortal(
 				period,
 				best_block.saturated_into(),
 			)),
-			frame_system::CheckNonce::<node_runtime::Runtime>::from(nonce),
-			frame_system::CheckWeight::<node_runtime::Runtime>::new(),
-			// pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
-			// 	pallet_asset_conversion_tx_payment::ChargeAssetTxPayment::<
-			// 		node_runtime::Runtime,
-			// 	>::from(tip, None),
-			// ),
+			frame_system::CheckNonce::<kitchensink_runtime::Runtime>::from(nonce),
+			frame_system::CheckWeight::<kitchensink_runtime::Runtime>::new(),
+			pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
+				pallet_asset_conversion_tx_payment::ChargeAssetTxPayment::<
+					kitchensink_runtime::Runtime,
+				>::from(tip, None),
+			),
 		);
 
-	let raw_payload = node_runtime::SignedPayload::from_raw(
+	let raw_payload = kitchensink_runtime::SignedPayload::from_raw(
 		function.clone(),
 		extra.clone(),
 		(
 			(),
-			node_runtime::VERSION.spec_version,
-			node_runtime::VERSION.transaction_version,
+			kitchensink_runtime::VERSION.spec_version,
+			kitchensink_runtime::VERSION.transaction_version,
 			genesis_hash,
 			best_hash,
 			(),
@@ -142,10 +142,10 @@ pub fn create_extrinsic(
 	);
 	let signature = raw_payload.using_encoded(|e| sender.sign(e));
 
-	node_runtime::UncheckedExtrinsic::new_signed(
+	kitchensink_runtime::UncheckedExtrinsic::new_signed(
 		function,
 		sp_runtime::AccountId32::from(sender.public()).into(),
-		node_runtime::Signature::Sr25519(signature),
+		kitchensink_runtime::Signature::Sr25519(signature),
 		extra,
 	)
 }
@@ -163,7 +163,7 @@ pub fn new_partial(
 		sc_transaction_pool::FullPool<Block, FullClient>,
 		(
 			impl Fn(
-				crate::rpc::DenyUnsafe,
+				node_rpc::DenyUnsafe,
 				sc_rpc::SubscriptionTaskExecutor,
 			) -> Result<jsonrpsee::RpcModule<()>, sc_service::Error>,
 			(
@@ -304,25 +304,25 @@ pub fn new_partial(
 		let rpc_backend = backend.clone();
 		let rpc_statement_store = statement_store.clone();
 		let rpc_extensions_builder =
-			move |deny_unsafe, subscription_executor: crate::rpc::SubscriptionTaskExecutor| {
-				let deps = crate::rpc::FullDeps {
+			move |deny_unsafe, subscription_executor: node_rpc::SubscriptionTaskExecutor| {
+				let deps = node_rpc::FullDeps {
 					client: client.clone(),
 					pool: pool.clone(),
 					select_chain: select_chain.clone(),
 					chain_spec: chain_spec.cloned_box(),
 					deny_unsafe,
-					babe: crate::rpc::BabeDeps {
+					babe: node_rpc::BabeDeps {
 						keystore: keystore.clone(),
 						babe_worker_handle: babe_worker_handle.clone(),
 					},
-					grandpa: crate::rpc::GrandpaDeps {
+					grandpa: node_rpc::GrandpaDeps {
 						shared_voter_state: shared_voter_state.clone(),
 						shared_authority_set: shared_authority_set.clone(),
 						justification_stream: justification_stream.clone(),
 						subscription_executor: subscription_executor.clone(),
 						finality_provider: finality_proof_provider.clone(),
 					},
-					beefy: crate::rpc::BeefyDeps {
+					beefy: node_rpc::BeefyDeps {
 						beefy_finality_proof_stream: beefy_rpc_links
 							.from_voter_justif_stream
 							.clone(),
@@ -336,7 +336,7 @@ pub fn new_partial(
 					mixnet_api: mixnet_api.as_ref().cloned(),
 				};
 
-				crate::rpc::create_full(deps).map_err(Into::into)
+				node_rpc::create_full(deps).map_err(Into::into)
 			};
 
 		(rpc_extensions_builder, shared_voter_state2)
@@ -789,7 +789,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 mod tests {
 	use crate::service::{new_full_base, NewFullBase};
 	use codec::Encode;
-	use node_runtime::{
+	use kitchensink_runtime::{
 		constants::{currency::CENTS, time::SLOT_DURATION},
 		Address, BalancesCall, RuntimeCall, UncheckedExtrinsic,
 	};
@@ -990,9 +990,9 @@ mod tests {
 				let check_era = frame_system::CheckEra::from(Era::Immortal);
 				let check_nonce = frame_system::CheckNonce::from(index);
 				let check_weight = frame_system::CheckWeight::new();
-				// let tx_payment = pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
-				// 	pallet_asset_conversion_tx_payment::ChargeAssetTxPayment::from(0, None),
-				// );
+				let tx_payment = pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
+					pallet_asset_conversion_tx_payment::ChargeAssetTxPayment::from(0, None),
+				);
 				let extra = (
 					check_non_zero_sender,
 					check_spec_version,
@@ -1001,7 +1001,7 @@ mod tests {
 					check_era,
 					check_nonce,
 					check_weight,
-					// tx_payment,
+					tx_payment,
 				);
 				let raw_payload = SignedPayload::from_raw(
 					function,

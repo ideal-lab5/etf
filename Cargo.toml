@@ -1,9 +1,17 @@
 [workspace]
 members = [
+    "client/consensus/beefy",
+    "client/consensus/beefy/rpc",
+    "node/bench",
     "node",
-    "node-primitives",
+    "node/inspect",
+    "node/primitives",
+    "node/rpc",
     "runtime",
+    "node/testing",
     "pallets/beefy",
+    "pallets/beefy-mmr",
+    "primitives/consensus/beefy",
 ]
 resolver = "2"
 
@@ -11,7 +19,7 @@ resolver = "2"
 edition = "2021"
 authors = ["Ideal Labs <driemworks@idealabs.network>"]
 repository = "https://github.com/ideal-lab5/etf"
-website = "https://idealabs.network"
+homepage = "https://idealabs.network"
 
 [workspace.lints.rust]
 suspicious_double_ref_op = { level = "allow", priority = 2 }
