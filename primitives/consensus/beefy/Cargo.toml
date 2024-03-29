@@ -44,8 +44,7 @@ std = [
 	"sp-application-crypto/std",
 	"sp-core/std",
 	"sp-crypto-hashing/std",
-	"sp-io/std",
-	"sp-keystore/std",
+	"sp-io/std", 	
 	"sp-mmr-primitives/std",
 	"sp-runtime/std",
 	"strum/std",
@@ -64,5 +63,7 @@ serde = [
 # the BLS implementation and interface may still be subject to significant change.
 bls-experimental = [
 	"sp-application-crypto/bls-experimental",
+	# "sp-application-crypto/full_crypto",
 	"sp-core/bls-experimental",
+	# "sp-core/full_crypto",
 ]

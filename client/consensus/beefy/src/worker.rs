@@ -41,7 +41,7 @@ use sp_arithmetic::traits::{AtLeast32Bit, Saturating};
 use sp_consensus::SyncOracle;
 use sp_consensus_beefy::{
 	check_equivocation_proof,
-	ecdsa_crypto::{AuthorityId, Signature},
+	bls_crypto::{AuthorityId, Signature},
 	BeefyApi, BeefySignatureHasher, Commitment, EquivocationProof, PayloadProvider, ValidatorSet,
 	VersionedFinalityProof, VoteMessage, BEEFY_ENGINE_ID,
 };
@@ -885,38 +885,31 @@ where
 		// ok so we could just get the share here
 		// and do the recovery...
 		/// get pubkeys from the keystore...
-		// self.comms.gossip_engine.gossip_message(resharing_topic::<B>(), vec![1u8], false);
-		let maybe_shares = self.runtime.runtime_api().read_share(hash, 0);
-
+		let runtime_api = self.runtime.runtime_api();
+		
 		info!(
 			target: LOG_TARGET,
-			"🎲 run ACSS Recover at best grandpa: #{:?}.",
+			"🎲 run ACSS recovery at best grandpa: #{:?}.",
 			hash
 		);
 
-		// self.runtime
-		// 	.runtime_api()
-		// 	.submit_report_commitment_unsigned_extrinsic(
-		// 		hash,
-		// 		1u8
-		// );
+		let rounds = self.persisted_state.voting_oracle.active_rounds().unwrap();
 
-		// // let mut resharing = Box::pin(
-		// // 	self.comms.g
-		// // );
-		// let mut resharings = Box::pin(
-		// 	self.comms
-		// 		.gossip_engine
-		// 		.messages_for(resharing_topic::<B>())
-		// 		.filter_map(|notification| async move {
-		// 			let reshare = GossipMessage::<B>::decode_all(&mut &notification.message[..])
-		// 				.ok()
-		// 				.and_then(|message| message.unwrap_resharing());
-		// 			trace!(target: LOG_TARGET, "🥩 Got resharing: {:?}", reshare);
-		// 			reshare
-		// 		})
-		// 		.fuse(),
-		// );
+		if let Some(id) = self.key_store.authority_id(rounds.validators()) {
+			info!(target: LOG_TARGET, "🎲 Local authority id: {:?}", id);
+			if let Some(Some(validator_set)) = runtime_api.validator_set(hash).ok() {
+				let idx = validator_set.validators().iter().position(|r| r.eq(&id)).unwrap();
+				info!(target: LOG_TARGET, "🎲 Found index: {:?}", idx);
+				if let Some(pok) = runtime_api.read_share(hash, idx as u8).ok() {
+					info!(target: LOG_TARGET, "🎲 Found pok: {:?}", pok);
+					// now we can try to run the ACSS recovery scheme...
+					// if let Some((s, s_prime)) = self.key_store.recover(pok) {
+
+					// }
+				}
+			}
+		}
+
 		let mut votes = Box::pin(
 			self.comms
 				.gossip_engine
@@ -1007,18 +1000,6 @@ where
 						break Error::FinalityProofGossipStreamTerminated;
 					}
 				},
-				// // Finally process incoming votes.
-				// resharing = resharings.next() => {
-				// 	if let Some(resharing) = resharing {
-				// 		info!("GOT THE RESHARING OMG IT WORKED?! SO COOL! NOW WE CAN DO THE RECOVER I SUPPOSE?");
-				// 		// Votes have already been verified to be valid by the gossip validator.
-				// 		if let Err(err) = self.triage_incoming_resharing(resharing) {
-				// 			debug!(target: LOG_TARGET, "🥩 {}", err);
-				// 		}
-				// 	} else {
-				// 		break Error::VotesGossipStreamTerminated;
-				// 	}
-				// },
 				// Finally process incoming votes.
 				vote = votes.next() => {
 					if let Some(vote) = vote {

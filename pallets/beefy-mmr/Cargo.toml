@@ -25,7 +25,7 @@ pallet-beefy = { path = "../beefy", default-features = false }
 pallet-mmr = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
 pallet-session = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
 # sp-consensus-beefy = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
-sp-consensus-beefy = { path = "../../primitives/consensus/beefy", default-features = false }
+sp-consensus-beefy = { path = "../../primitives/consensus/beefy", default-features = false, features = ["bls-experimental"] }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
 sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }

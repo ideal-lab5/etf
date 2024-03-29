@@ -44,9 +44,9 @@ sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1
 tokio = "1.22.0"
 etf-crypto-primitives = { path = "../../../../etf-sdk/etf-crypto-primitives" }
 ark-std = { version = "0.4.0"}
+ark-bls12-377 = { version = "0.4.0", features = ["curve"], default-features = false }
 rand = "0.8.5"
 sp-ark-bls12-381 = { git = "https://github.com/paritytech/sp-curves.git" }
-
 
 [dev-dependencies]
 serde = { workspace = true, default-features = true }
@@ -63,6 +63,8 @@ substrate-test-runtime-client = { git = "https://github.com/paritytech/polkadot-
 # the BLS implementation and interface may still be subject to significant change.
 bls-experimental = [
 	"sp-application-crypto/bls-experimental",
+	"sp-application-crypto/full_crypto",
 	"sp-consensus-beefy/bls-experimental",
 	"sp-core/bls-experimental",
+	# "sp-core/full_crypto",
 ]

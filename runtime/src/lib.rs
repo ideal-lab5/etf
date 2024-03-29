@@ -77,7 +77,7 @@ use pallet_tx_pause::RuntimeCallNameOf;
 use sp_api::impl_runtime_apis;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_beefy::{
-	ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
+	bls_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
 	mmr::MmrLeafVersion,
 };
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
@@ -1593,7 +1593,8 @@ impl pallet_beefy::Config for Runtime {
 	type MaxAuthorities = MaxAuthorities;
 	type MaxNominators = ConstU32<0>;
 	type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
-	type OnNewValidatorSet = MmrLeaf;
+	type OnNewValidatorSet = ();
+	//  MmrLeaf;
 	type WeightInfo = ();
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
 	type EquivocationReportSystem =
@@ -1616,7 +1617,7 @@ parameter_types! {
 
 impl pallet_beefy_mmr::Config for Runtime {
 	type LeafVersion = LeafVersion;
-	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
+	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyBlsToEthereum;
 	type LeafExtra = Vec<u8>;
 	type BeefyDataProvider = ();
 }

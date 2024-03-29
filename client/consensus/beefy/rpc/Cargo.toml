@@ -21,7 +21,7 @@ serde = { features = ["derive"], workspace = true, default-features = true }
 thiserror = { workspace = true }
 # sc-consensus-beefy = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sc-consensus-beefy = { path = "../." }
-sp-consensus-beefy = { path = "../../../../primitives/consensus/beefy" }
+sp-consensus-beefy = { path = "../../../../primitives/consensus/beefy", features = ["bls-experimental"] }
 # sp-consensus-beefy = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sc-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }

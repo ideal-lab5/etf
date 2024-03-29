@@ -53,9 +53,10 @@ rand = "0.8"
 sp-authority-discovery = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sp-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 # beefy-primitives = { package = "sp-consensus-beefy", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-beefy-primitives = { package = "sp-consensus-beefy", path = "../primitives/consensus/beefy" }
+beefy-primitives = { package = "sp-consensus-beefy", path = "../primitives/consensus/beefy", features = ["bls-experimental"] }
 grandpa-primitives = { package = "sp-consensus-grandpa", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sp-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+sp-application-crypto = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sp-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
@@ -83,7 +84,7 @@ sc-network-statement = { git = "https://github.com/paritytech/polkadot-sdk.git",
 sc-consensus-slots = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sc-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 # beefy = { package = "sc-consensus-beefy", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-beefy = { package = "sc-consensus-beefy", path = "../client/consensus/beefy" }
+beefy = { package = "sc-consensus-beefy", path = "../client/consensus/beefy", features = ["bls-experimental"] }
 grandpa = { package = "sc-consensus-grandpa", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 mmr-gadget = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 sc-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
@@ -112,6 +113,11 @@ pallet-skip-feeless-payment = { git = "https://github.com/paritytech/polkadot-sd
 kitchensink-runtime = { path = "../runtime" }
 node-rpc = { path = "./rpc" }
 node-primitives = { path = "./primitives" }
+sp-ark-bls12-377 = { git = "https://github.com/paritytech/sp-curves.git" }
+etf-crypto-primitives = { path = "../../etf-sdk/etf-crypto-primitives" }
+ark-std = { version = "0.4.0"}
+ark-serialize = { version = "0.4.0"}
+ark-bls12-377 = { version = "0.4.0", features = ["curve"], default-features = false }
 # node-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 # node-primitives = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
 

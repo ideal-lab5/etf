@@ -21,11 +21,17 @@ frame-system = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "
 pallet-authorship = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features =false }
 pallet-session = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features =false }
 # sp-consensus-beefy = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features =false, features = ["serde"] }
-sp-consensus-beefy = { path = "../../primitives/consensus/beefy",  default-features =false, features = ["serde"] }
+sp-consensus-beefy = { path = "../../primitives/consensus/beefy",  default-features =false, features = ["serde", "bls-experimental"] }
 sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features =false, features = ["serde"] }
 sp-session = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features =false }
 sp-staking = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features =false, features = ["serde"] }
 sp-std = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features =false }
+ark-std = { version = "0.4.0", default-features = false }
+ark-serialize = { version = "0.4.0", default-features = false }
+etf-crypto-primitives = { path = "../../../etf-sdk/etf-crypto-primitives", default-features = false} 
+getrandom = { version = "0.2", features = ["js"] }
+ark-bls12-377 = { version = "0.4.0", features = ["curve"], default-features = false }
+
 
 [dev-dependencies]
 frame-election-provider-support = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
@@ -47,6 +53,10 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"log/std",
+	"ark-std/std",
+	"ark-serialize/std",
+	"ark-bls12-377/std",
+	"etf-crypto-primitives/std",
 	"pallet-authorship/std",
 	"pallet-balances/std",
 	"pallet-offences/std",

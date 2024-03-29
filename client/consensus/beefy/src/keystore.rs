@@ -20,6 +20,8 @@ use sp_application_crypto::{key_types::BEEFY as BEEFY_KEY_TYPE, AppCrypto, Runti
 use sp_consensus_beefy::{AuthorityIdBound, BeefyAuthorityId, BeefySignatureHasher};
 use sp_core::ecdsa;
 #[cfg(feature = "bls-experimental")]
+use sp_core::bls377;
+#[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
 use sp_core::ecdsa_bls377;
 use sp_crypto_hashing::keccak_256;
 use sp_keystore::KeystorePtr;
@@ -100,6 +102,18 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 			},
 
 			#[cfg(feature = "bls-experimental")]
+			bls377::CRYPTO_ID => {
+				let public: bls377::Public =
+				bls377::Public::try_from(public.as_slice()).unwrap();
+				let sig = store
+					.bls377_sign(BEEFY_KEY_TYPE, &public, &message)
+					.map_err(|e| error::Error::Keystore(e.to_string()))?
+					.ok_or_else(|| error::Error::Signature("bls377_sign()  failed".to_string()))?;
+				let sig_ref: &[u8] = sig.as_ref();
+				sig_ref.to_vec()
+			},
+
+			#[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
 			ecdsa_bls377::CRYPTO_ID => {
 				let public: ecdsa_bls377::Public =
 					ecdsa_bls377::Public::try_from(public.as_slice()).unwrap();
@@ -146,6 +160,18 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 				}),
 
 			#[cfg(feature = "bls-experimental")]
+			bls377::CRYPTO_ID => store
+				.bls377_public_keys(BEEFY_KEY_TYPE)
+				.drain(..)
+				.map(|pk| AuthorityId::try_from(pk.as_ref()))
+				.collect::<Result<Vec<_>, _>>()
+				.or_else(|_| {
+					Err(error::Error::Keystore(
+						"unable to convert public key into authority id".into(),
+					))
+				}),
+
+			#[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
 			ecdsa_bls377::CRYPTO_ID => store
 				.ecdsa_bls377_public_keys(BEEFY_KEY_TYPE)
 				.drain(..)
@@ -173,7 +199,49 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 	) -> bool {
 		BeefyAuthorityId::<BeefySignatureHasher>::verify(public, sig, message)
 	}
+
+	#[cfg(feature = "bls-experimental")]
+	pub fn recover(
+		&self, 
+		public: &AuthorityId,
+		pok: BatchPoK<ark_bls12_377::G1Projective>,
+	) -> Vec<Vec<u8>> {
+		let store = self.0.clone().ok_or_else(|| error::Error::Keystore("no Keystore".into()))
+			.map_err(|_| ())
+			.unwrap();
+
+		let mut recovered = Vec::new();
+		// bls377::CRYPTO_ID => {
+		let public: bls377::Public =
+			bls377::Public::try_from(public.as_slice()).unwrap();
+
+		// store.key_pair::<bls377::Pair>(&public);
+		// let kp = store.read().key_pair::<bls377::Pair>(public);
+		pok.ciphertexts.iter().for_each(|ct| {
+			let message = ct.c1;
+			let message_bytes = Vec::new();
+			// 	let sig = store
+			// 		.bls377_sign(BEEFY_KEY_TYPE, &public, &message)
+			// 		.map_err(|e| error::Error::Keystore(e.to_string()))?
+			// 		.ok_or_else(|| error::Error::Signature("bls377_sign()  failed".to_string()))?;
+			// let sig_ref: &[u8] = sig.as_ref();
+			// sig_ref.to_vec()
+			});
+			// let sig = store
+			// 	.bls377_sign(BEEFY_KEY_TYPE, &public, &message)
+			// 	.map_err(|e| error::Error::Keystore(e.to_string()))?
+			// 	.ok_or_else(|| error::Error::Signature("bls377_sign()  failed".to_string()))?;
+			// let sig_ref: &[u8] = sig.as_ref();
+			// sig_ref.to_vec()
+		// },
+		recovered
+	}
 }
+
+use etf_crypto_primitives::{
+	proofs::hashed_el_gamal_sigma::BatchPoK,
+	dpss::acss::HighThresholdACSS
+};
 
 impl<AuthorityId: AuthorityIdBound> From<Option<KeystorePtr>> for BeefyKeystore<AuthorityId>
 where

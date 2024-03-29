@@ -45,6 +45,10 @@ use sp_consensus_beefy::{
 	ValidatorSet, BEEFY_ENGINE_ID, GENESIS_AUTHORITY_SET_ID,
 };
 
+use ark_std::Zero;
+use ark_serialize::CanonicalDeserialize;
+use etf_crypto_primitives::proofs::hashed_el_gamal_sigma::BatchPoK;
+
 mod default_weights;
 mod dpss;
 mod equivocation;
@@ -189,7 +193,7 @@ pub mod pallet {
 		/// to guarantee the client gets a finality notification for exactly this block.
 		pub genesis_block: Option<BlockNumberFor<T>>,
 		/// (beefy id, commitment, BatchPoK (which technically contains the commitment...))
-		pub genesis_resharing: Vec<(T::BeefyId, Vec<u8>, Vec<u8>)>
+		pub genesis_resharing: Vec<(T::BeefyId, Vec<u8>)>
 	}
 
 	impl<T: Config> Default for GenesisConfig<T> {
@@ -208,6 +212,7 @@ pub mod pallet {
 				// we panic here as runtime maintainers can simply reconfigure genesis and restart
 				// the chain easily
 				.expect("Authorities vec too big");
+			Pallet::<T>::initialize_genesis_shares(&self.genesis_resharing);
 			GenesisBlock::<T>::put(&self.genesis_block);
 		}
 	}
@@ -455,6 +460,33 @@ impl<T: Config> Pallet<T> {
 		SetIdSession::<T>::insert(0, 0);
 
 		Ok(())
+	}
+
+	fn initialize_genesis_shares(genesis_resharing: &Vec<(T::BeefyId, Vec<u8>)>) {
+		// TODO: we need to convert back to BatchPoks and get the pubkey commitments
+		// then we need to aggregate them and encode it onchain
+
+		let mut round_pubkey = ark_bls12_377::G1Projective::zero();
+		let mut unbounded_shares: Vec<BoundedVec<u8, ConstU32<1024>>> = Vec::new();
+		// let mut shares:  = Vec::new();
+		genesis_resharing.iter().for_each(|(public, pok_bytes)| {
+
+			let bounded_pok =
+				BoundedVec::<u8, ConstU32<1024>>::try_from(pok_bytes.clone())
+					.expect("genesis poks should be well formatted");
+			
+			unbounded_shares.push(bounded_pok);
+
+			// let pok: BatchPoK<ark_bls12_377::G1Projective> = 
+			// 	BatchPoK::deserialize_compressed(&pok_bytes[..])
+			// 		.expect("Genesis shares should be well formatted.");
+			// we could also check the proofs here, but we can trust them on genesis for nows
+		});
+		
+		let bounded_shares =
+			BoundedVec::<BoundedVec<u8, ConstU32<1024>>, T::MaxAuthorities>::try_from(unbounded_shares)
+				.expect("There should be the correct number of genesis resharings");
+		<Shares<T>>::put(bounded_shares);
 	}
 }
 

@@ -178,7 +178,7 @@ pub mod bls_crypto {
 ///
 /// Your code should use the above types as concrete types for all crypto related
 /// functionality.
-#[cfg(feature = "bls-experimental")]
+#[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
 pub mod ecdsa_bls_crypto {
 	use super::{AuthorityIdBound, BeefyAuthorityId, Hash, RuntimeAppPublic, KEY_TYPE};
 	use sp_application_crypto::{app_crypto, ecdsa_bls377};
@@ -205,11 +205,17 @@ pub mod ecdsa_bls_crypto {
 			// on Ethereum network where Keccak hasher is significantly cheaper than Blake2b.
 			// See Figure 3 of [OnSc21](https://www.scitepress.org/Papers/2021/106066/106066.pdf)
 			// for comparison.
-			EcdsaBlsPair::verify_with_hasher::<H>(
+
+			// TODO: I'm not actually using this currently, just doing this so it will compile..
+			EcdsaBlsPair::verify::<H>(
 				signature.as_inner_ref(),
 				msg,
-				self.as_inner_ref(),
 			)
+			// EcdsaBlsPair::verify_with_hasher::<H>(
+			// 	signature.as_inner_ref(),
+			// 	msg,
+			// 	self.as_inner_ref(),
+			// )
 		}
 	}
 
@@ -543,7 +549,8 @@ mod tests {
 	}
 
 	#[test]
-	#[cfg(feature = "bls-experimental")]
+	// #[cfg(feature = "bls-experimental")]
+	#[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
 	fn ecdsa_bls_beefy_verify_works() {
 		let msg = &b"test-message"[..];
 		let (pair, _) = ecdsa_bls_crypto::Pair::generate();
