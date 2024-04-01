@@ -18,33 +18,33 @@ workspace = true
 array-bytes = "6.1"
 clap = { version = "4.5.3", features = ["derive"] }
 log = { workspace = true, default-features = true }
-# node-primitives = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-# node-testing = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+# node-primitives = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+# node-testing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 node-primitives = { path = "../primitives" }
 node-testing = { path = "../testing" }
-# kitchensink-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+# kitchensink-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 kitchensink-runtime = { path = "../../runtime" }
-sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-state-machine = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-state-machine = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 serde = { workspace = true, default-features = true }
 serde_json = { workspace = true, default-features = true }
 derive_more = { version = "0.99.17", default-features = false, features = ["display"] }
 kvdb = "0.13.0"
 kvdb-rocksdb = "0.19.0"
-sp-trie = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-consensus = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-basic-authorship = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-inherents = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
-sp-tracing = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+sp-trie = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-basic-authorship = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-inherents = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-timestamp = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget",  default-features = false }
+sp-tracing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 hash-db = "0.16.0"
 tempfile = "3.1.0"
 fs_extra = "1"
 rand = { version = "0.8.5", features = ["small_rng"] }
 lazy_static = "1.4.0"
 parity-db = "0.4.12"
-sc-transaction-pool = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-transaction-pool-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+sc-transaction-pool = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-transaction-pool-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 futures = { version = "0.3.21", features = ["thread-pool"] }

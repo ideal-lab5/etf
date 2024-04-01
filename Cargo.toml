@@ -1,7 +1,5 @@
 [workspace]
 members = [
-    "client/consensus/beefy",
-    "client/consensus/beefy/rpc",
     "node/bench",
     "node",
     "node/inspect",
@@ -9,9 +7,6 @@ members = [
     "node/rpc",
     "runtime",
     "node/testing",
-    "pallets/beefy",
-    "pallets/beefy-mmr",
-    "primitives/consensus/beefy",
 ]
 resolver = "2"
 

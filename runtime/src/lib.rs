@@ -1303,6 +1303,7 @@ impl pallet_message_queue::Config for Runtime {
 	type HeapSize = ConstU32<{ 64 * 1024 }>;
 	type MaxStale = ConstU32<128>;
 	type ServiceWeight = MessageQueueServiceWeight;
+	type IdleMaxServiceWeight = ();
 }
 
 parameter_types! {
@@ -1599,8 +1600,6 @@ impl pallet_beefy::Config for Runtime {
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
 	type EquivocationReportSystem =
 		pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
-	type CommitmentReportSystem =
-		pallet_beefy::CommitmentReportSystem<Self, Offences, Historical, ReportLongevity>;
 }
 
 impl pallet_mmr::Config for Runtime {
@@ -1617,7 +1616,8 @@ parameter_types! {
 
 impl pallet_beefy_mmr::Config for Runtime {
 	type LeafVersion = LeafVersion;
-	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyBlsToEthereum;
+	// type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyBlsToEthereum;
+	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
 	type LeafExtra = Vec<u8>;
 	type BeefyDataProvider = ();
 }
@@ -3030,10 +3030,11 @@ impl_runtime_apis! {
 				.map(sp_consensus_beefy::OpaqueKeyOwnershipProof::new)
 		}
 
-		fn submit_report_commitment_unsigned_extrinsic(value: u8) -> Option<()> {
-			Beefy::submit_unsigned_commitment(value)
-		}
-
+		// fn read_share(_: u8) -> Option<Vec<u8>> { None }
+		// fn submit_report_commitment_unsigned_extrinsic(value: u8) -> Option<()> {
+		// 	Beefy::submit_unsigned_commitment(value)
+		// }
+		// #[cfg(feature = "etf")]
 		fn read_share(at: u8) -> Option<Vec<u8>> {
 			let shares = pallet_beefy::Shares::<Runtime>::get();
 			if at as usize >= shares.len() {

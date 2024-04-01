@@ -50,64 +50,64 @@ log = { workspace = true, default-features = true }
 rand = "0.8"
 
 # primitives
-sp-authority-discovery = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-# beefy-primitives = { package = "sp-consensus-beefy", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-beefy-primitives = { package = "sp-consensus-beefy", path = "../primitives/consensus/beefy", features = ["bls-experimental"] }
-grandpa-primitives = { package = "sp-consensus-grandpa", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-application-crypto = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-core = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-inherents = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-keyring = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-keystore = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-consensus = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-transaction-storage-proof = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-io = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-mixnet = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-mmr-primitives = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-statement-store = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+sp-authority-discovery = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-consensus-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+beefy-primitives = { package = "sp-consensus-beefy", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", features = ["bls-experimental", "etf"]}
+# beefy-primitives = { package = "sp-consensus-beefy", path = "../primitives/consensus/beefy", features = ["bls-experimental"] }
+grandpa-primitives = { package = "sp-consensus-grandpa", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-application-crypto = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-timestamp = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-inherents = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-keyring = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-keystore = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-transaction-storage-proof = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-io = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-mixnet = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-mmr-primitives = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-statement-store = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 
 # client dependencies
-sc-client-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-chain-spec = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-consensus = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-transaction-pool = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-transaction-pool-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-statement-store = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-network = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-network-common = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-network-sync = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-network-statement = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-consensus-slots = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-# beefy = { package = "sc-consensus-beefy", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-beefy = { package = "sc-consensus-beefy", path = "../client/consensus/beefy", features = ["bls-experimental"] }
-grandpa = { package = "sc-consensus-grandpa", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-mmr-gadget = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-basic-authorship = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-service = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
-sc-telemetry = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-executor = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-authority-discovery = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-mixnet = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-sync-state-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-sysinfo = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-storage-monitor = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-offchain = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-chain-spec = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-transaction-pool = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-transaction-pool-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-statement-store = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-network = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-network-common = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-network-sync = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-network-statement = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-consensus-slots = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-consensus-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+beefy = { package = "sc-consensus-beefy", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", features = ["bls-experimental", "etf"] }
+# beefy = { package = "sc-consensus-beefy", path = "../client/consensus/beefy", features = ["bls-experimental"] }
+grandpa = { package = "sc-consensus-grandpa", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+mmr-gadget = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-rpc = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-basic-authorship = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-service = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget",  default-features = false }
+sc-telemetry = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-executor = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-authority-discovery = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-mixnet = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-sync-state-rpc = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-sysinfo = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-storage-monitor = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-offchain = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 
 # frame dependencies
-frame-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-frame-system = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-assets = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-asset-conversion-tx-payment = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-asset-tx-payment = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-im-online = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
-pallet-skip-feeless-payment = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
+frame-benchmarking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+frame-system = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+frame-system-rpc-runtime-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-assets = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-asset-conversion-tx-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-asset-tx-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-im-online = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget",  default-features = false }
+pallet-skip-feeless-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget",  default-features = false }
 
 # node-specific dependencies
 kitchensink-runtime = { path = "../runtime" }
@@ -118,27 +118,27 @@ etf-crypto-primitives = { path = "../../etf-sdk/etf-crypto-primitives" }
 ark-std = { version = "0.4.0"}
 ark-serialize = { version = "0.4.0"}
 ark-bls12-377 = { version = "0.4.0", features = ["curve"], default-features = false }
-# node-rpc = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-# node-primitives = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+# node-rpc = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+# node-primitives = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 
 # CLI-specific dependencies
-sc-cli = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
-frame-benchmarking-cli = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
-node-inspect = { package = "staging-node-inspect", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
-try-runtime-cli = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
+sc-cli = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
+frame-benchmarking-cli = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
+node-inspect = { package = "staging-node-inspect", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
+try-runtime-cli = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
 serde_json = { workspace = true, default-features = true }
 
 [dev-dependencies]
-sc-keystore = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-client-db = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-consensus = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-consensus-epochs = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-service-test = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-block-builder = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-tracing = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-blockchain = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-crypto-hashing = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+sc-keystore = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-client-db = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-consensus-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-consensus-epochs = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-service-test = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-block-builder = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-tracing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-blockchain = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-crypto-hashing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 futures = "0.3.21"
 tempfile = "3.1.0"
 assert_cmd = "2.0.2"
@@ -150,42 +150,42 @@ criterion = { version = "0.4.0", features = ["async_tokio"] }
 tokio = { version = "1.22.0", features = ["macros", "parking_lot", "time"] }
 tokio-util = { version = "0.7.4", features = ["compat"] }
 wait-timeout = "0.2"
-substrate-rpc-client = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-# substrate-cli-test-utils = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+substrate-rpc-client = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-timestamp = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+# substrate-cli-test-utils = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 
 wat = "1.0"
-frame-support = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-# node-testing = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+frame-support = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+# node-testing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 node-testing = { path = "./testing" }
-pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-contracts = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-glutton = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-sudo = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-treasury = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-application-crypto = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-pallet-root-testing = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-consensus-babe = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-externalities = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-keyring = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+pallet-balances = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-contracts = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-glutton = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-sudo = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-treasury = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-transaction-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-application-crypto = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+pallet-root-testing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-consensus-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-externalities = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-keyring = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 serde_json = { workspace = true, default-features = true }
 scale-info = { version = "2.10.0", features = ["derive", "serde"] }
-sp-trie = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sp-state-machine = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+sp-trie = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sp-state-machine = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 
 [build-dependencies]
 clap = { version = "4.5.3", optional = true }
 clap_complete = { version = "4.0.2", optional = true }
-node-inspect = { package = "staging-node-inspect", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
-frame-benchmarking-cli = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
-substrate-build-script-utils = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
-substrate-frame-cli = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
-try-runtime-cli = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
-sc-cli = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1", optional = true }
-pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
-sc-storage-monitor = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1" }
+node-inspect = { package = "staging-node-inspect", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
+frame-benchmarking-cli = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
+substrate-build-script-utils = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
+substrate-frame-cli = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
+try-runtime-cli = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
+sc-cli = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget", optional = true }
+pallet-balances = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
+sc-storage-monitor = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget" }
 
 [features]
 default = ["cli"]

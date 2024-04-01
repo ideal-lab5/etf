@@ -4,9 +4,9 @@
 Add the dependencies to `runtime/Cargo.toml`:
 
 ``` toml
-pallet-beefy = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
-pallet-beefy-mmr = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
-pallet-mmr = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.9.0-rc1",  default-features = false }
+pallet-beefy = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget",  default-features = false }
+pallet-beefy-mmr = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget",  default-features = false }
+pallet-mmr = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf-finality-gadget",  default-features = false }
 ```
 
 We need to add BEEFY session keys to the OpauqeKeys types:
