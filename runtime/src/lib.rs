@@ -1585,23 +1585,6 @@ impl pallet_vesting::Config for Runtime {
 	const MAX_VESTING_SCHEDULES: u32 = 28;
 }
 
-parameter_types! {
-	pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
-}
-
-impl pallet_beefy::Config for Runtime {
-	type BeefyId = BeefyId;
-	type MaxAuthorities = MaxAuthorities;
-	type MaxNominators = ConstU32<0>;
-	type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
-	type OnNewValidatorSet = ();
-	//  MmrLeaf;
-	type WeightInfo = ();
-	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
-	type EquivocationReportSystem =
-		pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
-}
-
 impl pallet_mmr::Config for Runtime {
 	const INDEXING_PREFIX: &'static [u8] = b"mmr";
 	type Hashing = Keccak256;
@@ -1616,8 +1599,7 @@ parameter_types! {
 
 impl pallet_beefy_mmr::Config for Runtime {
 	type LeafVersion = LeafVersion;
-	// type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyBlsToEthereum;
-	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
+	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyBlsToEthereum;
 	type LeafExtra = Vec<u8>;
 	type BeefyDataProvider = ();
 }
@@ -2523,21 +2505,21 @@ type EventRecord = frame_system::EventRecord<
 	<Runtime as frame_system::Config>::Hash,
 >;
 
-// parameter_types! {
-// 	pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
-// }
+parameter_types! {
+	pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
+}
 
-// impl pallet_beefy::Config for Runtime {
-// 	type BeefyId = BeefyId;
-// 	type MaxAuthorities = MaxAuthorities;
-// 	type MaxNominators = ConstU32<0>;
-// 	type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
-// 	type OnNewValidatorSet = MmrLeaf;
-// 	type WeightInfo = ();
-// 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
-// 	type EquivocationReportSystem =
-// 		pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
-// }
+impl pallet_beefy::Config for Runtime {
+	type BeefyId = BeefyId;
+	type MaxAuthorities = MaxAuthorities;
+	type MaxNominators = ConstU32<0>;
+	type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
+	type OnNewValidatorSet = MmrLeaf;
+	type WeightInfo = ();
+	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
+	type EquivocationReportSystem =
+		pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+}
 
 /// MMR helper types.
 mod mmr {
@@ -3030,18 +3012,36 @@ impl_runtime_apis! {
 				.map(sp_consensus_beefy::OpaqueKeyOwnershipProof::new)
 		}
 
-		// fn read_share(_: u8) -> Option<Vec<u8>> { None }
-		// fn submit_report_commitment_unsigned_extrinsic(value: u8) -> Option<()> {
-		// 	Beefy::submit_unsigned_commitment(value)
-		// }
-		// #[cfg(feature = "etf")]
-		fn read_share(at: u8) -> Option<Vec<u8>> {
-			let shares = pallet_beefy::Shares::<Runtime>::get();
-			if at as usize >= shares.len() {
-				return None;
+		fn read_share(who: BeefyId) -> Option<Vec<u8>> {
+			let authorities = pallet_beefy::Authorities::<Runtime>::get();
+			if let Some(at) = authorities.iter().position(|auth| auth.eq(&who)) {
+				let shares = pallet_beefy::Shares::<Runtime>::get();
+				if at as usize >= shares.len() {
+					return None;
+				}
+				return Some(shares[at as usize].clone().into_inner());
 			}
-			Some(shares[at as usize].clone().into_inner())
-			// Beefy::read_share(at)
+			None
+		}
+
+		fn read_commitment(who: BeefyId) -> Option<BeefyId> {
+
+			let authorities = pallet_beefy::Authorities::<Runtime>::get();
+			if let Some(at) = authorities.iter().position(|auth| auth.eq(&who)) {
+				let commitments = pallet_beefy::Commitments::<Runtime>::get();
+				if at as usize >= commitments.len() {
+					return None;
+				}
+				return Some(commitments[at as usize].clone());
+			}
+			None
+
+
+			// let commitments = pallet_beefy::Commitments::<Runtime>::get();
+			// if at as usize >= commitments.len() {
+			// 	return None;
+			// }
+			// Some(commitments[at as usize].clone().into_inner())
 		}
 	}
 
