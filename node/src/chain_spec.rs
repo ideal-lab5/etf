@@ -406,13 +406,15 @@ pub fn etf_genesis<EB: EngineBLS>(
 	let mut ibe_pp_bytes = Vec::new();
 	ibe_pub_param.serialize_compressed(&mut ibe_pp_bytes).unwrap();
 
+	// we need to get the PublicKeyGroup element (G2)
 	let genesis_resharing = double_secret.reshare(
 		&initial_authorities.iter().map(|authority| {
-			w3f_bls::single::PublicKey::<EB>::from_bytes(&authority.to_raw_vec()[..48]).unwrap()
-			// EB::SignatureGroup::deserialize_compressed(
-			// 	// [48 bytes for SigGroup][96 bytes for PubKeyGroup]
-			// 	&authority.to_raw_vec()[..48]
-			// ).unwrap()
+			// panic!(authority.to_raw_vec());
+			w3f_bls::single::PublicKey::<EB>(
+				w3f_bls::double::DoublePublicKey::<EB>::from_bytes(
+					&authority.to_raw_vec()
+				).unwrap().1
+			)
 		}).collect::<Vec<_>>(), 
 		initial_authorities.len() as u8, // threshold = full set of authorities for now
 		&mut OsRng,
