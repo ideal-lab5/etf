@@ -2325,8 +2325,9 @@ mod runtime {
 	pub type Assets = pallet_assets<Instance1>;
 
 	#[runtime::pallet_index(40)]
-	pub type PoolAssets = pallet_assets<Instance2>;
+	pub type Etf = pallet_etf;
 
+	// Beefy must be after Etf since we need the round key and public commitments to be available
 	#[runtime::pallet_index(41)]
 	pub type Beefy = pallet_beefy;
 
@@ -2439,6 +2440,9 @@ mod runtime {
 
 	#[runtime::pallet_index(77)]
 	pub type SkipFeelessPayment = pallet_skip_feeless_payment;
+
+	#[runtime::pallet_index(78)]
+	pub type PoolAssets = pallet_assets<Instance2>;
 }
 
 /// The address format for describing accounts.
@@ -2505,6 +2509,11 @@ type EventRecord = frame_system::EventRecord<
 	<Runtime as frame_system::Config>::Hash,
 >;
 
+impl pallet_etf::Config for Runtime {
+	type BeefyId = BeefyId;
+	type MaxAuthorities = MaxAuthorities;
+}
+
 parameter_types! {
 	pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
@@ -2519,6 +2528,7 @@ impl pallet_beefy::Config for Runtime {
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
 	type EquivocationReportSystem =
 		pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+	type RoundCommitmentProvider = Etf;
 }
 
 /// MMR helper types.
@@ -3015,7 +3025,7 @@ impl_runtime_apis! {
 		fn read_share(who: BeefyId) -> Option<Vec<u8>> {
 			let authorities = pallet_beefy::Authorities::<Runtime>::get();
 			if let Some(at) = authorities.iter().position(|auth| auth.eq(&who)) {
-				let shares = pallet_beefy::Shares::<Runtime>::get();
+				let shares = pallet_etf::Shares::<Runtime>::get();
 				if at as usize >= shares.len() {
 					return None;
 				}
@@ -3025,10 +3035,9 @@ impl_runtime_apis! {
 		}
 
 		fn read_commitment(who: BeefyId) -> Option<BeefyId> {
-
 			let authorities = pallet_beefy::Authorities::<Runtime>::get();
 			if let Some(at) = authorities.iter().position(|auth| auth.eq(&who)) {
-				let commitments = pallet_beefy::Commitments::<Runtime>::get();
+				let commitments = pallet_etf::Commitments::<Runtime>::get();
 				if at as usize >= commitments.len() {
 					return None;
 				}

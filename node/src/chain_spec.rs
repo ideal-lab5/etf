@@ -38,7 +38,14 @@ use sp_runtime::{
 	RuntimeAppPublic,
 };
 
-use w3f_bls::{EngineBLS, TinyBLS377, SerializableToBytes};
+use w3f_bls::{
+	DoublePublicKey,
+	DoublePublicKeyScheme,
+	EngineBLS, 
+	TinyBLS,
+	TinyBLS377, 
+	SerializableToBytes
+};
 
 
 use ark_serialize::CanonicalSerialize;
@@ -333,7 +340,7 @@ fn configure_accounts(
 	usize,
 	Vec<(AccountId, AccountId, Balance, StakerStatus<AccountId>)>,
 	Vec<u8>,
-	Vec<(BeefyId, BeefyId, Vec<u8>)>
+	Vec<(BeefyId, Vec<u8>)>
 ) {
 	let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
 		vec![
@@ -384,34 +391,36 @@ fn configure_accounts(
 	let num_endowed_accounts = endowed_accounts.len();
 
 	// Aggregate BLS signature scheme with Signature in G1 for BLS12-377 curve.
-	let (ibe_pp_bytes, genesis_shares) = etf_genesis::<TinyBLS377>(
+	let (double_public_bytes, genesis_shares) = etf_genesis::<TinyBLS377>(
 		initial_authorities.iter().map(|x| x.7.clone()).collect::<Vec<_>>(),
 		vec!["Alice", "Bob", "Charlie"],
 	);
-	(initial_authorities, endowed_accounts, num_endowed_accounts, stakers, ibe_pp_bytes, genesis_shares)
+	(initial_authorities, endowed_accounts, num_endowed_accounts, stakers, double_public_bytes, genesis_shares)
 }
 
 /// Helper function to prepare initial secrets and resharing for ETF conensus
 /// return a vec of (authority id, resharing, pubkey commitment) along with ibe public key against the master secret
-pub fn etf_genesis<EB: EngineBLS>(
+pub fn etf_genesis<E: EngineBLS>(
 		initial_authorities: Vec<BeefyId>, 
 		seeds: Vec<&str>
-	) -> (Vec<u8>, Vec<(BeefyId, BeefyId, Vec<u8>)>) {
-	let msk = EB::Scalar::rand(&mut OsRng);
-	let msk_prime = EB::Scalar::rand(&mut OsRng);
+	) -> (Vec<u8>, Vec<(BeefyId, Vec<u8>)>) {
+	let msk_prime = E::Scalar::rand(&mut OsRng);
+	let mut keypair = w3f_bls::KeypairVT::<E>::generate(&mut OsRng);
+	let msk: E::Scalar = keypair.secret.0;
+	let double_public: DoublePublicKey<E> =  DoublePublicKey(
+		keypair.into_public_key_in_signature_group().0,
+		keypair.public.0,
+	);
 
-	let double_secret = DoubleSecret::<EB>(msk, msk_prime);
+	let double_secret = DoubleSecret::<E>(msk, msk_prime);
 
-	let ibe_pub_param = EB::PublicKeyGroup::generator() * msk;
-	let mut ibe_pp_bytes = Vec::new();
-	ibe_pub_param.serialize_compressed(&mut ibe_pp_bytes).unwrap();
+	let mut double_public_bytes = Vec::new();
+	double_public.serialize_compressed(&mut double_public_bytes).unwrap();
 
-	// we need to get the PublicKeyGroup element (G2)
 	let genesis_resharing = double_secret.reshare(
 		&initial_authorities.iter().map(|authority| {
-			// panic!(authority.to_raw_vec());
-			w3f_bls::single::PublicKey::<EB>(
-				w3f_bls::double::DoublePublicKey::<EB>::from_bytes(
+			w3f_bls::single::PublicKey::<E>(
+				w3f_bls::double::DoublePublicKey::<E>::from_bytes(
 					&authority.to_raw_vec()
 				).unwrap().1
 			)
@@ -431,9 +440,9 @@ pub fn etf_genesis<EB: EngineBLS>(
 		let o = t.acss_recover(&bytes, initial_authorities.len() as u8)
 			.expect("genesis shares should be well formatted");
 		let etf_id = BeefyId::from(o.public());
-		(auth.clone(), etf_id, bytes)
+		(etf_id, bytes)
 	}).collect::<Vec<_>>();
-	(ibe_pp_bytes, resharings)
+	(double_public_bytes, resharings)
 }
 
 /// Helper function to create RuntimeGenesisConfig json patch for testing.
@@ -455,6 +464,7 @@ pub fn testnet_genesis(
 	let (initial_authorities, endowed_accounts, num_endowed_accounts, stakers, round_key, genesis_shares) =
 		configure_accounts(initial_authorities, initial_nominators, endowed_accounts, STASH);
 
+	// panic!("{:?}", round_key.len());
 	serde_json::json!({
 		"balances": {
 			"balances": endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect::<Vec<_>>(),
@@ -504,11 +514,13 @@ pub fn testnet_genesis(
 		"babe": {
 			"epochConfig": Some(kitchensink_runtime::BABE_GENESIS_EPOCH_CONFIG),
 		},
+		"etf": {
+			"genesisResharing": genesis_shares,
+			"roundPubkey": round_key,			
+		},
 		"beefy": {
 			"authorities": Vec::<BeefyId>::new(),
 			"genesisBlock": Some(1),
-			"genesisResharing": genesis_shares,
-			"roundPubkey": round_key,
 		},
 		"society": { "pot": 0 },
 		"assets": {
