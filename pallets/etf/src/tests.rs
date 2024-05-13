@@ -22,7 +22,7 @@
 // 	dispatch::{GetDispatchInfo, Pays},
 // 	traits::{Currency, KeyOwnerProofSystem, OnInitialize},
 // };
-// use sp_consensus_beefy::{
+// use sp_consensus_beefy_etf::{
 // 	check_equivocation_proof,
 // 	known_payloads::MMR_ROOT_ID,
 // 	test_utils::{generate_equivocation_proof, Keyring as BeefyKeyring},

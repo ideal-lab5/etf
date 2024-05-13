@@ -48,3 +48,6 @@ parity-db = "0.4.12"
 sc-transaction-pool = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
 sc-transaction-pool-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
 futures = { version = "0.3.21", features = ["thread-pool"] }
+
+[patch.'https://github.com/ideal-lab5/polkadot-sdk.git']
+sp-core = { path = "../primitives/core" }

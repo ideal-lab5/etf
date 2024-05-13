@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "client/consensus/beefy-etf",
+    "client/consensus/beefy-etf/rpc",
     "node/bench",
     "node",
     "node/inspect",
@@ -7,9 +9,10 @@ members = [
     "node/rpc",
     "runtime",
     "node/testing",
-    "pallets/beefy",
-    "pallets/beefy-mmr",
+    "pallets/beefy-etf",
+    "pallets/beefy-mmr-etf",
     "pallets/etf",
+    "primitives/consensus/beefy-etf",
 ]
 resolver = "2"
 

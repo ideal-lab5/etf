@@ -20,7 +20,7 @@ frame-support = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch
 frame-system = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev", default-features = false }
 pallet-authorship = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev", default-features = false }
 pallet-session = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev", default-features = false }
-sp-consensus-beefy = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev", default-features = false, features = ["serde"] }
+sp-consensus-beefy-etf = { path = "../../primitives/consensus/beefy-etf", default-features = false, features = ["serde"] }
 sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev", default-features = false, features = ["serde"] }
 sp-session = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev", default-features = false }
 sp-staking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev", default-features = false, features = ["serde"] }
@@ -62,7 +62,7 @@ std = [
 	"pallet-timestamp/std",
 	"scale-info/std",
 	"serde/std",
-	"sp-consensus-beefy/std",
+	"sp-consensus-beefy-etf/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
