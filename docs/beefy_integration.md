@@ -5,7 +5,7 @@ Add the dependencies to `runtime/Cargo.toml`:
 
 ``` toml
 pallet-beefy = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf",  default-features = false }
-pallet-beefy-mmr = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf",  default-features = false }
+pallet-beefy-mmr-etf = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf",  default-features = false }
 pallet-mmr = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf",  default-features = false }
 ```
 

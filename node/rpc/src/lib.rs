@@ -37,7 +37,7 @@ use jsonrpsee::RpcModule;
 use node_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Nonce};
 use sc_client_api::AuxStore;
 use sc_consensus_babe::BabeWorkerHandle;
-use sc_consensus_beefy::communication::notification::{
+use sc_consensus_beefy_etf::communication::notification::{
 	BeefyBestBlockStream, BeefyVersionedFinalityProofStream,
 };
 use sc_consensus_grandpa::{
@@ -149,7 +149,7 @@ where
 	use mmr_rpc::{Mmr, MmrApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 	use sc_consensus_babe_rpc::{Babe, BabeApiServer};
-	use sc_consensus_beefy_rpc::{Beefy, BeefyApiServer};
+	use sc_consensus_beefy_etf_rpc::{Beefy, BeefyApiServer};
 	use sc_consensus_grandpa_rpc::{Grandpa, GrandpaApiServer};
 	use sc_rpc::{
 		dev::{Dev, DevApiServer},

@@ -76,7 +76,7 @@ use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
 use pallet_tx_pause::RuntimeCallNameOf;
 use sp_api::impl_runtime_apis;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
-use sp_consensus_beefy::{
+use sp_consensus_beefy_etf::{
 	bls_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
 	mmr::MmrLeafVersion,
 };
@@ -1589,7 +1589,7 @@ impl pallet_mmr::Config for Runtime {
 	const INDEXING_PREFIX: &'static [u8] = b"mmr";
 	type Hashing = Keccak256;
 	type LeafData = pallet_mmr::ParentNumberAndHash<Self>;
-	type OnNewRoot = pallet_beefy_mmr::DepositBeefyDigest<Runtime>;
+	type OnNewRoot = pallet_beefy_mmr_etf::DepositBeefyDigest<Runtime>;
 	type WeightInfo = ();
 }
 
@@ -1597,9 +1597,9 @@ parameter_types! {
 	pub LeafVersion: MmrLeafVersion = MmrLeafVersion::new(0, 0);
 }
 
-impl pallet_beefy_mmr::Config for Runtime {
+impl pallet_beefy_mmr_etf::Config for Runtime {
 	type LeafVersion = LeafVersion;
-	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyBlsToEthereum;
+	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr_etf::BeefyBlsToEthereum;
 	type LeafExtra = Vec<u8>;
 	type BeefyDataProvider = ();
 }
@@ -2325,10 +2325,11 @@ mod runtime {
 	pub type Assets = pallet_assets<Instance1>;
 
 	#[runtime::pallet_index(40)]
-	pub type PoolAssets = pallet_assets<Instance2>;
+	pub type Etf = pallet_etf;
 
+	// Beefy must be after Etf since we need the round key and public commitments to be available
 	#[runtime::pallet_index(41)]
-	pub type Beefy = pallet_beefy;
+	pub type Beefy = pallet_beefy_etf;
 
 	// MMR leaf construction must be after session in order to have a leaf's next_auth_set
 	// refer to block<N>. See issue polkadot-fellows/runtimes#160 for details.
@@ -2336,7 +2337,7 @@ mod runtime {
 	pub type Mmr = pallet_mmr;
 
 	#[runtime::pallet_index(43)]
-	pub type MmrLeaf = pallet_beefy_mmr;
+	pub type MmrLeaf = pallet_beefy_mmr_etf;
 
 	#[runtime::pallet_index(44)]
 	pub type Lottery = pallet_lottery;
@@ -2439,6 +2440,9 @@ mod runtime {
 
 	#[runtime::pallet_index(77)]
 	pub type SkipFeelessPayment = pallet_skip_feeless_payment;
+
+	#[runtime::pallet_index(78)]
+	pub type PoolAssets = pallet_assets<Instance2>;
 }
 
 /// The address format for describing accounts.
@@ -2505,11 +2509,16 @@ type EventRecord = frame_system::EventRecord<
 	<Runtime as frame_system::Config>::Hash,
 >;
 
+impl pallet_etf::Config for Runtime {
+	type BeefyId = BeefyId;
+	type MaxAuthorities = MaxAuthorities;
+}
+
 parameter_types! {
 	pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
 
-impl pallet_beefy::Config for Runtime {
+impl pallet_beefy_etf::Config for Runtime {
 	type BeefyId = BeefyId;
 	type MaxAuthorities = MaxAuthorities;
 	type MaxNominators = ConstU32<0>;
@@ -2518,7 +2527,8 @@ impl pallet_beefy::Config for Runtime {
 	type WeightInfo = ();
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
 	type EquivocationReportSystem =
-		pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+		pallet_beefy_etf::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+	type RoundCommitmentProvider = Etf;
 }
 
 /// MMR helper types.
@@ -2978,22 +2988,22 @@ impl_runtime_apis! {
 	}
 
 	#[api_version(3)]
-	impl sp_consensus_beefy::BeefyApi<Block, BeefyId> for Runtime {
+	impl sp_consensus_beefy_etf::BeefyApi<Block, BeefyId> for Runtime {
 		fn beefy_genesis() -> Option<BlockNumber> {
-			pallet_beefy::GenesisBlock::<Runtime>::get()
+			pallet_beefy_etf::GenesisBlock::<Runtime>::get()
 		}
 
-		fn validator_set() -> Option<sp_consensus_beefy::ValidatorSet<BeefyId>> {
+		fn validator_set() -> Option<sp_consensus_beefy_etf::ValidatorSet<BeefyId>> {
 			Beefy::validator_set()
 		}
 
 		fn submit_report_equivocation_unsigned_extrinsic(
-			equivocation_proof: sp_consensus_beefy::EquivocationProof<
+			equivocation_proof: sp_consensus_beefy_etf::EquivocationProof<
 				BlockNumber,
 				BeefyId,
 				BeefySignature,
 			>,
-			key_owner_proof: sp_consensus_beefy::OpaqueKeyOwnershipProof,
+			key_owner_proof: sp_consensus_beefy_etf::OpaqueKeyOwnershipProof,
 		) -> Option<()> {
 			let key_owner_proof = key_owner_proof.decode()?;
 
@@ -3004,18 +3014,18 @@ impl_runtime_apis! {
 		}
 
 		fn generate_key_ownership_proof(
-			_set_id: sp_consensus_beefy::ValidatorSetId,
+			_set_id: sp_consensus_beefy_etf::ValidatorSetId,
 			authority_id: BeefyId,
-		) -> Option<sp_consensus_beefy::OpaqueKeyOwnershipProof> {
-			Historical::prove((sp_consensus_beefy::KEY_TYPE, authority_id))
+		) -> Option<sp_consensus_beefy_etf::OpaqueKeyOwnershipProof> {
+			Historical::prove((sp_consensus_beefy_etf::KEY_TYPE, authority_id))
 				.map(|p| p.encode())
-				.map(sp_consensus_beefy::OpaqueKeyOwnershipProof::new)
+				.map(sp_consensus_beefy_etf::OpaqueKeyOwnershipProof::new)
 		}
 
 		fn read_share(who: BeefyId) -> Option<Vec<u8>> {
-			let authorities = pallet_beefy::Authorities::<Runtime>::get();
+			let authorities = pallet_beefy_etf::Authorities::<Runtime>::get();
 			if let Some(at) = authorities.iter().position(|auth| auth.eq(&who)) {
-				let shares = pallet_beefy::Shares::<Runtime>::get();
+				let shares = pallet_etf::Shares::<Runtime>::get();
 				if at as usize >= shares.len() {
 					return None;
 				}
@@ -3025,23 +3035,19 @@ impl_runtime_apis! {
 		}
 
 		fn read_commitment(who: BeefyId) -> Option<BeefyId> {
-
-			let authorities = pallet_beefy::Authorities::<Runtime>::get();
+			let authorities = pallet_beefy_etf::Authorities::<Runtime>::get();
 			if let Some(at) = authorities.iter().position(|auth| auth.eq(&who)) {
-				let commitments = pallet_beefy::Commitments::<Runtime>::get();
+				let commitments = pallet_etf::Commitments::<Runtime>::get();
 				if at as usize >= commitments.len() {
 					return None;
 				}
 				return Some(commitments[at as usize].clone());
 			}
 			None
+		}
 
-
-			// let commitments = pallet_beefy::Commitments::<Runtime>::get();
-			// if at as usize >= commitments.len() {
-			// 	return None;
-			// }
-			// Some(commitments[at as usize].clone().into_inner())
+		fn acss_recover(pok: Vec<u8>) -> Option<Vec<u8>> {
+			None
 		}
 	}
 

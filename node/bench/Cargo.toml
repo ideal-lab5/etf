@@ -18,33 +18,36 @@ workspace = true
 array-bytes = "6.1"
 clap = { version = "4.5.3", features = ["derive"] }
 log = { workspace = true, default-features = true }
-# node-primitives = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
-# node-testing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
+# node-primitives = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
+# node-testing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
 node-primitives = { path = "../primitives" }
 node-testing = { path = "../testing" }
-# kitchensink-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
+# kitchensink-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
 kitchensink-runtime = { path = "../../runtime" }
-sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
-sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
-sp-state-machine = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
+sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
+sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
+sp-state-machine = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
 serde = { workspace = true, default-features = true }
 serde_json = { workspace = true, default-features = true }
 derive_more = { version = "0.99.17", default-features = false, features = ["display"] }
 kvdb = "0.13.0"
 kvdb-rocksdb = "0.19.0"
-sp-trie = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
-sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
-sp-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
-sc-basic-authorship = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
-sp-inherents = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
-sp-timestamp = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf",  default-features = false }
-sp-tracing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
+sp-trie = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
+sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
+sp-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
+sc-basic-authorship = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
+sp-inherents = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
+sp-timestamp = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev",  default-features = false }
+sp-tracing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
 hash-db = "0.16.0"
 tempfile = "3.1.0"
 fs_extra = "1"
 rand = { version = "0.8.5", features = ["small_rng"] }
 lazy_static = "1.4.0"
 parity-db = "0.4.12"
-sc-transaction-pool = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
-sc-transaction-pool-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "etf" }
+sc-transaction-pool = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
+sc-transaction-pool-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "dev" }
 futures = { version = "0.3.21", features = ["thread-pool"] }
+
+[patch.'https://github.com/ideal-lab5/polkadot-sdk.git']
+sp-core = { path = "../primitives/core" }

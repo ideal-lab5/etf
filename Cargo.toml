@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "client/consensus/beefy-etf",
+    "client/consensus/beefy-etf/rpc",
     "node/bench",
     "node",
     "node/inspect",
@@ -7,6 +9,10 @@ members = [
     "node/rpc",
     "runtime",
     "node/testing",
+    "pallets/beefy-etf",
+    "pallets/beefy-mmr-etf",
+    "pallets/etf",
+    "primitives/consensus/beefy-etf",
 ]
 resolver = "2"
 
@@ -56,7 +62,7 @@ serde-big-array = { version = "0.3.2" }
 serde_derive = { version = "1.0.117" }
 serde_json = { version = "1.0.114", default-features = false }
 serde_yaml = { version = "0.9" }
-syn = { version = "2.0.53" }
+syn = { versicargon = "2.0.53" }
 thiserror = { version = "1.0.48" }
 
 [profile.release]
