@@ -18,14 +18,13 @@
 
 use sp_application_crypto::{
 	key_types::BEEFY as BEEFY_KEY_TYPE,
-	key_types::ETF as ETF_KEY_TYPE,
 	AppCrypto, 
 	RuntimeAppPublic
 };
 use sp_consensus_beefy_etf::{AuthorityIdBound, BeefyAuthorityId, BeefySignatureHasher};
 use sp_core::ecdsa;
 #[cfg(feature = "bls-experimental")]
-use sp_core::{bls377, ecdsa_bls377};
+use sp_core::{bls377, ecdsa_bls377, crypto::KeyTypeId};
 use sp_crypto_hashing::keccak_256;
 use sp_keystore::KeystorePtr;
 
@@ -34,6 +33,9 @@ use log::{info, warn};
 use std::marker::PhantomData;
 
 use crate::{error, LOG_TARGET};
+
+#[cfg(feature = "bls-experimental")]
+pub const ETF_KEY_TYPE: KeyTypeId = KeyTypeId(*b"etfn");
 
 /// A BEEFY specific keystore implemented as a `Newtype`. This is basically a
 /// wrapper around [`sp_keystore::Keystore`] and allows to customize

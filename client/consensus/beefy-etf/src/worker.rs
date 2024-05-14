@@ -905,13 +905,7 @@ where
 		message: &[u8]
 	) -> Option<Signature> {
 		let mut runtime_api = self.runtime.runtime_api();
-		// let mut runtime_api = client.runtime_api();
 
-		// runtime_api.register_extension(sp_keystore::KeystoreExt::from(self.keystore));
-	
-		// for seed in seeds {
-		// 	runtime_api.generate_session_keys(at, Some(seed.as_bytes().to_vec()))?;
-		// }
 		info!(
 			target: LOG_TARGET,
 			"🎲 run ACSS recovery at best grandpa: #{:?}.",
