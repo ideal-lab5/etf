@@ -41,16 +41,13 @@ use sp_runtime::{
 use w3f_bls::{
 	DoublePublicKey,
 	DoublePublicKeyScheme,
-	EngineBLS, 
-	TinyBLS,
+	EngineBLS,
 	TinyBLS377, 
 	SerializableToBytes
 };
 
-
 use ark_serialize::CanonicalSerialize;
 use ark_std::UniformRand;
-use ark_ec::Group;
 
 use rand::rngs::OsRng;
 use etf_crypto_primitives::dpss::acss::DoubleSecret;
@@ -344,6 +341,8 @@ fn configure_accounts(
 ) {
 	let mut endowed_accounts: Vec<AccountId> = endowed_accounts.unwrap_or_else(|| {
 		vec![
+			// the ETF faucet 5GCW5pYV7gdhRY7VAhn6WACiVyxn5sFcqfdBd5UayKbWipQn
+			array_bytes::hex_n_into_unchecked("b6e343c7f8a80a7f388488ae724f9632bd69199951e2b7099bc3e96b2fe0154a"),
 			get_account_id_from_seed::<sr25519::Public>("Alice"),
 			get_account_id_from_seed::<sr25519::Public>("Bob"),
 			get_account_id_from_seed::<sr25519::Public>("Charlie"),
@@ -405,7 +404,7 @@ pub fn etf_genesis<E: EngineBLS>(
 		seeds: Vec<&str>
 	) -> (Vec<u8>, Vec<(BeefyId, Vec<u8>)>) {
 	let msk_prime = E::Scalar::rand(&mut OsRng);
-	let mut keypair = w3f_bls::KeypairVT::<E>::generate(&mut OsRng);
+	let keypair = w3f_bls::KeypairVT::<E>::generate(&mut OsRng);
 	let msk: E::Scalar = keypair.secret.0;
 	let double_public: DoublePublicKey<E> =  DoublePublicKey(
 		keypair.into_public_key_in_signature_group().0,
@@ -429,7 +428,7 @@ pub fn etf_genesis<E: EngineBLS>(
 		&mut OsRng,
 	).unwrap();
 
-	let resharings = initial_authorities.iter().enumerate().map(|(idx, auth)| {
+	let resharings = initial_authorities.iter().enumerate().map(|(idx, _)| {
 		let pok = &genesis_resharing[idx].1;
 		let mut bytes = Vec::new();
 		pok.serialize_compressed(&mut bytes).unwrap();

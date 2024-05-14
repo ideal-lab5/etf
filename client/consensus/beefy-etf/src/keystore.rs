@@ -29,7 +29,7 @@ use sp_crypto_hashing::keccak_256;
 use sp_keystore::KeystorePtr;
 
 use codec::Decode;
-use log::{info, warn};
+use log::warn;
 use std::marker::PhantomData;
 
 use crate::{error, LOG_TARGET};

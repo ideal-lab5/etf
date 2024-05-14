@@ -524,9 +524,6 @@ sp_api::decl_runtime_apis! {
 		) -> Option<OpaqueKeyOwnershipProof>;
 
 		#[cfg(feature = "bls-experimental")]
-		fn acss_recover(pok: Vec<u8>) -> Option<Vec<u8>>;
-
-		#[cfg(feature = "bls-experimental")]
 		/// Return a proof of knowledge for async secret sharing
 		fn read_share(who: AuthorityId) -> Option<Vec<u8>>;
 

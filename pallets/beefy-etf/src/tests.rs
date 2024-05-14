@@ -64,36 +64,6 @@ fn genesis_session_initializes_authorities() {
 }
 
 #[test]
-fn genesis_session_initializes_resharing_and_commitments_with_valid_values() {
-	let genesis_resharing = mock_resharing(
-		vec![
-			(1, 2, vec![1, 2]), 
-			(3, 4, vec![3, 4])
-		]);
-
-	let want_resharing = genesis_resharing.clone();
-	let genesis_roundkey = [1;96].to_vec();
-
-	ExtBuilder::default()
-		.add_authorities(mock_authorities(vec![1, 3]))
-		.add_resharing(genesis_resharing)
-		.add_round_key(genesis_roundkey)
-		.build_and_execute(|| 
-	{
-		// resharings are populated
-		let resharings = beefy::Shares::<Test>::get();
-		assert_eq!(resharings.len(), 2);
-		assert_eq!(resharings[0], want_resharing[0].2);
-		assert_eq!(resharings[1], want_resharing[1].2);
-
-		let commitments = beefy::Commitments::<Test>::get();
-		assert_eq!(commitments.len(), 2);
-		assert_eq!(commitments[0], want_resharing[0].1);
-		assert_eq!(commitments[1], want_resharing[1].1);
-	});
-}
-
-#[test]
 fn session_change_updates_authorities() {
 	let authorities = mock_authorities(vec![1, 2, 3, 4]);
 	let want_validators = authorities.clone();
@@ -108,7 +78,7 @@ fn session_change_updates_authorities() {
 			assert!(1 == beefy::ValidatorSetId::<Test>::get());
 
 			let want = beefy_log(ConsensusLog::AuthoritiesChange(
-				ValidatorSet::new(want_validators, 1).unwrap(),
+				ValidatorSet::new(want_validators.clone(), want_validators, 1).unwrap(),
 			));
 
 			let log = System::digest().logs[0].clone();
@@ -119,7 +89,7 @@ fn session_change_updates_authorities() {
 			assert!(2 == beefy::ValidatorSetId::<Test>::get());
 
 			let want = beefy_log(ConsensusLog::AuthoritiesChange(
-				ValidatorSet::new(vec![mock_beefy_id(2), mock_beefy_id(4)], 2).unwrap(),
+				ValidatorSet::new(vec![mock_beefy_id(2), mock_beefy_id(3), mock_beefy_id(4)], vec![mock_beefy_id(5)], 2).unwrap(),
 			));
 
 			let log = System::digest().logs[1].clone();

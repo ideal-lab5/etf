@@ -43,6 +43,7 @@ sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "to
 sp-io = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 sp-staking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 sp-state-machine = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false }
+pallet-etf = { path = "../etf" }
 
 [features]
 default = ["std"]

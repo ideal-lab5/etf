@@ -93,6 +93,14 @@ impl pallet_mmr::Config for Test {
 	type WeightInfo = ();
 }
 
+pub struct MockRoundCommitmentProvider {}
+
+impl pallet_etf::RoundCommitmentProvider<BeefyId, ConstU32<100>> for MockRoundCommitmentProvider {
+	fn get() -> frame_support::BoundedVec<BeefyId, ConstU32<100>> {
+		frame_support::BoundedVec::<BeefyId, ConstU32<100>>::new()
+	}
+}
+
 impl pallet_beefy::Config for Test {
 	type BeefyId = BeefyId;
 	type MaxAuthorities = ConstU32<100>;
@@ -102,6 +110,7 @@ impl pallet_beefy::Config for Test {
 	type WeightInfo = ();
 	type KeyOwnerProof = sp_core::Void;
 	type EquivocationReportSystem = ();
+	type RoundCommitmentProvider = MockRoundCommitmentProvider;
 }
 
 parameter_types! {

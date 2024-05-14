@@ -35,6 +35,7 @@ sp-state-machine = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", bra
 [dev-dependencies]
 array-bytes = "6.1"
 sp-staking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
+pallet-etf = { path = "../etf" }
 
 [features]
 default = ["std"]
