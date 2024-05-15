@@ -1,4 +1,5 @@
 # build a dev chainspec
-./target/release/node build-spec > etfDevSpec.json
-./target/release/node build-spec --chain=etfDevSpec.json --raw > etfDevSpecRaw.json
-rm etfDevSpec.json
+#cargo build --release
+./target/release/node build-spec --dev > etfDevSpec.json
+./target/release/node build-spec --chain=etfDevSpec.json --raw > local_chainspec.json
+#rm etfDevSpec.json

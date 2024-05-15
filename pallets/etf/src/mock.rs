@@ -1,117 +1,75 @@
-use crate as pallet_etf;
-use frame_support::traits::{ConstBool, ConstU64};
-use sp_core::{ConstU32, H256};
-use sp_runtime::{
-	traits::{BlakeTwo256, IdentityLookup},
-};
-use sp_runtime::BuildStorage;
+use std::vec;
 
-use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
+use frame_support::{
+	construct_runtime, derive_impl,
+	traits::ConstU32,
+};
+use sp_io::TestExternalities;
+use sp_runtime::{
+	app_crypto::bls377::Public,
+	traits::{OpaqueKeys},
+	BuildStorage,
+};
+use sp_state_machine::BasicExternalities;
+
+use crate as pallet_etf;
+
+pub use sp_consensus_beefy_etf::{
+	bls_crypto::AuthorityId as BeefyId,
+};
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
-// Configure a mock runtime to test the pallet.
-frame_support::construct_runtime!(
+construct_runtime!(
 	pub enum Test
 	{
 		System: frame_system,
-		Balances: pallet_balances,
-		Aura: pallet_etf_aura,
 		Etf: pallet_etf,
 	}
 );
 
-type AccountId = u64;
-
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
 impl frame_system::Config for Test {
-	type BaseCallFilter = frame_support::traits::Everything;
-	type BlockWeights = ();
-	type BlockLength = ();
-	type RuntimeOrigin = RuntimeOrigin;
-	type RuntimeCall = RuntimeCall;
-	type Nonce = u64;
-	type Hash = H256;
-	type Hashing = BlakeTwo256;
-	type AccountId = AccountId;
-	type Lookup = IdentityLookup<Self::AccountId>;
 	type Block = Block;
-	type RuntimeEvent = RuntimeEvent;
-	type BlockHashCount = ConstU64<250>;
-	type DbWeight = ();
-	type Version = ();
-	type PalletInfo = PalletInfo;
-	type AccountData = pallet_balances::AccountData<u64>;
-	type OnNewAccount = ();
-	type OnKilledAccount = ();
-	type SystemWeightInfo = ();
-	type SS58Prefix = ();
-	type OnSetCode = ();
-	type MaxConsumers = ConstU32<3>;
-}
-
-impl pallet_balances::Config for Test {
-	type Balance = u64;
-	type DustRemoval = ();
-	type RuntimeEvent = RuntimeEvent;
-	type ExistentialDeposit = ConstU64<1>;
-	type AccountStore = System;
-	type WeightInfo = ();
-	type MaxLocks = ();
-	type MaxReserves = ();
-	type ReserveIdentifier = [u8; 8];
-	type RuntimeHoldReason = RuntimeHoldReason;
-	type RuntimeFreezeReason = RuntimeFreezeReason;
-	type FreezeIdentifier = ();
-	type MaxHolds = ConstU32<10>;
-	type MaxFreezes = ();
-}
-
-
-impl pallet_timestamp::Config for Test {
-	type Moment = u64;
-	type OnTimestampSet = Aura;
-	type MinimumPeriod = ConstU64<1>;
-	type WeightInfo = ();
-}
-
-impl pallet_etf_aura::Config for Test {
-	type AuthorityId = AuraId;
-	type DisabledValidators = ();
-	type MaxAuthorities = ConstU32<32>;
-	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-
-	#[cfg(feature = "experimental")]
-	type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Test>;
 }
 
 impl pallet_etf::Config for Test {
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Test>;
-	type SlotSecretProvider = Aura;
+	type BeefyId = BeefyId;
+	type MaxAuthorities = ConstU32<100>;
+}
+// Note, that we can't use `UintAuthorityId` here. Reason is that the implementation
+// of `to_public_key()` assumes, that a public key is 32 bytes long. This is true for
+// ed25519 and sr25519 but *not* for aggregatable BLS. A compressed aggregated BLS public key is 144 bytes
+pub fn mock_beefy_id(id: u8) -> BeefyId {
+	let mut buf: [u8; 144] = [id; 144];
+	// Set to something valid.
+	buf[0] = 0x02;
+	let pk = Public::from_raw(buf);
+	BeefyId::from(pk)
 }
 
-// Build genesis storage according to the mock runtime.
-pub fn new_test_ext(
-    g1_hex: &str,
-	g2_hex: &str,
-) -> sp_io::TestExternalities {
+pub fn mock_authorities(vec: Vec<u8>) -> Vec<(u64, BeefyId)> {
+	vec.into_iter().map(|id| ((id as u64), mock_beefy_id(id))).collect()
+}
 
-	let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
+pub fn new_test_ext(ids: Vec<u8>) -> TestExternalities {
+	new_test_ext_raw_authorities(mock_authorities(ids))
+}
 
-    let ibe_g1: Vec<u8> = array_bytes::hex2bytes_unchecked(g1_hex);
-	let ibe_g2: Vec<u8> = array_bytes::hex2bytes_unchecked(g2_hex);
+pub fn new_test_ext_raw_authorities(authorities: Vec<(u64, BeefyId)>) -> TestExternalities {
+	let mut t = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 
-    let config: pallet_etf::GenesisConfig::<Test> = pallet_etf::GenesisConfig {
-		initial_ibe_params: ibe_g1.clone(),
-		initial_ibe_pp: ibe_g2.clone(),
-		initial_ibe_commitment: ibe_g2.clone(),
-		_config:Default::default(),
-	};
+	let genesis_resharing = authorities
+		.iter()
+		.map(|(_idx, id)| (id.clone(), vec![2]))
+		.collect();
 
-	config.assimilate_storage(&mut storage).unwrap();
-    let mut ext: sp_io::TestExternalities = storage.into();
-	// Clear thread local vars for https://github.com/paritytech/substrate/issues/10479.
-	// ext.execute_with(|| take_hooks());
-	ext.execute_with(|| System::set_block_number(1));
-	ext
+	pallet_etf::GenesisConfig::<Test> { 
+		genesis_resharing: genesis_resharing,
+		round_pubkey: vec![1]
+	}
+		.assimilate_storage(&mut t)
+		.unwrap();
+
+	t.into()
 }
