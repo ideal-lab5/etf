@@ -213,7 +213,7 @@ impl TestNetFactory for BeefyTestNet {
 		Self::PeerData,
 	) {
 		let keys = &[BeefyKeyring::Alice, BeefyKeyring::Bob];
-		let validator_set = ValidatorSet::new(make_beefy_ids(keys), 0).unwrap();
+		let validator_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 0).unwrap();
 		let api = Arc::new(TestApi::new(self.beefy_genesis, &validator_set, GOOD_MMR_ROOT));
 		let inner = BlockImportAdapter::new(client.clone());
 		let (block_import, voter_links, rpc_links) =
@@ -323,17 +323,6 @@ sp_api::mock_impl_runtime_apis! {
 			_dummy1: ValidatorSetId,
 			_dummy2: AuthorityId,
 		) -> Option<OpaqueKeyOwnershipProof> { Some(OpaqueKeyOwnershipProof::new(vec![])) }
-
-		fn read_share(dummy: AuthorityId) -> Option<Vec<u8>> {
-			// TODO
-			Some(vec![])
-		}
-
-		fn read_commitment(dummy: AuthorityId) -> Option<AuthorityId> {
-			// TODO
-			None
-		}
-
 	}
 
 	impl MmrApi<Block, MmrRootHash, NumberFor<Block>> for RuntimeApi {
@@ -601,7 +590,7 @@ async fn beefy_finalizing_blocks() {
 	sp_tracing::try_init_simple();
 
 	let peers = [BeefyKeyring::Alice, BeefyKeyring::Bob];
-	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), make_beefy_ids(&peers), 0).unwrap();
 	let session_len = 10;
 	let min_block_delta = 4;
 
@@ -641,7 +630,7 @@ async fn lagging_validators() {
 	sp_tracing::try_init_simple();
 
 	let peers = [BeefyKeyring::Alice, BeefyKeyring::Bob, BeefyKeyring::Charlie];
-	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), make_beefy_ids(&peers), 0).unwrap();
 	let session_len = 30;
 	let min_block_delta = 1;
 
@@ -709,7 +698,7 @@ async fn correct_beefy_payload() {
 	sp_tracing::try_init_simple();
 
 	let peers = [BeefyKeyring::Alice, BeefyKeyring::Bob, BeefyKeyring::Charlie, BeefyKeyring::Dave];
-	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), make_beefy_ids(&peers), 0).unwrap();
 	let session_len = 20;
 	let min_block_delta = 2;
 
@@ -771,7 +760,7 @@ async fn beefy_importing_justifications() {
 
 	let mut net = BeefyTestNet::new(2);
 	let keys = &[BeefyKeyring::Alice, BeefyKeyring::Bob];
-	let good_set = ValidatorSet::new(make_beefy_ids(keys), 0).unwrap();
+	let good_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 0).unwrap();
 	// Set BEEFY genesis to block 3.
 	net.beefy_genesis = 3;
 
@@ -899,7 +888,7 @@ async fn beefy_importing_justifications() {
 	let block = builder.build().unwrap().block;
 	let hashof4 = block.header.hash();
 	let keys = &[BeefyKeyring::Alice];
-	let bad_set = ValidatorSet::new(make_beefy_ids(keys), 1).unwrap();
+	let bad_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 1).unwrap();
 	let proof = crate::justification::tests::new_finality_proof(block_num, &bad_set, keys);
 	let versioned_proof: VersionedFinalityProof<NumberFor<Block>, Signature> = proof.into();
 	let encoded = versioned_proof.encode();
@@ -933,7 +922,7 @@ async fn on_demand_beefy_justification_sync() {
 
 	let all_peers =
 		[BeefyKeyring::Alice, BeefyKeyring::Bob, BeefyKeyring::Charlie, BeefyKeyring::Dave];
-	let validator_set = ValidatorSet::new(make_beefy_ids(&all_peers), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(&all_peers), make_beefy_ids(&all_peers), 0).unwrap();
 	let session_len = 5;
 	let min_block_delta = 4;
 
@@ -1014,7 +1003,7 @@ async fn on_demand_beefy_justification_sync() {
 #[tokio::test]
 async fn should_initialize_voter_at_genesis() {
 	let keys = &[BeefyKeyring::Alice];
-	let validator_set = ValidatorSet::new(make_beefy_ids(keys), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 0).unwrap();
 	let mut net = BeefyTestNet::new(1);
 	let backend = net.peer(0).client().as_backend();
 
@@ -1052,7 +1041,7 @@ async fn should_initialize_voter_at_genesis() {
 #[tokio::test]
 async fn should_initialize_voter_at_custom_genesis() {
 	let keys = &[BeefyKeyring::Alice];
-	let validator_set = ValidatorSet::new(make_beefy_ids(keys), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 0).unwrap();
 	let mut net = BeefyTestNet::new(1);
 	let backend = net.peer(0).client().as_backend();
 	// custom pallet genesis is block number 7
@@ -1092,7 +1081,7 @@ async fn should_initialize_voter_at_custom_genesis() {
 	// now re-init after genesis changes
 
 	// should ignore existing aux db state and reinit at new genesis
-	let new_validator_set = ValidatorSet::new(make_beefy_ids(keys), 42).unwrap();
+	let new_validator_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 42).unwrap();
 	let new_pallet_genesis = 10;
 	let api = TestApi::new(new_pallet_genesis, &new_validator_set, GOOD_MMR_ROOT);
 
@@ -1122,7 +1111,7 @@ async fn should_initialize_voter_at_custom_genesis() {
 #[tokio::test]
 async fn should_initialize_voter_when_last_final_is_session_boundary() {
 	let keys = &[BeefyKeyring::Alice];
-	let validator_set = ValidatorSet::new(make_beefy_ids(keys), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 0).unwrap();
 	let mut net = BeefyTestNet::new(1);
 	let backend = net.peer(0).client().as_backend();
 
@@ -1176,7 +1165,7 @@ async fn should_initialize_voter_when_last_final_is_session_boundary() {
 #[tokio::test]
 async fn should_initialize_voter_at_latest_finalized() {
 	let keys = &[BeefyKeyring::Alice];
-	let validator_set = ValidatorSet::new(make_beefy_ids(keys), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 0).unwrap();
 	let mut net = BeefyTestNet::new(1);
 	let backend = net.peer(0).client().as_backend();
 
@@ -1228,7 +1217,7 @@ async fn should_initialize_voter_at_latest_finalized() {
 #[tokio::test]
 async fn should_initialize_voter_at_custom_genesis_when_state_unavailable() {
 	let keys = &[BeefyKeyring::Alice];
-	let validator_set = ValidatorSet::new(make_beefy_ids(keys), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 0).unwrap();
 	let mut net = BeefyTestNet::new(1);
 	let backend = net.peer(0).client().as_backend();
 	// custom pallet genesis is block number 7
@@ -1276,7 +1265,7 @@ async fn should_initialize_voter_at_custom_genesis_when_state_unavailable() {
 #[tokio::test]
 async fn should_catch_up_when_loading_saved_voter_state() {
 	let keys = &[BeefyKeyring::Alice];
-	let validator_set = ValidatorSet::new(make_beefy_ids(keys), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(keys), make_beefy_ids(keys), 0).unwrap();
 	let mut net = BeefyTestNet::new(1);
 	let backend = net.peer(0).client().as_backend();
 
@@ -1340,7 +1329,7 @@ async fn beefy_finalizing_after_pallet_genesis() {
 	sp_tracing::try_init_simple();
 
 	let peers = [BeefyKeyring::Alice, BeefyKeyring::Bob];
-	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), 14).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), make_beefy_ids(&peers), 14).unwrap();
 	let session_len = 10;
 	let min_block_delta = 1;
 	let pallet_genesis = 15;
@@ -1374,7 +1363,7 @@ async fn beefy_reports_equivocations() {
 	sp_tracing::try_init_simple();
 
 	let peers = [BeefyKeyring::Alice, BeefyKeyring::Bob, BeefyKeyring::Charlie];
-	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(&peers), make_beefy_ids(&peers), 0).unwrap();
 	let session_len = 10;
 	let min_block_delta = 4;
 
@@ -1448,7 +1437,7 @@ async fn gossipped_finality_proofs() {
 	let validators = [BeefyKeyring::Alice, BeefyKeyring::Bob, BeefyKeyring::Charlie];
 	// Only Alice and Bob are running the voter -> finality threshold not reached
 	let peers = [BeefyKeyring::Alice, BeefyKeyring::Bob];
-	let validator_set = ValidatorSet::new(make_beefy_ids(&validators), 0).unwrap();
+	let validator_set = ValidatorSet::new(make_beefy_ids(&validators), make_beefy_ids(&validators), 0).unwrap();
 	let session_len = 10;
 	let min_block_delta = 1;
 

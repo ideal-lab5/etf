@@ -51,7 +51,6 @@ use sp_consensus_beefy_etf::{
 	BeefyApi, BeefySignatureHasher, Commitment, EquivocationProof, PayloadProvider, ValidatorSetId,
 	ValidatorSet, VersionedFinalityProof, VoteMessage, BEEFY_ENGINE_ID, Payload, known_payloads,
 };
-use sp_core::bls377;
 use sp_runtime::{
 	generic::BlockId,
 	traits::{Block, Header, NumberFor, Zero},
@@ -748,7 +747,7 @@ where
 		let rounds = self.persisted_state.voting_oracle.active_rounds_mut()?;
 		let (validators, validator_set_id) = (rounds.validators(), rounds.validator_set_id());
 
-		let mut authority_id = if let Some(id) = self.key_store.authority_id(validators) {
+		let authority_id = if let Some(id) = self.key_store.authority_id(validators) {
 			debug!(target: LOG_TARGET, "🥩 Local authority id: {:?}", id);
 			id
 		} else {
@@ -759,7 +758,7 @@ where
 			return Ok(())
 		};
 
-		if let Some((signature, id, commitment)) = self.get_signed_payload(
+		if let Some((signature, _id, commitment)) = self.get_signed_payload(
 			target_number,
 			target_header,
 			// target_hash,
@@ -904,7 +903,7 @@ where
 		id: AuthorityId,
 		message: &[u8]
 	) -> Option<Signature> {
-		let mut runtime_api = self.runtime.runtime_api();
+		let runtime_api = self.runtime.runtime_api();
 
 		info!(
 			target: LOG_TARGET,

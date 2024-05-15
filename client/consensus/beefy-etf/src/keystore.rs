@@ -29,13 +29,10 @@ use sp_crypto_hashing::keccak_256;
 use sp_keystore::KeystorePtr;
 
 use codec::Decode;
-use log::{info, warn};
+use log::warn;
 use std::marker::PhantomData;
 
 use crate::{error, LOG_TARGET};
-
-#[cfg(feature = "bls-experimental")]
-pub const ETF_KEY_TYPE: KeyTypeId = KeyTypeId(*b"etfn");
 
 /// A BEEFY specific keystore implemented as a `Newtype`. This is basically a
 /// wrapper around [`sp_keystore::Keystore`] and allows to customize

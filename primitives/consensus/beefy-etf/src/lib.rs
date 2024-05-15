@@ -182,7 +182,7 @@ pub mod bls_crypto {
 pub mod ecdsa_bls_crypto {
 	use super::{AuthorityIdBound, BeefyAuthorityId, Hash, RuntimeAppPublic, KEY_TYPE};
 	use sp_application_crypto::{app_crypto, ecdsa_bls377};
-	use sp_core::{crypto::Wraps, ecdsa_bls377::Pair as EcdsaBlsPair};
+	// use sp_core::{crypto::Wraps, ecdsa_bls377::Pair as EcdsaBlsPair};
 
 	app_crypto!(ecdsa_bls377, KEY_TYPE);
 
@@ -197,7 +197,7 @@ pub mod ecdsa_bls_crypto {
 		H: Hash,
 		H::Output: Into<[u8; 32]>,
 	{
-		fn verify(&self, signature: &<Self as RuntimeAppPublic>::Signature, msg: &[u8]) -> bool {
+		fn verify(&self, _signature: &<Self as RuntimeAppPublic>::Signature, _msg: &[u8]) -> bool {
 			// We can not simply call
 			// `EcdsaBlsPair::verify(signature.as_inner_ref(), msg, self.as_inner_ref())`
 			// because that invokes ECDSA default verification which performs Blake2b hash
@@ -301,7 +301,7 @@ impl<AuthorityId> ValidatorSet<AuthorityId> {
 	{
 		let validators: Vec<AuthorityId> = validators.into_iter().collect();
 		let commitments: Vec<AuthorityId> = commitments.into_iter().collect();
-		if validators.is_empty() || validators.len() != commitments.len() {
+		if validators.is_empty() || commitments.is_empty() {
 			// No validators; the set would be empty.
 			// Or the validator and commitment set are improperly allocated
 			None
@@ -522,9 +522,6 @@ sp_api::decl_runtime_apis! {
 			set_id: ValidatorSetId,
 			authority_id: AuthorityId,
 		) -> Option<OpaqueKeyOwnershipProof>;
-
-		#[cfg(feature = "bls-experimental")]
-		fn acss_recover(pok: Vec<u8>) -> Option<Vec<u8>>;
 
 		#[cfg(feature = "bls-experimental")]
 		/// Return a proof of knowledge for async secret sharing

@@ -46,7 +46,10 @@ fn genesis_session_initializes_authorities() {
 	let authorities = mock_authorities(vec![1, 2, 3, 4]);
 	let want = authorities.clone();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
+		.build_and_execute(|| {
 		let authorities = beefy::Authorities::<Test>::get();
 
 		assert_eq!(authorities.len(), 4);
@@ -64,42 +67,12 @@ fn genesis_session_initializes_authorities() {
 }
 
 #[test]
-fn genesis_session_initializes_resharing_and_commitments_with_valid_values() {
-	let genesis_resharing = mock_resharing(
-		vec![
-			(1, 2, vec![1, 2]), 
-			(3, 4, vec![3, 4])
-		]);
-
-	let want_resharing = genesis_resharing.clone();
-	let genesis_roundkey = [1;96].to_vec();
-
-	ExtBuilder::default()
-		.add_authorities(mock_authorities(vec![1, 3]))
-		.add_resharing(genesis_resharing)
-		.add_round_key(genesis_roundkey)
-		.build_and_execute(|| 
-	{
-		// resharings are populated
-		let resharings = beefy::Shares::<Test>::get();
-		assert_eq!(resharings.len(), 2);
-		assert_eq!(resharings[0], want_resharing[0].2);
-		assert_eq!(resharings[1], want_resharing[1].2);
-
-		let commitments = beefy::Commitments::<Test>::get();
-		assert_eq!(commitments.len(), 2);
-		assert_eq!(commitments[0], want_resharing[0].1);
-		assert_eq!(commitments[1], want_resharing[1].1);
-	});
-}
-
-#[test]
 fn session_change_updates_authorities() {
 	let authorities = mock_authorities(vec![1, 2, 3, 4]);
-	let want_validators = authorities.clone();
 
 	ExtBuilder::default()
-		.add_authorities(mock_authorities(vec![1, 2, 3, 4]))
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities.clone())
 		.build_and_execute(|| {
 			assert!(0 == beefy::ValidatorSetId::<Test>::get());
 
@@ -108,7 +81,7 @@ fn session_change_updates_authorities() {
 			assert!(1 == beefy::ValidatorSetId::<Test>::get());
 
 			let want = beefy_log(ConsensusLog::AuthoritiesChange(
-				ValidatorSet::new(want_validators, 1).unwrap(),
+				ValidatorSet::new(authorities.clone(), authorities.clone(), 1).unwrap(),
 			));
 
 			let log = System::digest().logs[0].clone();
@@ -119,7 +92,11 @@ fn session_change_updates_authorities() {
 			assert!(2 == beefy::ValidatorSetId::<Test>::get());
 
 			let want = beefy_log(ConsensusLog::AuthoritiesChange(
-				ValidatorSet::new(vec![mock_beefy_id(2), mock_beefy_id(4)], 2).unwrap(),
+				ValidatorSet::new(
+					vec![mock_beefy_id(2), mock_beefy_id(4)],
+					authorities.clone(),
+					2
+				).unwrap(),
 			));
 
 			let log = System::digest().logs[1].clone();
@@ -131,8 +108,10 @@ fn session_change_updates_authorities() {
 fn session_change_updates_next_authorities() {
 	let want = vec![mock_beefy_id(1), mock_beefy_id(2), mock_beefy_id(3), mock_beefy_id(4)];
 
+	let authorities = mock_authorities(vec![1, 2, 3, 4]);
 	ExtBuilder::default()
-		.add_authorities(mock_authorities(vec![1, 2, 3, 4]))
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
 		.build_and_execute(|| {
 			let next_authorities = beefy::NextAuthorities::<Test>::get();
 
@@ -156,8 +135,10 @@ fn session_change_updates_next_authorities() {
 fn validator_set_at_genesis() {
 	let want = vec![mock_beefy_id(1), mock_beefy_id(2)];
 
+	let authorities = mock_authorities(vec![1, 2, 3, 4]);
 	ExtBuilder::default()
-		.add_authorities(mock_authorities(vec![1, 2, 3, 4]))
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
 		.build_and_execute(|| {
 			let vs = Beefy::validator_set().unwrap();
 
@@ -171,8 +152,10 @@ fn validator_set_at_genesis() {
 fn validator_set_updates_work() {
 	let want = vec![mock_beefy_id(1), mock_beefy_id(2), mock_beefy_id(3), mock_beefy_id(4)];
 
+	let authorities = mock_authorities(vec![1, 2, 3, 4]);
 	ExtBuilder::default()
-		.add_authorities(mock_authorities(vec![1, 2, 3, 4]))
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
 		.build_and_execute(|| {
 			let vs = Beefy::validator_set().unwrap();
 			assert_eq!(vs.id(), 0u64);
@@ -201,8 +184,10 @@ fn validator_set_updates_work() {
 
 #[test]
 fn cleans_up_old_set_id_session_mappings() {
+	let authorities = mock_authorities(vec![1, 2, 3, 4]);
 	ExtBuilder::default()
-		.add_authorities(mock_authorities(vec![1, 2, 3, 4]))
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
 		.build_and_execute(|| {
 			let max_set_id_session_entries = MaxSetIdSessionEntries::get();
 
@@ -298,7 +283,10 @@ fn should_sign_and_verify() {
 fn report_equivocation_current_set_works() {
 	let authorities = test_authorities();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities.clone())
+		.build_and_execute(|| {
 		assert_eq!(Staking::current_era(), Some(0));
 		assert_eq!(Session::current_index(), 0);
 
@@ -378,7 +366,10 @@ fn report_equivocation_current_set_works() {
 fn report_equivocation_old_set_works() {
 	let authorities = test_authorities();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
+		.build_and_execute(|| {
 		start_era(1);
 
 		let block_num = System::block_number();
@@ -461,7 +452,10 @@ fn report_equivocation_old_set_works() {
 fn report_equivocation_invalid_set_id() {
 	let authorities = test_authorities();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
+		.build_and_execute(|| {
 		start_era(1);
 
 		let block_num = System::block_number();
@@ -499,7 +493,10 @@ fn report_equivocation_invalid_set_id() {
 fn report_equivocation_invalid_session() {
 	let authorities = test_authorities();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
+		.build_and_execute(|| {
 		start_era(1);
 
 		let block_num = System::block_number();
@@ -542,7 +539,11 @@ fn report_equivocation_invalid_session() {
 fn report_equivocation_invalid_key_owner_proof() {
 	let authorities = test_authorities();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
+		.build_and_execute(|| {
+
 		start_era(1);
 
 		let block_num = System::block_number();
@@ -590,7 +591,10 @@ fn report_equivocation_invalid_key_owner_proof() {
 fn report_equivocation_invalid_equivocation_proof() {
 	let authorities = test_authorities();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
+		.build_and_execute(|| {
 		start_era(1);
 
 		let block_num = System::block_number();
@@ -663,7 +667,10 @@ fn report_equivocation_validate_unsigned_prevents_duplicates() {
 
 	let authorities = test_authorities();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
+		.build_and_execute(|| {
 		start_era(1);
 
 		let block_num = System::block_number();
@@ -767,7 +774,10 @@ fn report_equivocation_has_valid_weight() {
 fn valid_equivocation_reports_dont_pay_fees() {
 	let authorities = test_authorities();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+		.add_authorities(authorities.clone())
+		.add_commitments(authorities)
+		.build_and_execute(|| {
 		start_era(1);
 
 		let block_num = System::block_number();
@@ -835,7 +845,10 @@ fn valid_equivocation_reports_dont_pay_fees() {
 fn set_new_genesis_works() {
 	let authorities = test_authorities();
 
-	ExtBuilder::default().add_authorities(authorities).build_and_execute(|| {
+	ExtBuilder::default()
+	.add_authorities(authorities.clone())
+	.add_commitments(authorities)
+	.build_and_execute(|| {
 		start_era(1);
 
 		let new_genesis_delay = 10u64;

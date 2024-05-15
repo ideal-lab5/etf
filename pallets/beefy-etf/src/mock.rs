@@ -61,6 +61,7 @@ construct_runtime!(
 		Authorship: pallet_authorship,
 		Timestamp: pallet_timestamp,
 		Balances: pallet_balances,
+		Etf: pallet_etf,
 		Beefy: pallet_beefy,
 		Staking: pallet_staking,
 		Session: pallet_session,
@@ -90,6 +91,11 @@ parameter_types! {
 	pub const MaxSetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
 
+impl pallet_etf::Config for Test {
+	type BeefyId = BeefyId;
+	type MaxAuthorities = ConstU32<100>;
+}
+
 impl pallet_beefy::Config for Test {
 	type BeefyId = BeefyId;
 	type MaxAuthorities = ConstU32<100>;
@@ -100,6 +106,7 @@ impl pallet_beefy::Config for Test {
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
 	type EquivocationReportSystem =
 		super::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+	type RoundCommitmentProvider = Etf;
 }
 
 parameter_types! {
@@ -220,8 +227,7 @@ impl pallet_offences::Config for Test {
 #[derive(Default)]
 pub struct ExtBuilder {
 	authorities: Vec<BeefyId>,
-	genesis_resharing: Vec<(BeefyId, BeefyId, Vec<u8>)>,
-	round_pubkey: Vec<u8>,
+	commitments: Vec<BeefyId>,
 }
 
 impl ExtBuilder {
@@ -232,15 +238,10 @@ impl ExtBuilder {
 		self
 	}
 
+	// Add some commitments (AccountIds) to insert into storage
 	#[cfg(test)]
-	pub(crate) fn add_resharing(mut self, genesis_resharing: Vec<(BeefyId, BeefyId, Vec<u8>)>) -> Self {
-		self.genesis_resharing = genesis_resharing;
-		self
-	}
-
-	#[cfg(test)]
-	pub(crate) fn add_round_key(mut self, round_pubkey: Vec<u8>) -> Self {
-		self.round_pubkey = round_pubkey;
+	pub(crate) fn add_commitments(mut self, ids: Vec<BeefyId>) -> Self {
+		self.commitments = ids;
 		self
 	}
 
@@ -271,6 +272,19 @@ impl ExtBuilder {
 			.assimilate_storage(&mut t)
 			.unwrap();
 
+		let genesis_resharing = self
+			.commitments
+			.iter()
+			.map(|comm| (comm.clone(), vec![2]))
+			.collect();
+
+		pallet_etf::GenesisConfig::<Test> { 
+			genesis_resharing: genesis_resharing,
+			round_pubkey: vec![1]
+		}
+			.assimilate_storage(&mut t)
+			.unwrap();
+
 		// controllers are same as stash
 		let stakers: Vec<_> = (0..self.authorities.len())
 			.map(|i| (i as u64, i as u64, 10_000, pallet_staking::StakerStatus::<u64>::Validator))
@@ -290,8 +304,6 @@ impl ExtBuilder {
 		let beefy_config = pallet_beefy::GenesisConfig::<Test> {
 			authorities: vec![],
 			genesis_block: None,
-			genesis_resharing: self.genesis_resharing,
-			round_pubkey: self.round_pubkey,
 		};
 
 		beefy_config.assimilate_storage(&mut t).unwrap();
@@ -321,16 +333,6 @@ pub fn mock_beefy_id(id: u8) -> BeefyId {
 
 pub fn mock_authorities(vec: Vec<u8>) -> Vec<BeefyId> {
 	vec.into_iter().map(|id| mock_beefy_id(id)).collect()
-}
-
-pub fn mock_resharing(vec: Vec<(u8, u8, Vec<u8>)>) -> Vec<(BeefyId, BeefyId, Vec<u8> )> {
-	vec.into_iter().map(|id| 
-		(
-			mock_beefy_id(id.0), 
-			mock_beefy_id(id.1), 
-			id.2
-		)
-	).collect()
 }
 
 pub fn start_session(session_index: SessionIndex) {
