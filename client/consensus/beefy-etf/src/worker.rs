@@ -758,7 +758,7 @@ where
 			return Ok(())
 		};
 
-		if let Some((signature, id, commitment)) = self.get_signed_payload(
+		if let Some((signature, _id, commitment)) = self.get_signed_payload(
 			target_number,
 			target_header,
 			// target_hash,

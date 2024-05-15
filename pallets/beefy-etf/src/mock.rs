@@ -61,6 +61,7 @@ construct_runtime!(
 		Authorship: pallet_authorship,
 		Timestamp: pallet_timestamp,
 		Balances: pallet_balances,
+		Etf: pallet_etf,
 		Beefy: pallet_beefy,
 		Staking: pallet_staking,
 		Session: pallet_session,
@@ -90,12 +91,9 @@ parameter_types! {
 	pub const MaxSetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
 
-pub struct MockRoundCommitmentProvider {}
-
-impl pallet_etf::RoundCommitmentProvider<BeefyId, ConstU32<100>> for MockRoundCommitmentProvider {
-	fn get() -> frame_support::BoundedVec<BeefyId, ConstU32<100>> {
-		frame_support::BoundedVec::<BeefyId, ConstU32<100>>::new()
-	}
+impl pallet_etf::Config for Test {
+	type BeefyId = BeefyId;
+	type MaxAuthorities = ConstU32<100>;
 }
 
 impl pallet_beefy::Config for Test {
@@ -108,7 +106,7 @@ impl pallet_beefy::Config for Test {
 	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
 	type EquivocationReportSystem =
 		super::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
-	type RoundCommitmentProvider = MockRoundCommitmentProvider;
+	type RoundCommitmentProvider = Etf;
 }
 
 parameter_types! {
@@ -229,6 +227,7 @@ impl pallet_offences::Config for Test {
 #[derive(Default)]
 pub struct ExtBuilder {
 	authorities: Vec<BeefyId>,
+	commitments: Vec<BeefyId>,
 }
 
 impl ExtBuilder {
@@ -236,6 +235,13 @@ impl ExtBuilder {
 	#[cfg(test)]
 	pub(crate) fn add_authorities(mut self, ids: Vec<BeefyId>) -> Self {
 		self.authorities = ids;
+		self
+	}
+
+	// Add some commitments (AccountIds) to insert into storage
+	#[cfg(test)]
+	pub(crate) fn add_commitments(mut self, ids: Vec<BeefyId>) -> Self {
+		self.commitments = ids;
 		self
 	}
 
@@ -263,6 +269,19 @@ impl ExtBuilder {
 		});
 
 		pallet_session::GenesisConfig::<Test> { keys: session_keys }
+			.assimilate_storage(&mut t)
+			.unwrap();
+
+		let genesis_resharing = self
+			.commitments
+			.iter()
+			.map(|comm| (comm.clone(), vec![2]))
+			.collect();
+
+		pallet_etf::GenesisConfig::<Test> { 
+			genesis_resharing: genesis_resharing,
+			round_pubkey: vec![1]
+		}
 			.assimilate_storage(&mut t)
 			.unwrap();
 

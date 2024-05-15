@@ -20,7 +20,7 @@ frame-support = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch
 frame-system = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false }
 pallet-authorship = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false }
 pallet-session = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false }
-sp-consensus-beefy-etf = { path = "../../primitives/consensus/beefy-etf", default-features = false, features = ["serde"] }
+sp-consensus-beefy-etf = { path = "../../primitives/consensus/beefy-etf", default-features = false, features = ["serde", "bls-experimental"] }
 sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false, features = ["serde"] }
 sp-session = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false }
 sp-staking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false, features = ["serde"] }
@@ -42,6 +42,11 @@ sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "to
 sp-io = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 sp-staking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 sp-state-machine = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false }
+pallet-beefy = { package = "pallet-beefy-etf", path = "../beefy-etf" }
+pallet-beefy-mmr = { package = "pallet-beefy-mmr-etf", path = "../beefy-mmr-etf" }
+pallet-mmr = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false }
+array-bytes = "6.1"
+binary-merkle-tree = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = false }
 
 [features]
 default = ["std"]

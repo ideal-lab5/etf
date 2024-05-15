@@ -20,15 +20,12 @@ use codec::MaxEncodedLen;
 use frame_support::{
 	pallet_prelude::*,
 	traits::Get,
-	BoundedSlice, BoundedVec, Parameter,
+	BoundedVec, Parameter,
 };
 use sp_runtime::traits::Member;
 use sp_std::prelude::*;
 
-use sp_consensus_beefy_etf::{
-	AuthorityIndex, BeefyAuthorityId, ConsensusLog, EquivocationProof, OnNewValidatorSet,
-	ValidatorSet, BEEFY_ENGINE_ID, GENESIS_AUTHORITY_SET_ID,
-};
+use sp_consensus_beefy_etf::BeefyAuthorityId;
 
 #[cfg(test)]
 mod mock;
@@ -40,7 +37,6 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use frame_system::{ensure_root, pallet_prelude::BlockNumberFor};
 
 	#[pallet::config]
 	pub trait Config: frame_system::Config {

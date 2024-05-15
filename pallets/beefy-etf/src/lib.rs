@@ -166,10 +166,6 @@ pub mod pallet {
 		/// *Note:* Ideally use block number where GRANDPA authorities are changed,
 		/// to guarantee the client gets a finality notification for exactly this block.
 		pub genesis_block: Option<BlockNumberFor<T>>,
-		// /// (beefy id, commitment, BatchPoK (which technically contains the commitment...))
-		// pub genesis_resharing: Vec<(T::BeefyId, T::BeefyId, Vec<u8>)>,
-		// /// the round pubkey is the IBE master secret multiplied by a given group generator (e.g r = sP)
-		// pub round_pubkey: Vec<u8>,
 	}
 
 	impl<T: Config> Default for GenesisConfig<T> {
@@ -180,9 +176,7 @@ pub mod pallet {
 			// by default, etf consensus will fail, must be intentionally seeded
 			Self { 
 				authorities: Vec::new(), 
-				genesis_block, 
-				// genesis_resharing: Vec::new(),
-				// round_pubkey: Vec::new(),
+				genesis_block,
 			}
 		}
 	}
@@ -304,11 +298,6 @@ pub mod pallet {
 		fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
 			Self::do_try_state()
 		}
-
-		#[cfg(feature = "bls-experimental")]
-		fn offchain_worker(_n: BlockNumberFor<T>) {
-			// sp_io::offchain::rpc_query()
-		}
 	}
 
 	#[pallet::validate_unsigned]
@@ -333,7 +322,6 @@ impl<T: Config> Pallet<T> {
 	pub fn do_try_state() -> Result<(), sp_runtime::TryRuntimeError> {
 		Self::try_state_authorities()?;
 		Self::try_state_validators()?;
-		// Self::try_state_resharings()?;
 
 		Ok(())
 	}

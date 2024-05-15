@@ -52,6 +52,7 @@ construct_runtime!(
 		System: frame_system,
 		Session: pallet_session,
 		Mmr: pallet_mmr,
+		Etf: pallet_etf,
 		Beefy: pallet_beefy,
 		BeefyMmr: pallet_beefy_mmr,
 	}
@@ -93,12 +94,9 @@ impl pallet_mmr::Config for Test {
 	type WeightInfo = ();
 }
 
-pub struct MockRoundCommitmentProvider {}
-
-impl pallet_etf::RoundCommitmentProvider<BeefyId, ConstU32<100>> for MockRoundCommitmentProvider {
-	fn get() -> frame_support::BoundedVec<BeefyId, ConstU32<100>> {
-		frame_support::BoundedVec::<BeefyId, ConstU32<100>>::new()
-	}
+impl pallet_etf::Config for Test {
+	type BeefyId = BeefyId;
+	type MaxAuthorities = ConstU32<100>;
 }
 
 impl pallet_beefy::Config for Test {
@@ -110,7 +108,7 @@ impl pallet_beefy::Config for Test {
 	type WeightInfo = ();
 	type KeyOwnerProof = sp_core::Void;
 	type EquivocationReportSystem = ();
-	type RoundCommitmentProvider = MockRoundCommitmentProvider;
+	type RoundCommitmentProvider = Etf;
 }
 
 parameter_types! {
@@ -189,6 +187,18 @@ pub fn new_test_ext_raw_authorities(authorities: Vec<(u64, BeefyId)>) -> TestExt
 			frame_system::Pallet::<Test>::inc_providers(id);
 		}
 	});
+
+	let genesis_resharing = authorities
+		.iter()
+		.map(|(_idx, id)| (id.clone(), vec![2]))
+		.collect();
+
+	pallet_etf::GenesisConfig::<Test> { 
+		genesis_resharing: genesis_resharing,
+		round_pubkey: vec![1]
+	}
+		.assimilate_storage(&mut t)
+		.unwrap();
 
 	pallet_session::GenesisConfig::<Test> { keys: session_keys }
 		.assimilate_storage(&mut t)
