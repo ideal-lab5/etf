@@ -259,10 +259,11 @@ where
 
 #[cfg(test)]
 pub mod tests {
-	#[cfg(feature = "bls-experimental")]
-	use sp_consensus_beefy_etf::ecdsa_bls_crypto;
+	// #[cfg(feature = "bls-experimental")]
+	// use sp_consensus_beefy_etf::ecdsa_bls_crypto;
 	use sp_consensus_beefy_etf::{
-		ecdsa_crypto,
+		// ecdsa_crypto,
+		bls_crypto,
 		test_utils::{BeefySignerAuthority, Keyring},
 	};
 	use sp_core::Pair as PairT;
@@ -588,6 +589,12 @@ pub mod tests {
 	// fn verify_works_for_ecdsa_n_bls() {
 	// 	verify_works::<ecdsa_bls_crypto::AuthorityId>();
 	// }
+
+	// #[cfg(feature = "bls-experimental")]
+	#[test]
+	fn verify_works_for_bls() {
+		verify_works::<bls_crypto::AuthorityId>();
+	}
 
 	// Note that we use keys with and without a seed for this test.
 	fn public_keys_works<

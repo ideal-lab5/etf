@@ -1442,39 +1442,43 @@ pub(crate) mod tests {
 			oracle.voting_target()
 		};
 
-		// rounds not initialized -> should vote: `None`
-		assert_eq!(voting_target_with(&mut oracle, 0, 1), None);
+		// we force a vote on top of each finalized block at the moment
+		// I am keeping the rest of the original test for posterity,
+		// as we aim to modify this logic later on
+		assert_eq!(voting_target_with(&mut oracle, 0, 1), Some(1));
+		// // rounds not initialized -> should vote: `None`
+		// assert_eq!(voting_target_with(&mut oracle, 0, 1), None);
 
-		let keys = &[Keyring::Alice];
-		let validator_set = ValidatorSet::new(make_beefy_ids(keys),make_beefy_ids(keys), 0).unwrap();
+		// let keys = &[Keyring::Alice];
+		// let validator_set = ValidatorSet::new(make_beefy_ids(keys),make_beefy_ids(keys), 0).unwrap();
 
-		oracle.add_session(Rounds::new(1, validator_set.clone()));
+		// oracle.add_session(Rounds::new(1, validator_set.clone()));
 
-		// under min delta
-		oracle.min_block_delta = 4;
-		assert_eq!(voting_target_with(&mut oracle, 1, 1), None);
-		assert_eq!(voting_target_with(&mut oracle, 2, 5), None);
+		// // under min delta
+		// oracle.min_block_delta = 4;
+		// assert_eq!(voting_target_with(&mut oracle, 1, 1), None);
+		// assert_eq!(voting_target_with(&mut oracle, 2, 5), None);
 
-		// vote on min delta
-		assert_eq!(voting_target_with(&mut oracle, 4, 9), Some(8));
-		oracle.min_block_delta = 8;
-		assert_eq!(voting_target_with(&mut oracle, 10, 18), Some(18));
+		// // vote on min delta
+		// assert_eq!(voting_target_with(&mut oracle, 4, 9), Some(8));
+		// oracle.min_block_delta = 8;
+		// assert_eq!(voting_target_with(&mut oracle, 10, 18), Some(18));
 
-		// vote on power of two
-		oracle.min_block_delta = 1;
-		assert_eq!(voting_target_with(&mut oracle, 1000, 1008), Some(1004));
-		assert_eq!(voting_target_with(&mut oracle, 1000, 1016), Some(1008));
+		// // vote on power of two
+		// oracle.min_block_delta = 1;
+		// assert_eq!(voting_target_with(&mut oracle, 1000, 1008), Some(1004));
+		// assert_eq!(voting_target_with(&mut oracle, 1000, 1016), Some(1008));
 
-		// nothing new to vote on
-		assert_eq!(voting_target_with(&mut oracle, 1000, 1000), None);
+		// // nothing new to vote on
+		// assert_eq!(voting_target_with(&mut oracle, 1000, 1000), None);
 
-		// vote on mandatory
-		oracle.sessions.clear();
-		oracle.add_session(Rounds::new(1000, validator_set.clone()));
-		assert_eq!(voting_target_with(&mut oracle, 0, 1008), Some(1000));
-		oracle.sessions.clear();
-		oracle.add_session(Rounds::new(1001, validator_set.clone()));
-		assert_eq!(voting_target_with(&mut oracle, 1000, 1008), Some(1001));
+		// // vote on mandatory
+		// oracle.sessions.clear();
+		// oracle.add_session(Rounds::new(1000, validator_set.clone()));
+		// assert_eq!(voting_target_with(&mut oracle, 0, 1008), Some(1000));
+		// oracle.sessions.clear();
+		// oracle.add_session(Rounds::new(1001, validator_set.clone()));
+		// assert_eq!(voting_target_with(&mut oracle, 1000, 1008), Some(1001));
 	}
 
 	#[test]

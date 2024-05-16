@@ -229,296 +229,296 @@ mod tests {
 		}
 	}
 
-	// #[test]
-	// fn round_tracker() {
-	// 	let mut rt = RoundTracker::default();
-	// 	let bob_vote = (Keyring::Bob.public(), Keyring::<AuthorityId>::Bob.sign(b"I am committed"));
-	// 	let threshold = 2;
+	#[test]
+	fn round_tracker() {
+		let mut rt = RoundTracker::default();
+		let bob_vote = (Keyring::Bob.public(), Keyring::<AuthorityId>::Bob.sign(b"I am committed"));
+		let threshold = 2;
 
-	// 	// adding new vote allowed
-	// 	assert!(rt.add_vote(bob_vote.clone()));
-	// 	// adding existing vote not allowed
-	// 	assert!(!rt.add_vote(bob_vote));
+		// adding new vote allowed
+		assert!(rt.add_vote(bob_vote.clone()));
+		// adding existing vote not allowed
+		assert!(!rt.add_vote(bob_vote));
 
-	// 	// vote is not done
-	// 	assert!(!rt.is_done(threshold));
+		// vote is not done
+		assert!(!rt.is_done(threshold));
 
-	// 	let alice_vote =
-	// 		(Keyring::Alice.public(), Keyring::<AuthorityId>::Alice.sign(b"I am committed"));
-	// 	// adding new vote (self vote this time) allowed
-	// 	assert!(rt.add_vote(alice_vote));
+		let alice_vote =
+			(Keyring::Alice.public(), Keyring::<AuthorityId>::Alice.sign(b"I am committed"));
+		// adding new vote (self vote this time) allowed
+		assert!(rt.add_vote(alice_vote));
 
-	// 	// vote is now done
-	// 	assert!(rt.is_done(threshold));
-	// }
+		// vote is now done
+		assert!(rt.is_done(threshold));
+	}
 
-	// #[test]
-	// fn vote_threshold() {
-	// 	assert_eq!(threshold(1), 1);
-	// 	assert_eq!(threshold(2), 2);
-	// 	assert_eq!(threshold(3), 3);
-	// 	assert_eq!(threshold(4), 3);
-	// 	assert_eq!(threshold(100), 67);
-	// 	assert_eq!(threshold(300), 201);
-	// }
+	#[test]
+	fn vote_threshold() {
+		assert_eq!(threshold(1), 1);
+		assert_eq!(threshold(2), 2);
+		assert_eq!(threshold(3), 3);
+		assert_eq!(threshold(4), 3);
+		assert_eq!(threshold(100), 67);
+		assert_eq!(threshold(300), 201);
+	}
 
-	// #[test]
-	// fn new_rounds() {
-	// 	sp_tracing::try_init_simple();
+	#[test]
+	fn new_rounds() {
+		sp_tracing::try_init_simple();
 
-	// 	let validators = ValidatorSet::<AuthorityId>::new(
-	// 		vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
-	// 		vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
-	// 		42,
-	// 	)
-	// 	.unwrap();
+		let validators = ValidatorSet::<AuthorityId>::new(
+			vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
+			vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
+			42,
+		)
+		.unwrap();
 
-	// 	let session_start = 1u64.into();
-	// 	let rounds = Rounds::<Block>::new(session_start, validators);
+		let session_start = 1u64.into();
+		let rounds = Rounds::<Block>::new(session_start, validators);
 
-	// 	assert_eq!(42, rounds.validator_set_id());
-	// 	assert_eq!(1, rounds.session_start());
-	// 	assert_eq!(
-	// 		&vec![
-	// 			Keyring::<AuthorityId>::Alice.public(),
-	// 			Keyring::<AuthorityId>::Bob.public(),
-	// 			Keyring::<AuthorityId>::Charlie.public()
-	// 		],
-	// 		rounds.validators()
-	// 	);
-	// }
+		assert_eq!(42, rounds.validator_set_id());
+		assert_eq!(1, rounds.session_start());
+		assert_eq!(
+			&vec![
+				Keyring::<AuthorityId>::Alice.public(),
+				Keyring::<AuthorityId>::Bob.public(),
+				Keyring::<AuthorityId>::Charlie.public()
+			],
+			rounds.validators()
+		);
+	}
 
-	// #[test]
-	// fn add_and_conclude_votes() {
-	// 	sp_tracing::try_init_simple();
+	#[test]
+	fn add_and_conclude_votes() {
+		sp_tracing::try_init_simple();
 
-	// 	let validators = ValidatorSet::<AuthorityId>::new(
-	// 		vec![
-	// 			Keyring::Alice.public(),
-	// 			Keyring::Bob.public(),
-	// 			Keyring::Charlie.public(),
-	// 			Keyring::Eve.public(),
-	// 		],
-	// 		vec![
-	// 			Keyring::Alice.public(),
-	// 			Keyring::Bob.public(),
-	// 			Keyring::Charlie.public(),
-	// 			Keyring::Eve.public(),
-	// 		],
-	// 		Default::default(),
-	// 	)
-	// 	.unwrap();
-	// 	let validator_set_id = validators.id();
+		let validators = ValidatorSet::<AuthorityId>::new(
+			vec![
+				Keyring::Alice.public(),
+				Keyring::Bob.public(),
+				Keyring::Charlie.public(),
+				Keyring::Eve.public(),
+			],
+			vec![
+				Keyring::Alice.public(),
+				Keyring::Bob.public(),
+				Keyring::Charlie.public(),
+				Keyring::Eve.public(),
+			],
+			Default::default(),
+		)
+		.unwrap();
+		let validator_set_id = validators.id();
 
-	// 	let session_start = 1u64.into();
-	// 	let mut rounds = Rounds::<Block>::new(session_start, validators);
+		let session_start = 1u64.into();
+		let mut rounds = Rounds::<Block>::new(session_start, validators);
 
-	// 	let payload = Payload::from_single_entry(MMR_ROOT_ID, vec![]);
-	// 	let block_number = 1;
-	// 	let commitment = Commitment { block_number, payload, validator_set_id };
-	// 	let mut vote = VoteMessage {
-	// 		id: Keyring::Alice.public(),
-	// 		commitment: commitment.clone(),
-	// 		signature: Keyring::<AuthorityId>::Alice.sign(b"I am committed"),
-	// 	};
-	// 	// add 1st good vote
-	// 	assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Ok);
+		let payload = Payload::from_single_entry(MMR_ROOT_ID, vec![]);
+		let block_number = 1;
+		let commitment = Commitment { block_number, payload, validator_set_id };
+		let mut vote = VoteMessage {
+			id: Keyring::Alice.public(),
+			commitment: commitment.clone(),
+			signature: Keyring::<AuthorityId>::Alice.sign(b"I am committed"),
+		};
+		// add 1st good vote
+		assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Ok);
 
-	// 	// double voting (same vote), ok, no effect
-	// 	assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Ok);
+		// double voting (same vote), ok, no effect
+		assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Ok);
 
-	// 	vote.id = Keyring::Dave.public();
-	// 	vote.signature = Keyring::<AuthorityId>::Dave.sign(b"I am committed");
-	// 	// invalid vote (Dave is not a validator)
-	// 	assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Invalid);
+		vote.id = Keyring::Dave.public();
+		vote.signature = Keyring::<AuthorityId>::Dave.sign(b"I am committed");
+		// invalid vote (Dave is not a validator)
+		assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Invalid);
 
-	// 	vote.id = Keyring::Bob.public();
-	// 	vote.signature = Keyring::<AuthorityId>::Bob.sign(b"I am committed");
-	// 	// add 2nd good vote
-	// 	assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Ok);
+		vote.id = Keyring::Bob.public();
+		vote.signature = Keyring::<AuthorityId>::Bob.sign(b"I am committed");
+		// add 2nd good vote
+		assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Ok);
 
-	// 	vote.id = Keyring::Charlie.public();
-	// 	vote.signature = Keyring::<AuthorityId>::Charlie.sign(b"I am committed");
-	// 	// add 3rd good vote -> round concluded -> signatures present
-	// 	assert_eq!(
-	// 		rounds.add_vote(vote.clone()),
-	// 		VoteImportResult::RoundConcluded(SignedCommitment {
-	// 			commitment,
-	// 			signatures: vec![
-	// 				Some(Keyring::<AuthorityId>::Alice.sign(b"I am committed")),
-	// 				Some(Keyring::<AuthorityId>::Bob.sign(b"I am committed")),
-	// 				Some(Keyring::<AuthorityId>::Charlie.sign(b"I am committed")),
-	// 				None,
-	// 			]
-	// 		})
-	// 	);
-	// 	rounds.conclude(block_number);
+		vote.id = Keyring::Charlie.public();
+		vote.signature = Keyring::<AuthorityId>::Charlie.sign(b"I am committed");
+		// add 3rd good vote -> round concluded -> signatures present
+		assert_eq!(
+			rounds.add_vote(vote.clone()),
+			VoteImportResult::RoundConcluded(SignedCommitment {
+				commitment,
+				signatures: vec![
+					Some(Keyring::<AuthorityId>::Alice.sign(b"I am committed")),
+					Some(Keyring::<AuthorityId>::Bob.sign(b"I am committed")),
+					Some(Keyring::<AuthorityId>::Charlie.sign(b"I am committed")),
+					None,
+				]
+			})
+		);
+		rounds.conclude(block_number);
 
-	// 	vote.id = Keyring::Eve.public();
-	// 	vote.signature = Keyring::<AuthorityId>::Eve.sign(b"I am committed");
-	// 	// Eve is a validator, but round was concluded, adding vote disallowed
-	// 	assert_eq!(rounds.add_vote(vote), VoteImportResult::Stale);
-	// }
+		vote.id = Keyring::Eve.public();
+		vote.signature = Keyring::<AuthorityId>::Eve.sign(b"I am committed");
+		// Eve is a validator, but round was concluded, adding vote disallowed
+		assert_eq!(rounds.add_vote(vote), VoteImportResult::Stale);
+	}
 
-	// #[test]
-	// fn old_rounds_not_accepted() {
-	// 	sp_tracing::try_init_simple();
+	#[test]
+	fn old_rounds_not_accepted() {
+		sp_tracing::try_init_simple();
 
-	// 	let validators = ValidatorSet::<AuthorityId>::new(
-	// 		vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
-	// 		vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
-	// 		42,
-	// 	)
-	// 	.unwrap();
-	// 	let validator_set_id = validators.id();
+		let validators = ValidatorSet::<AuthorityId>::new(
+			vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
+			vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
+			42,
+		)
+		.unwrap();
+		let validator_set_id = validators.id();
 
-	// 	// active rounds starts at block 10
-	// 	let session_start = 10u64.into();
-	// 	let mut rounds = Rounds::<Block>::new(session_start, validators);
+		// active rounds starts at block 10
+		let session_start = 10u64.into();
+		let mut rounds = Rounds::<Block>::new(session_start, validators);
 
-	// 	// vote on round 9
-	// 	let block_number = 9;
-	// 	let payload = Payload::from_single_entry(MMR_ROOT_ID, vec![]);
-	// 	let commitment = Commitment { block_number, payload, validator_set_id };
-	// 	let mut vote = VoteMessage {
-	// 		id: Keyring::Alice.public(),
-	// 		commitment,
-	// 		signature: Keyring::<AuthorityId>::Alice.sign(b"I am committed"),
-	// 	};
-	// 	// add vote for previous session, should fail
-	// 	assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Stale);
-	// 	// no votes present
-	// 	assert!(rounds.rounds.is_empty());
+		// vote on round 9
+		let block_number = 9;
+		let payload = Payload::from_single_entry(MMR_ROOT_ID, vec![]);
+		let commitment = Commitment { block_number, payload, validator_set_id };
+		let mut vote = VoteMessage {
+			id: Keyring::Alice.public(),
+			commitment,
+			signature: Keyring::<AuthorityId>::Alice.sign(b"I am committed"),
+		};
+		// add vote for previous session, should fail
+		assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Stale);
+		// no votes present
+		assert!(rounds.rounds.is_empty());
 
-	// 	// simulate 11 was concluded
-	// 	rounds.best_done = Some(11);
-	// 	// add votes for current session, but already concluded rounds, should fail
-	// 	vote.commitment.block_number = 10;
-	// 	assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Stale);
-	// 	vote.commitment.block_number = 11;
-	// 	assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Stale);
-	// 	// no votes present
-	// 	assert!(rounds.rounds.is_empty());
+		// simulate 11 was concluded
+		rounds.best_done = Some(11);
+		// add votes for current session, but already concluded rounds, should fail
+		vote.commitment.block_number = 10;
+		assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Stale);
+		vote.commitment.block_number = 11;
+		assert_eq!(rounds.add_vote(vote.clone()), VoteImportResult::Stale);
+		// no votes present
+		assert!(rounds.rounds.is_empty());
 
-	// 	// add vote for active round 12
-	// 	vote.commitment.block_number = 12;
-	// 	assert_eq!(rounds.add_vote(vote), VoteImportResult::Ok);
-	// 	// good vote present
-	// 	assert_eq!(rounds.rounds.len(), 1);
-	// }
+		// add vote for active round 12
+		vote.commitment.block_number = 12;
+		assert_eq!(rounds.add_vote(vote), VoteImportResult::Ok);
+		// good vote present
+		assert_eq!(rounds.rounds.len(), 1);
+	}
 
-	// #[test]
-	// fn multiple_rounds() {
-	// 	sp_tracing::try_init_simple();
+	#[test]
+	fn multiple_rounds() {
+		sp_tracing::try_init_simple();
 
-	// 	let validators = ValidatorSet::<AuthorityId>::new(
-	// 		vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
-	// 		vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
-	// 		Default::default(),
-	// 	)
-	// 	.unwrap();
-	// 	let validator_set_id = validators.id();
+		let validators = ValidatorSet::<AuthorityId>::new(
+			vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
+			vec![Keyring::Alice.public(), Keyring::Bob.public(), Keyring::Charlie.public()],
+			Default::default(),
+		)
+		.unwrap();
+		let validator_set_id = validators.id();
 
-	// 	let session_start = 1u64.into();
-	// 	let mut rounds = Rounds::<Block>::new(session_start, validators);
+		let session_start = 1u64.into();
+		let mut rounds = Rounds::<Block>::new(session_start, validators);
 
-	// 	let payload = Payload::from_single_entry(MMR_ROOT_ID, vec![]);
-	// 	let commitment = Commitment { block_number: 1, payload, validator_set_id };
-	// 	let mut alice_vote = VoteMessage {
-	// 		id: Keyring::Alice.public(),
-	// 		commitment: commitment.clone(),
-	// 		signature: Keyring::<AuthorityId>::Alice.sign(b"I am committed"),
-	// 	};
-	// 	let mut bob_vote = VoteMessage {
-	// 		id: Keyring::Bob.public(),
-	// 		commitment: commitment.clone(),
-	// 		signature: Keyring::<AuthorityId>::Bob.sign(b"I am committed"),
-	// 	};
-	// 	let mut charlie_vote = VoteMessage {
-	// 		id: Keyring::Charlie.public(),
-	// 		commitment,
-	// 		signature: Keyring::<AuthorityId>::Charlie.sign(b"I am committed"),
-	// 	};
-	// 	let expected_signatures = vec![
-	// 		Some(Keyring::<AuthorityId>::Alice.sign(b"I am committed")),
-	// 		Some(Keyring::<AuthorityId>::Bob.sign(b"I am committed")),
-	// 		Some(Keyring::<AuthorityId>::Charlie.sign(b"I am committed")),
-	// 	];
+		let payload = Payload::from_single_entry(MMR_ROOT_ID, vec![]);
+		let commitment = Commitment { block_number: 1, payload, validator_set_id };
+		let mut alice_vote = VoteMessage {
+			id: Keyring::Alice.public(),
+			commitment: commitment.clone(),
+			signature: Keyring::<AuthorityId>::Alice.sign(b"I am committed"),
+		};
+		let mut bob_vote = VoteMessage {
+			id: Keyring::Bob.public(),
+			commitment: commitment.clone(),
+			signature: Keyring::<AuthorityId>::Bob.sign(b"I am committed"),
+		};
+		let mut charlie_vote = VoteMessage {
+			id: Keyring::Charlie.public(),
+			commitment,
+			signature: Keyring::<AuthorityId>::Charlie.sign(b"I am committed"),
+		};
+		let expected_signatures = vec![
+			Some(Keyring::<AuthorityId>::Alice.sign(b"I am committed")),
+			Some(Keyring::<AuthorityId>::Bob.sign(b"I am committed")),
+			Some(Keyring::<AuthorityId>::Charlie.sign(b"I am committed")),
+		];
 
-	// 	// round 1 - only 2 out of 3 vote
-	// 	assert_eq!(rounds.add_vote(alice_vote.clone()), VoteImportResult::Ok);
-	// 	assert_eq!(rounds.add_vote(charlie_vote.clone()), VoteImportResult::Ok);
-	// 	// should be 1 active round
-	// 	assert_eq!(1, rounds.rounds.len());
+		// round 1 - only 2 out of 3 vote
+		assert_eq!(rounds.add_vote(alice_vote.clone()), VoteImportResult::Ok);
+		assert_eq!(rounds.add_vote(charlie_vote.clone()), VoteImportResult::Ok);
+		// should be 1 active round
+		assert_eq!(1, rounds.rounds.len());
 
-	// 	// round 2 - only Charlie votes
-	// 	charlie_vote.commitment.block_number = 2;
-	// 	assert_eq!(rounds.add_vote(charlie_vote.clone()), VoteImportResult::Ok);
-	// 	// should be 2 active rounds
-	// 	assert_eq!(2, rounds.rounds.len());
+		// round 2 - only Charlie votes
+		charlie_vote.commitment.block_number = 2;
+		assert_eq!(rounds.add_vote(charlie_vote.clone()), VoteImportResult::Ok);
+		// should be 2 active rounds
+		assert_eq!(2, rounds.rounds.len());
 
-	// 	// round 3 - all validators vote -> round is concluded
-	// 	alice_vote.commitment.block_number = 3;
-	// 	bob_vote.commitment.block_number = 3;
-	// 	charlie_vote.commitment.block_number = 3;
-	// 	assert_eq!(rounds.add_vote(alice_vote.clone()), VoteImportResult::Ok);
-	// 	assert_eq!(rounds.add_vote(bob_vote.clone()), VoteImportResult::Ok);
-	// 	assert_eq!(
-	// 		rounds.add_vote(charlie_vote.clone()),
-	// 		VoteImportResult::RoundConcluded(SignedCommitment {
-	// 			commitment: charlie_vote.commitment,
-	// 			signatures: expected_signatures
-	// 		})
-	// 	);
-	// 	// should be only 2 active since this one auto-concluded
-	// 	assert_eq!(2, rounds.rounds.len());
+		// round 3 - all validators vote -> round is concluded
+		alice_vote.commitment.block_number = 3;
+		bob_vote.commitment.block_number = 3;
+		charlie_vote.commitment.block_number = 3;
+		assert_eq!(rounds.add_vote(alice_vote.clone()), VoteImportResult::Ok);
+		assert_eq!(rounds.add_vote(bob_vote.clone()), VoteImportResult::Ok);
+		assert_eq!(
+			rounds.add_vote(charlie_vote.clone()),
+			VoteImportResult::RoundConcluded(SignedCommitment {
+				commitment: charlie_vote.commitment,
+				signatures: expected_signatures
+			})
+		);
+		// should be only 2 active since this one auto-concluded
+		assert_eq!(2, rounds.rounds.len());
 
-	// 	// conclude round 2
-	// 	rounds.conclude(2);
-	// 	// should be no more active rounds since 2 was officially concluded and round "1" is stale
-	// 	assert!(rounds.rounds.is_empty());
+		// conclude round 2
+		rounds.conclude(2);
+		// should be no more active rounds since 2 was officially concluded and round "1" is stale
+		assert!(rounds.rounds.is_empty());
 
-	// 	// conclude round 3
-	// 	rounds.conclude(3);
-	// 	assert!(rounds.previous_votes.is_empty());
-	// }
+		// conclude round 3
+		rounds.conclude(3);
+		assert!(rounds.previous_votes.is_empty());
+	}
 
-	// #[test]
-	// fn should_provide_equivocation_proof() {
-	// 	sp_tracing::try_init_simple();
+	#[test]
+	fn should_provide_equivocation_proof() {
+		sp_tracing::try_init_simple();
 
-	// 	let validators = ValidatorSet::<AuthorityId>::new(
-	// 		vec![Keyring::Alice.public(), Keyring::Bob.public()],
-	// 		vec![Keyring::Alice.public(), Keyring::Bob.public()],
-	// 		Default::default(),
-	// 	)
-	// 	.unwrap();
-	// 	let validator_set_id = validators.id();
-	// 	let session_start = 1u64.into();
-	// 	let mut rounds = Rounds::<Block>::new(session_start, validators);
+		let validators = ValidatorSet::<AuthorityId>::new(
+			vec![Keyring::Alice.public(), Keyring::Bob.public()],
+			vec![Keyring::Alice.public(), Keyring::Bob.public()],
+			Default::default(),
+		)
+		.unwrap();
+		let validator_set_id = validators.id();
+		let session_start = 1u64.into();
+		let mut rounds = Rounds::<Block>::new(session_start, validators);
 
-	// 	let payload1 = Payload::from_single_entry(MMR_ROOT_ID, vec![1, 1, 1, 1]);
-	// 	let payload2 = Payload::from_single_entry(MMR_ROOT_ID, vec![2, 2, 2, 2]);
-	// 	let commitment1 = Commitment { block_number: 1, payload: payload1, validator_set_id };
-	// 	let commitment2 = Commitment { block_number: 1, payload: payload2, validator_set_id };
+		let payload1 = Payload::from_single_entry(MMR_ROOT_ID, vec![1, 1, 1, 1]);
+		let payload2 = Payload::from_single_entry(MMR_ROOT_ID, vec![2, 2, 2, 2]);
+		let commitment1 = Commitment { block_number: 1, payload: payload1, validator_set_id };
+		let commitment2 = Commitment { block_number: 1, payload: payload2, validator_set_id };
 
-	// 	let alice_vote1 = VoteMessage {
-	// 		id: Keyring::Alice.public(),
-	// 		commitment: commitment1,
-	// 		signature: Keyring::<AuthorityId>::Alice.sign(b"I am committed"),
-	// 	};
-	// 	let mut alice_vote2 = alice_vote1.clone();
-	// 	alice_vote2.commitment = commitment2;
+		let alice_vote1 = VoteMessage {
+			id: Keyring::Alice.public(),
+			commitment: commitment1,
+			signature: Keyring::<AuthorityId>::Alice.sign(b"I am committed"),
+		};
+		let mut alice_vote2 = alice_vote1.clone();
+		alice_vote2.commitment = commitment2;
 
-	// 	let expected_result = VoteImportResult::Equivocation(EquivocationProof {
-	// 		first: alice_vote1.clone(),
-	// 		second: alice_vote2.clone(),
-	// 	});
+		let expected_result = VoteImportResult::Equivocation(EquivocationProof {
+			first: alice_vote1.clone(),
+			second: alice_vote2.clone(),
+		});
 
-	// 	// vote on one payload - ok
-	// 	assert_eq!(rounds.add_vote(alice_vote1), VoteImportResult::Ok);
+		// vote on one payload - ok
+		assert_eq!(rounds.add_vote(alice_vote1), VoteImportResult::Ok);
 
-	// 	// vote on _another_ commitment/payload -> expected equivocation proof
-	// 	assert_eq!(rounds.add_vote(alice_vote2), expected_result);
-	// }
+		// vote on _another_ commitment/payload -> expected equivocation proof
+		assert_eq!(rounds.add_vote(alice_vote2), expected_result);
+	}
 }

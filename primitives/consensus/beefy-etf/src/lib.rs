@@ -138,7 +138,7 @@ pub mod ecdsa_crypto {
 /// Your code should use the above types as concrete types for all crypto related
 /// functionality.
 
-#[cfg(feature = "bls-experimental")]
+// #[cfg(feature = "bls-experimental")]
 pub mod bls_crypto {
 	use super::{AuthorityIdBound, BeefyAuthorityId, Hash, RuntimeAppPublic, KEY_TYPE};
 	use sp_application_crypto::{app_crypto, bls377};
@@ -523,11 +523,11 @@ sp_api::decl_runtime_apis! {
 			authority_id: AuthorityId,
 		) -> Option<OpaqueKeyOwnershipProof>;
 
-		#[cfg(feature = "bls-experimental")]
+		// #[cfg(feature = "bls-experimental")]
 		/// Return a proof of knowledge for async secret sharing
 		fn read_share(who: AuthorityId) -> Option<Vec<u8>>;
 
-		#[cfg(feature = "bls-experimental")] 
+		// #[cfg(feature = "bls-experimental")] 
 		/// Return a public key commitment for the current round for the authority if one exists
 		fn read_commitment(who: AuthorityId) -> Option<AuthorityId>;
 	}
@@ -542,22 +542,7 @@ mod tests {
 	use sp_crypto_hashing::{blake2_256, keccak_256};
 	use sp_runtime::traits::{BlakeTwo256, Keccak256};
 
-	// #[test]
-	// #[cfg(not(feature = "bls-experimental"))]
-	// fn validator_set() {
-	// 	// Empty set not allowed.
-	// 	assert_eq!(ValidatorSet::<Public>::new(vec![], 0), None);
-
-	// 	let alice = ecdsa::Pair::from_string("//Alice", None).unwrap();
-	// 	let set_id = 0;
-	// 	let validators = ValidatorSet::<Public>::new(vec![alice.public()], set_id).unwrap();
-
-	// 	assert_eq!(validators.id(), set_id);
-	// 	assert_eq!(validators.validators(), &vec![alice.public()]);
-	// }
-
 	#[test]
-	#[cfg(feature = "bls-experimental")]
 	fn validator_set() {
 		// Empty set not allowed.
 		assert_eq!(ValidatorSet::<Public>::new(vec![], vec![], 0), None);
@@ -617,7 +602,7 @@ mod tests {
 	}
 
 	#[test]
-	#[cfg(feature = "bls-experimental")]
+	// #[cfg(feature = "bls-experimental")]
 	fn bls_beefy_verify_works() {
 		let msg = &b"test-message"[..];
 		let (pair, _) = bls_crypto::Pair::generate();
@@ -632,24 +617,24 @@ mod tests {
 		assert!(!BeefyAuthorityId::<Keccak256>::verify(&other_pair.public(), &signature, msg,));
 	}
 
-	#[test]
-	// #[cfg(feature = "bls-experimental")]
-	#[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
-	fn ecdsa_bls_beefy_verify_works() {
-		let msg = &b"test-message"[..];
-		let (pair, _) = ecdsa_bls_crypto::Pair::generate();
+	// #[test]
+	// // #[cfg(feature = "bls-experimental")]
+	// #[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
+	// fn ecdsa_bls_beefy_verify_works() {
+	// 	let msg = &b"test-message"[..];
+	// 	let (pair, _) = ecdsa_bls_crypto::Pair::generate();
 
-		let signature: ecdsa_bls_crypto::Signature =
-			pair.as_inner_ref().sign_with_hasher::<Keccak256>(&msg).into();
+	// 	let signature: ecdsa_bls_crypto::Signature =
+	// 		pair.as_inner_ref().sign_with_hasher::<Keccak256>(&msg).into();
 
-		// Verification works if same hashing function is used when signing and verifying.
-		assert!(BeefyAuthorityId::<Keccak256>::verify(&pair.public(), &signature, msg));
+	// 	// Verification works if same hashing function is used when signing and verifying.
+	// 	assert!(BeefyAuthorityId::<Keccak256>::verify(&pair.public(), &signature, msg));
 
-		// Verification doesn't work if we verify function provided by pair_crypto implementation
-		assert!(!ecdsa_bls_crypto::Pair::verify(&signature, msg, &pair.public()));
+	// 	// Verification doesn't work if we verify function provided by pair_crypto implementation
+	// 	assert!(!ecdsa_bls_crypto::Pair::verify(&signature, msg, &pair.public()));
 
-		// Other public key doesn't work
-		let (other_pair, _) = ecdsa_bls_crypto::Pair::generate();
-		assert!(!BeefyAuthorityId::<Keccak256>::verify(&other_pair.public(), &signature, msg,));
-	}
+	// 	// Other public key doesn't work
+	// 	let (other_pair, _) = ecdsa_bls_crypto::Pair::generate();
+	// 	assert!(!BeefyAuthorityId::<Keccak256>::verify(&other_pair.public(), &signature, msg,));
+	// }
 }
