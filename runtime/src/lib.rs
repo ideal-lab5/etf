@@ -1329,9 +1329,22 @@ impl pallet_tips::Config for Runtime {
 	type WeightInfo = pallet_tips::weights::SubstrateWeight<Runtime>;
 }
 
+// parameter_types! {
+// 	pub Schedule: pallet_contracts::Schedule<Runtime> = Default::default();
+// 	pub CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(30);
+// }
+
+pub const fn deposit(items: u32, bytes: u32) -> Balance {
+	items as Balance * 1 * CENTS + (bytes as Balance) * 1 * CENTS
+}
+
 parameter_types! {
+	pub const DepositPerItem: Balance = deposit(1, 0);
+	pub const DepositPerByte: Balance = deposit(0, 1);
+	pub const DefaultDepositLimit: Balance = deposit(1024, 1024 * 1024);
 	pub Schedule: pallet_contracts::Schedule<Runtime> = Default::default();
-	pub CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(30);
+	pub const CodeHashLockupDepositPercent: Perbill = Perbill::from_percent(0);
+	pub const MaxDelegateDependencies: u32 = 32;
 }
 
 impl pallet_contracts::Config for Runtime {
@@ -1347,9 +1360,12 @@ impl pallet_contracts::Config for Runtime {
 	/// change because that would break already deployed contracts. The `Call` structure itself
 	/// is not allowed to change the indices of existing pallets, too.
 	type CallFilter = Nothing;
-	type DepositPerItem = dynamic_params::contracts::DepositPerItem;
-	type DepositPerByte = dynamic_params::contracts::DepositPerByte;
-	type DefaultDepositLimit = dynamic_params::contracts::DefaultDepositLimit;
+	// type DepositPerItem = dynamic_params::contracts::DepositPerItem;
+	// type DepositPerByte = dynamic_params::contracts::DepositPerByte;
+	// type DefaultDepositLimit = dynamic_params::contracts::DefaultDepositLimit;
+	type DefaultDepositLimit = DefaultDepositLimit;
+	type DepositPerByte = DepositPerByte;
+	type DepositPerItem = DepositPerItem;
 	type CallStack = [pallet_contracts::Frame<Self>; 5];
 	type WeightPrice = pallet_transaction_payment::Pallet<Self>;
 	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
@@ -1367,7 +1383,7 @@ impl pallet_contracts::Config for Runtime {
 	type Migrations = ();
 	#[cfg(feature = "runtime-benchmarks")]
 	type Migrations = pallet_contracts::migration::codegen::BenchMigrations;
-	type MaxDelegateDependencies = ConstU32<32>;
+	type MaxDelegateDependencies = MaxDelegateDependencies;
 	type CodeHashLockupDepositPercent = CodeHashLockupDepositPercent;
 	type Debug = ();
 	type Environment = ();
@@ -2443,6 +2459,9 @@ mod runtime {
 
 	#[runtime::pallet_index(78)]
 	pub type PoolAssets = pallet_assets<Instance2>;
+
+	#[runtime::pallet_index(79)]
+	pub type RandomnessBeacon = pallet_randomness_beacon;
 }
 
 /// The address format for describing accounts.
@@ -2512,6 +2531,11 @@ type EventRecord = frame_system::EventRecord<
 impl pallet_etf::Config for Runtime {
 	type BeefyId = BeefyId;
 	type MaxAuthorities = MaxAuthorities;
+}
+
+impl pallet_randomness_beacon::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type MaxPulses = ConstU32<256_000>;
 }
 
 parameter_types! {

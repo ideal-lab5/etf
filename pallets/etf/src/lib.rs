@@ -151,6 +151,10 @@ impl<T: Config> Pallet<T> {
 		Commitments::<T>::put(bounded_commitments);
 		Ok(())
 	}
+
+	pub fn round_pubkey() -> BoundedVec<u8, ConstU32<144>> {
+		RoundPublic::<T>::get()
+	}
 }
 
 /// A type to provide commitments, keys, and shares to validators

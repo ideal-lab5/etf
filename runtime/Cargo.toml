@@ -90,6 +90,7 @@ pallet-election-provider-multi-phase = { git = "https://github.com/ideal-lab5/po
 pallet-election-provider-support-benchmarking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false, optional = true }
 pallet-elections-phragmen = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
 pallet-etf = { path = "../pallets/etf", default-features = false}
+pallet-randomness-beacon = { path = "../pallets/randomness-beacon", default-features = false}
 pallet-example-tasks = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
 pallet-fast-unstake = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
 pallet-migrations = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
@@ -193,6 +194,7 @@ std = [
 	"pallet-election-provider-support-benchmarking?/std",
 	"pallet-elections-phragmen/std",
 	"pallet-etf/std",
+	"pallet-randomness-beacon/std",
 	"pallet-example-tasks/std",
 	"pallet-fast-unstake/std",
 	"pallet-glutton/std",
