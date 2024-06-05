@@ -21,7 +21,7 @@ use crate::{self as beacon, mock::*, Call, Config, Error, Weight};
 
 #[test]
 fn test_genesis() {
-	new_test_ext(vec![1, 2, 3]).execute_with(|| {
+    new_test_ext(vec![1, 2, 3]).execute_with(|| {
         let pulses = beacon::Pulses::<Test>::get();
         assert_eq!(pulses.len(), 1);
 	});
@@ -29,7 +29,6 @@ fn test_genesis() {
 
 #[test]
 fn test_can_write_pulse() {
-    
 	new_test_ext(vec![1, 2, 3]).execute_with(|| {
         let pulses = beacon::Pulses::<Test>::get();
         assert_eq!(pulses.len(), 1);

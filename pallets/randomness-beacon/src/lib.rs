@@ -73,6 +73,8 @@ pub struct Pulse<BN: core::fmt::Debug> {
 }
 
 impl<BN: core::fmt::Debug> Pulse<BN> {
+
+	// builds the next pulse from a previous one
 	pub fn build_next(
 		signature: OpaqueSignature,
 		block_number: BN,
@@ -158,6 +160,7 @@ pub mod pallet {
 		InvalidOrigin,
 		/// the signature could not be verified
 		InvalidSignature,
+		AlreadyInitialized,
 		/// the bounded runtime storage has reached its limit
 		PulseOverflow,
 	}
@@ -199,11 +202,14 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
 	/// initialize the genesis state for this pallet
 	fn initialize(genesis_pulse: &Pulse<BlockNumberFor<T>>) -> Result<(), Error<T>> {
-
-		// TODO: check that it hasn't already been initialized
-
-		Pulses::<T>::get().try_push(genesis_pulse.clone())
+		let mut pulses = Pulses::<T>::get();
+		// check that it hasn't already been initialized
+		if !pulses.is_empty() {
+			return Err(Error::<T>::AlreadyInitialized);
+		}
+		pulses.try_push(genesis_pulse.clone())
 			.map_err(|_| Error::<T>::PulseOverflow)?;
+		Pulses::<T>::put(pulses);
 		Ok(())
 	}
 
@@ -214,8 +220,6 @@ impl<T: Config> Pallet<T> {
 		rk: DoublePublicKey<TinyBLS377>,
 		validator_set_id: ValidatorSetId,
 	) -> Result<(), Error<T>> {
-
-
 		if let Ok(sig) = DoubleSignature::<TinyBLS377>::from_bytes(&raw_signature) {
 			let payload = Payload::from_single_entry(
 				known_payloads::ETF_SIGNATURE, 
@@ -238,9 +242,10 @@ impl<T: Config> Pallet<T> {
 					block_number, 
 					last_pulse
 				);
-
-				Pulses::<T>::get().try_push(pulse.clone())
+				let mut pulses = Pulses::<T>::get();
+				pulses.try_push(pulse.clone())
 					.map_err(|_| Error::<T>::PulseOverflow)?;
+				Pulses::<T>::put(pulses);
 				return Ok(());
 			} 
 	
