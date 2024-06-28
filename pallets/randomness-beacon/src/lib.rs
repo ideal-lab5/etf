@@ -17,12 +17,14 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use codec::MaxEncodedLen;
 
+use serde::{Serialize, Deserialize};
+
 use frame_support::{
 	pallet_prelude::*,
 	traits::Get,
 	BoundedVec, Parameter,
 };
-use serde::{Serialize, Deserialize};
+
 use sp_runtime::traits::Member;
 use sp_std::prelude::*;
 use frame_system::pallet_prelude::*;
@@ -103,7 +105,6 @@ impl<BN: core::fmt::Debug> Pulse<BN> {
 	}
 }
 
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -133,26 +134,26 @@ pub mod pallet {
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
 
-	#[pallet::genesis_config]
-	pub struct GenesisConfig<T: Config> {
-		pub genesis_pulse: Pulse<BlockNumberFor<T>>,
-	}
+	// #[pallet::genesis_config]
+	// pub struct GenesisConfig<T: Config> {
+	// 	pub genesis_pulse: Pulse<BlockNumberFor<T>>,
+	// }
 
-	impl<T: Config> Default for GenesisConfig<T> {
-		fn default() -> Self {
-			Self { 
-				genesis_pulse: Pulse::default(),
-			}
-		}
-	}
+	// impl<T: Config> Default for GenesisConfig<T> {
+	// 	fn default() -> Self {
+	// 		Self { 
+	// 			genesis_pulse: Pulse::default(),
+	// 		}
+	// 	}
+	// }
 
-	#[pallet::genesis_build]
-	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
-		fn build(&self) {
-			Pallet::<T>::initialize(&self.genesis_pulse)
-				.expect("The genesis pulse must be well formatted.");
-		}
-	}
+	// #[pallet::genesis_build]
+	// impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+	// 	fn build(&self) {
+	// 		Pallet::<T>::initialize(&self.genesis_pulse)
+	// 			.expect("The genesis pulse must be well formatted.");
+	// 	}
+	// }
 
 	#[pallet::error]
 	pub enum Error<T> {
