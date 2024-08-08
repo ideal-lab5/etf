@@ -28,7 +28,7 @@ use frame_support::{
 use pallet_session::historical as pallet_session_historical;
 use sp_core::{crypto::KeyTypeId, ConstU128};
 use sp_runtime::{
-	app_crypto::bls377::Public, curve::PiecewiseLinear, impl_opaque_keys, testing::TestXt,
+	app_crypto::bls381::Public, curve::PiecewiseLinear, impl_opaque_keys, testing::TestXt,
 	traits::OpaqueKeys, BuildStorage, Perbill,
 };
 use sp_staking::{EraIndex, SessionIndex};

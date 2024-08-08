@@ -365,7 +365,7 @@ pub(crate) fn make_beefy_ids(keys: &[BeefyKeyring<AuthorityId>]) -> Vec<Authorit
 pub(crate) fn create_beefy_keystore(authority: &BeefyKeyring<AuthorityId>) -> KeystorePtr {
 	let keystore = MemoryKeystore::new();
 	keystore
-		.bls377_generate_new(BEEFY_KEY_TYPE, Some(&authority.to_seed()))
+		.bls381_generate_new(BEEFY_KEY_TYPE, Some(&authority.to_seed()))
 		.expect("Creates authority key");
 	keystore.into()
 }

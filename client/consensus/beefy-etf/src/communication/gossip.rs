@@ -528,7 +528,7 @@ pub(crate) mod tests {
 		commitment: &Commitment<BN>,
 	) -> Signature {
 		let store = MemoryKeystore::new();
-		store.bls377_generate_new(BEEFY_KEY_TYPE, Some(&who.to_seed())).unwrap();
+		store.bls381_generate_new(BEEFY_KEY_TYPE, Some(&who.to_seed())).unwrap();
 		let beefy_keystore: BeefyKeystore<AuthorityId> = Some(store.into()).into();
 		beefy_keystore.sign(&who.public(), &commitment.encode()).unwrap()
 	}

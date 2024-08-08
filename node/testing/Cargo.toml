@@ -24,7 +24,7 @@ tempfile = "3.1.0"
 frame-system = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 node-cli = { package = "node", path = "../." }
 node-primitives = { path = "../primitives" } 
-kitchensink-runtime = { path = "../../runtime" }
+node-template-runtime = { path = "../../runtime" }
 pallet-asset-conversion = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 pallet-assets = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 pallet-asset-conversion-tx-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }

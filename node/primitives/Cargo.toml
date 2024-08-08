@@ -21,4 +21,7 @@ sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = 
 
 [features]
 default = ["std"]
-std = ["sp-core/std", "sp-runtime/std"]
+std = [
+    "sp-core/std", 
+    "sp-runtime/std"
+]

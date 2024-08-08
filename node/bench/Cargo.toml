@@ -18,12 +18,9 @@ workspace = true
 array-bytes = "6.1"
 clap = { version = "4.5.3", features = ["derive"] }
 log = { workspace = true, default-features = true }
-# node-primitives = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
-# node-testing = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 node-primitives = { path = "../primitives" }
 node-testing = { path = "../testing" }
-# kitchensink-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
-kitchensink-runtime = { path = "../../runtime" }
+node-template-runtime = { path = "../../runtime" }
 sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 sp-state-machine = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }

@@ -6,7 +6,7 @@ use frame_support::{
 };
 use sp_io::TestExternalities;
 use sp_runtime::{
-	app_crypto::bls377::Public,
+	app_crypto::bls381::Public,
 	traits::{OpaqueKeys},
 	BuildStorage,
 };

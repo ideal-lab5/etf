@@ -25,7 +25,7 @@ use frame_support::{
 use sp_consensus_beefy_etf::mmr::MmrLeafVersion;
 use sp_io::TestExternalities;
 use sp_runtime::{
-	app_crypto::bls377::Public,
+	app_crypto::bls381::Public,
 	impl_opaque_keys,
 	traits::{ConvertInto, Keccak256, OpaqueKeys},
 	BuildStorage,

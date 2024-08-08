@@ -22,7 +22,7 @@ use crate::{
 	ValidatorSetId, VoteMessage,
 };
 use sp_application_crypto::{AppCrypto, AppPair, RuntimeAppPublic, Wraps};
-use sp_core::{bls377, Pair};
+use sp_core::{bls381, Pair};
 use sp_runtime::traits::Hash;
 
 use codec::Encode;
@@ -124,7 +124,7 @@ impl From<Keyring<bls_crypto::AuthorityId>> for bls_crypto::Pair {
 	}
 }
 
-impl From<Keyring<bls_crypto::AuthorityId>> for bls377::Pair {
+impl From<Keyring<bls_crypto::AuthorityId>> for bls381::Pair {
 	fn from(k: Keyring<bls_crypto::AuthorityId>) -> Self {
 		k.pair().into()
 	}
