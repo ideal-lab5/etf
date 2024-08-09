@@ -74,6 +74,7 @@ sp-statement-store = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", b
 sp-crypto-ec-utils = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = true, features = ["bls12-381"]}
 
 # client dependencies
+polkadot-sdk = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = true }
 sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = true }
 sc-chain-spec = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = true }
 sc-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = true }
@@ -113,6 +114,8 @@ pallet-asset-conversion-tx-payment = { git = "https://github.com/ideal-lab5/polk
 pallet-asset-tx-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = true }
 pallet-im-online = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = true }
 pallet-skip-feeless-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = true }
+
+frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev", default-features = true, optional = true }
 
 # node-specific dependencies
 node-template-runtime = { path = "../runtime" }

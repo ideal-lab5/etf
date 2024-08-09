@@ -30,7 +30,7 @@ use codec::Encode;
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
-use kitchensink_runtime::RuntimeApi;
+use node_template_runtime::RuntimeApi;
 use node_primitives::Block;
 use sc_client_api::{Backend, BlockBackend};
 use sc_consensus_babe::{self, SlotProportion};
@@ -47,7 +47,7 @@ use sp_core::crypto::Pair;
 use sp_runtime::{generic, traits::Block as BlockT, SaturatedConversion};
 use std::{path::Path, sync::Arc};
 
-/// Host functions required for kitchensink runtime and Substrate node.
+/// Host functions required for node_template runtime and Substrate node.
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type HostFunctions =
 	(
@@ -55,7 +55,7 @@ pub type HostFunctions =
 		// sp_statement_store::runtime_api::HostFunctions
 	);
 
-/// Host functions required for kitchensink runtime and Substrate node.
+/// Host functions required for node_template runtime and Substrate node.
 #[cfg(feature = "runtime-benchmarks")]
 pub type HostFunctions = (
 	sp_io::SubstrateHostFunctions,
@@ -78,7 +78,6 @@ type FullBeefyBlockImport<InnerBlockImport> = beefy::import::BeefyBlockImport<
 	FullBackend,
 	FullClient,
 	InnerBlockImport,
-	beefy_primitives::ecdsa_crypto::AuthorityId,
 >;
 
 /// The transaction pool type definition.
@@ -108,47 +107,47 @@ pub fn fetch_nonce(client: &FullClient, account: sp_core::sr25519::Pair) -> u32 
 pub fn create_extrinsic(
 	client: &FullClient,
 	sender: sp_core::sr25519::Pair,
-	function: impl Into<kitchensink_runtime::RuntimeCall>,
+	function: impl Into<node_template_runtime::RuntimeCall>,
 	nonce: Option<u32>,
-) -> kitchensink_runtime::UncheckedExtrinsic {
+) -> node_template_runtime::UncheckedExtrinsic {
 	let function = function.into();
 	let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
 	let best_hash = client.chain_info().best_hash;
 	let best_block = client.chain_info().best_number;
 	let nonce = nonce.unwrap_or_else(|| fetch_nonce(client, sender.clone()));
 
-	let period = kitchensink_runtime::BlockHashCount::get()
+	let period = node_template_runtime::BlockHashCount::get()
 		.checked_next_power_of_two()
 		.map(|c| c / 2)
 		.unwrap_or(2) as u64;
 	let tip = 0;
-	let extra: kitchensink_runtime::SignedExtra =
+	let extra: node_template_runtime::SignedExtra =
 		(
-			frame_system::CheckNonZeroSender::<kitchensink_runtime::Runtime>::new(),
-			frame_system::CheckSpecVersion::<kitchensink_runtime::Runtime>::new(),
-			frame_system::CheckTxVersion::<kitchensink_runtime::Runtime>::new(),
-			frame_system::CheckGenesis::<kitchensink_runtime::Runtime>::new(),
-			frame_system::CheckEra::<kitchensink_runtime::Runtime>::from(generic::Era::mortal(
+			frame_system::CheckNonZeroSender::<node_template_runtime::Runtime>::new(),
+			frame_system::CheckSpecVersion::<node_template_runtime::Runtime>::new(),
+			frame_system::CheckTxVersion::<node_template_runtime::Runtime>::new(),
+			frame_system::CheckGenesis::<node_template_runtime::Runtime>::new(),
+			frame_system::CheckEra::<node_template_runtime::Runtime>::from(generic::Era::mortal(
 				period,
 				best_block.saturated_into(),
 			)),
-			frame_system::CheckNonce::<kitchensink_runtime::Runtime>::from(nonce),
-			frame_system::CheckWeight::<kitchensink_runtime::Runtime>::new(),
+			frame_system::CheckNonce::<node_template_runtime::Runtime>::from(nonce),
+			frame_system::CheckWeight::<node_template_runtime::Runtime>::new(),
 			pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
 				pallet_asset_conversion_tx_payment::ChargeAssetTxPayment::<
-					kitchensink_runtime::Runtime,
+					node_template_runtime::Runtime,
 				>::from(tip, None),
 			),
 			frame_metadata_hash_extension::CheckMetadataHash::new(false),
 		);
 
-	let raw_payload = kitchensink_runtime::SignedPayload::from_raw(
+	let raw_payload = node_template_runtime::SignedPayload::from_raw(
 		function.clone(),
 		extra.clone(),
 		(
 			(),
-			kitchensink_runtime::VERSION.spec_version,
-			kitchensink_runtime::VERSION.transaction_version,
+			node_template_runtime::VERSION.spec_version,
+			node_template_runtime::VERSION.transaction_version,
 			genesis_hash,
 			best_hash,
 			(),
@@ -159,10 +158,10 @@ pub fn create_extrinsic(
 	);
 	let signature = raw_payload.using_encoded(|e| sender.sign(e));
 
-	kitchensink_runtime::UncheckedExtrinsic::new_signed(
+	node_template_runtime::UncheckedExtrinsic::new_signed(
 		function,
 		sp_runtime::AccountId32::from(sender.public()).into(),
-		kitchensink_runtime::Signature::Sr25519(signature),
+		node_template_runtime::Signature::Sr25519(signature),
 		extra,
 	)
 }
@@ -336,7 +335,7 @@ pub fn new_partial(
 						subscription_executor: subscription_executor.clone(),
 						finality_provider: finality_proof_provider.clone(),
 					},
-					beefy: node_rpc::BeefyDeps::<beefy_primitives::ecdsa_crypto::AuthorityId> {
+					beefy: node_rpc::BeefyDeps::<beefy_primitives::bls_crypto::AuthorityId> {
 						beefy_finality_proof_stream: beefy_rpc_links
 							.from_voter_justif_stream
 							.clone(),
@@ -458,8 +457,12 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 		beefy::gossip_protocol_name(&genesis_hash, config.chain_spec.fork_id());
 	// `beefy_on_demand_justifications_handler` is given to `beefy-gadget` task to be run,
 	// while `beefy_req_resp_cfg` is added to `config.network.request_response_protocols`.
+	let beefy_gossip_proto_name =
+	beefy::gossip_protocol_name(&genesis_hash, config.chain_spec.fork_id());
+	// `beefy_on_demand_justifications_handler` is given to `beefy-gadget` task to be run,
+	// while `beefy_req_resp_cfg` is added to `config.network.request_response_protocols`.
 	let (beefy_on_demand_justifications_handler, beefy_req_resp_cfg) =
-		beefy::communication::request_response::BeefyJustifsRequestHandler::new::<_, N>(
+		beefy::communication::request_response::BeefyJustifsRequestHandler::new(
 			&genesis_hash,
 			config.chain_spec.fork_id(),
 			client.clone(),
@@ -467,14 +470,11 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 		);
 
 	let (beefy_notification_config, beefy_notification_service) =
-		beefy::communication::beefy_peers_set_config::<_, N>(
-			beefy_gossip_proto_name.clone(),
-			metrics.clone(),
-			Arc::clone(&peer_store_handle),
-		);
+		beefy::communication::beefy_peers_set_config(beefy_gossip_proto_name.clone());
 
 	net_config.add_notification_protocol(beefy_notification_config);
 	net_config.add_request_response_protocol(beefy_req_resp_cfg);
+
 
 	// let (statement_handler_proto, statement_config) =
 	// 	sc_network_statement::StatementHandlerPrototype::new::<_, _, N>(
@@ -549,27 +549,27 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 		telemetry: telemetry.as_mut(),
 	})?;
 
-	if let Some(hwbench) = hwbench {
-		sc_sysinfo::print_hwbench(&hwbench);
-		match SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
-			Err(err) if role.is_authority() => {
-				log::warn!(
-					"⚠️  The hardware does not meet the minimal requirements {} for role 'Authority'.",
-					err
-				);
-			},
-			_ => {},
-		}
+	// if let Some(hwbench) = hwbench {
+	// 	sc_sysinfo::print_hwbench(&hwbench);
+	// 	match SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
+	// 		Err(err) if role.is_authority() => {
+	// 			log::warn!(
+	// 				"⚠️  The hardware does not meet the minimal requirements {} for role 'Authority'.",
+	// 				err
+	// 			);
+	// 		},
+	// 		_ => {},
+	// 	}
 
-		if let Some(ref mut telemetry) = telemetry {
-			let telemetry_handle = telemetry.handle();
-			task_manager.spawn_handle().spawn(
-				"telemetry_hwbench",
-				None,
-				sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
-			);
-		}
-	}
+	// 	if let Some(ref mut telemetry) = telemetry {
+	// 		let telemetry_handle = telemetry.handle();
+	// 		task_manager.spawn_handle().spawn(
+	// 			"telemetry_hwbench",
+	// 			None,
+	// 			sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
+	// 		);
+	// 	}
+	// }
 
 	let (block_import, grandpa_link, babe_link, beefy_links) = import_setup;
 
@@ -678,7 +678,7 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 	let beefy_params = beefy::BeefyParams {
 		client: client.clone(),
 		backend: backend.clone(),
-		payload_provider: sp_consensus_beefy::mmr::MmrRootProvider::new(client.clone()),
+		payload_provider: beefy_primitives::mmr::MmrRootProvider::new(client.clone()),
 		runtime: client.clone(),
 		key_store: keystore.clone(),
 		network_params,
@@ -686,10 +686,10 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 		prometheus_registry: prometheus_registry.clone(),
 		links: beefy_links,
 		on_demand_justifications_handler: beefy_on_demand_justifications_handler,
-		is_authority: role.is_authority(),
+		// is_authority: role.is_authority(),
 	};
 
-	let beefy_gadget = beefy::start_beefy_gadget::<_, _, _, _, _, _, _, _>(beefy_params);
+	let beefy_gadget = beefy::start_beefy_gadget::<_, _, _, _, _, _, _>(beefy_params);
 	// BEEFY is part of consensus, if it fails we'll bring the node down with it to make sure it
 	// is noticed.
 	task_manager
@@ -848,7 +848,7 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
 mod tests {
 	use crate::service::{new_full_base, NewFullBase};
 	use codec::Encode;
-	use kitchensink_runtime::{
+	use node_template_runtime::{
 		constants::{currency::CENTS, time::SLOT_DURATION},
 		Address, BalancesCall, RuntimeCall, UncheckedExtrinsic,
 	};

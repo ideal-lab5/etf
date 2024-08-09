@@ -79,9 +79,10 @@ pub fn signed_extra(nonce: Nonce, extra_fee: Balance) -> SignedExtra {
 		frame_system::CheckEra::from(Era::mortal(256, 0)),
 		frame_system::CheckNonce::from(nonce),
 		frame_system::CheckWeight::new(),
-		pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
-			pallet_asset_conversion_tx_payment::ChargeAssetTxPayment::from(extra_fee, None),
-		),
+		// pallet_skip_feeless_payment::SkipCheckIfFeeless::from(
+		// 	pallet_asset_conversion_tx_payment::ChargeAssetTxPayment::from(extra_fee, None),
+		// ),
+		frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
 	)
 }
 

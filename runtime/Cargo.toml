@@ -140,6 +140,7 @@ pallet-utility = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branc
 pallet-transaction-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
 pallet-asset-conversion-tx-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
+pallet-asset-conversion-ops = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
 pallet-asset-tx-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
 pallet-skip-feeless-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
 pallet-transaction-storage = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
@@ -275,6 +276,7 @@ std = [
 	"sp-version/std",
 	"substrate-wasm-builder",
 	"frame-metadata-hash-extension/std",
+	"pallet-asset-conversion-ops/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking-pallet-pov/runtime-benchmarks",

@@ -22,6 +22,7 @@ futures = "0.3.21"
 log = { workspace = true, default-features = true }
 tempfile = "3.1.0"
 frame-system = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
+frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
 node-cli = { package = "node", path = "../." }
 node-primitives = { path = "../primitives" } 
 node-template-runtime = { path = "../../runtime" }
