@@ -141,10 +141,10 @@ pub mod ecdsa_crypto {
 // #[cfg(feature = "bls-experimental")]
 pub mod bls_crypto {
 	use super::{AuthorityIdBound, BeefyAuthorityId, Hash, RuntimeAppPublic, KEY_TYPE};
-	use sp_application_crypto::{app_crypto, bls381};
-	use sp_core::{bls381::Pair as BlsPair, crypto::Wraps, Pair as _};
+	use sp_application_crypto::{app_crypto, bls377};
+	use sp_core::{bls377::Pair as BlsPair, crypto::Wraps, Pair as _};
 
-	app_crypto!(bls381, KEY_TYPE);
+	app_crypto!(bls377, KEY_TYPE);
 
 	/// Identity of a BEEFY authority using BLS as its crypto.
 	pub type AuthorityId = Public;
@@ -181,10 +181,10 @@ pub mod bls_crypto {
 #[cfg(all(feature = "bls-experimental"))]
 pub mod ecdsa_bls_crypto {
 	use super::{AuthorityIdBound, BeefyAuthorityId, Hash, RuntimeAppPublic, KEY_TYPE};
-	use sp_application_crypto::{app_crypto, ecdsa_bls381};
+	use sp_application_crypto::{app_crypto, ecdsa_bls377};
 	// use sp_core::{crypto::Wraps, ecdsa_bls381::Pair as EcdsaBlsPair};
 
-	app_crypto!(ecdsa_bls381, KEY_TYPE);
+	app_crypto!(ecdsa_bls377, KEY_TYPE);
 
 	/// Identity of a BEEFY authority using (ECDSA,BLS) as its crypto.
 	pub type AuthorityId = Public;
@@ -253,44 +253,6 @@ pub struct ValidatorSet<AuthorityId> {
 	/// Identifier of the validator set
 	id: ValidatorSetId,
 }
-
-// #[cfg(not(feature =  "bls-experimental"))]
-// impl<AuthorityId> ValidatorSet<AuthorityId> {
-// 	/// Return a validator set with the given validators and set id.
-// 	pub fn new<I>(validators: I, id: ValidatorSetId) -> Option<Self>
-// 	where
-// 		I: IntoIterator<Item = AuthorityId>,
-// 	{
-// 		let validators: Vec<AuthorityId> = validators.into_iter().collect();
-// 		if validators.is_empty() {
-// 			// No validators; the set would be empty.
-// 			None
-// 		} else {
-// 			Some(Self { validators, id })
-// 		}
-// 	}
-
-// 	/// Return a reference to the vec of validators.
-// 	pub fn validators(&self) -> &[AuthorityId] {
-// 		&self.validators
-// 	}
-
-// 	/// Return a reference to the vec of commitments
-// 	#[cfg(feature = "bls-experimental")]
-// 	pub fn commitments(&self) -> &[AuthorityId] {
-// 		&self.commitments
-// 	}
-
-// 	/// Return the validator set id.
-// 	pub fn id(&self) -> ValidatorSetId {
-// 		self.id
-// 	}
-
-// 	/// Return the number of validators in the set.
-// 	pub fn len(&self) -> usize {
-// 		self.validators.len()
-// 	}
-// }
 
 // #[cfg(feature = "bls-experimental")]
 impl<AuthorityId> ValidatorSet<AuthorityId> {

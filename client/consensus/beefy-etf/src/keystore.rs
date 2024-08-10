@@ -24,7 +24,7 @@ use sp_application_crypto::{
 use sp_consensus_beefy_etf::{AuthorityIdBound, BeefyAuthorityId, BeefySignatureHasher};
 use sp_core::ecdsa;
 #[cfg(feature = "bls-experimental")]
-use sp_core::{bls381, ecdsa_bls381, crypto::KeyTypeId};
+use sp_core::{bls377, ecdsa_bls377, crypto::KeyTypeId};
 use sp_crypto_hashing::keccak_256;
 use sp_keystore::KeystorePtr;
 
@@ -104,25 +104,25 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 			},
 
 			#[cfg(feature = "bls-experimental")]
-			bls381::CRYPTO_ID => {
-				let public: bls381::Public =
-					bls381::Public::try_from(public.as_slice()).unwrap();
+			bls377::CRYPTO_ID => {
+				let public: bls377::Public =
+					bls377::Public::try_from(public.as_slice()).unwrap();
 				let sig = store
-					.bls381_sign(BEEFY_KEY_TYPE, &public, &message)
+					.bls377_sign(BEEFY_KEY_TYPE, &public, &message)
 					.map_err(|e| error::Error::Keystore(e.to_string()))?
-					.ok_or_else(|| error::Error::Signature("bls381_sign() failed".to_string()))?;
+					.ok_or_else(|| error::Error::Signature("bls377_sign() failed".to_string()))?;
 				let sig_ref: &[u8] = sig.as_ref();
 				sig_ref.to_vec()
 			},
 
 			#[cfg(all(feature = "bls-experimental"))]
-			ecdsa_bls381::CRYPTO_ID => {
-				let public: ecdsa_bls381::Public =
-					ecdsa_bls381::Public::try_from(public.as_slice()).unwrap();
+			ecdsa_bls377::CRYPTO_ID => {
+				let public: ecdsa_bls377::Public =
+					ecdsa_bls377::Public::try_from(public.as_slice()).unwrap();
 				let sig = store
-					.ecdsa_bls381_sign_with_keccak256(BEEFY_KEY_TYPE, &public, &message)
+					.ecdsa_bls377_sign_with_keccak256(BEEFY_KEY_TYPE, &public, &message)
 					.map_err(|e| error::Error::Keystore(e.to_string()))?
-					.ok_or_else(|| error::Error::Signature("bls381_sign()  failed".to_string()))?;
+					.ok_or_else(|| error::Error::Signature("bls377_sign()  failed".to_string()))?;
 				let sig_ref: &[u8] = sig.as_ref();
 				sig_ref.to_vec()
 			},
@@ -162,8 +162,8 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 				}),
 
 			#[cfg(feature = "bls-experimental")]
-			bls381::CRYPTO_ID => store
-				.bls381_public_keys(BEEFY_KEY_TYPE)
+			bls377::CRYPTO_ID => store
+				.bls377_public_keys(BEEFY_KEY_TYPE)
 				.drain(..)
 				.map(|pk| AuthorityId::try_from(pk.as_ref()))
 				.collect::<Result<Vec<_>, _>>()
@@ -174,8 +174,8 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 				}),
 
 			#[cfg(all(feature = "bls-experimental", feature = "full_crypto"))]
-			ecdsa_bls381::CRYPTO_ID => store
-				.ecdsa_bls381_public_keys(BEEFY_KEY_TYPE)
+			ecdsa_bls377::CRYPTO_ID => store
+				.ecdsa_bls377_public_keys(BEEFY_KEY_TYPE)
 				.drain(..)
 				.map(|pk| AuthorityId::try_from(pk.as_ref()))
 				.collect::<Result<Vec<_>, _>>()
@@ -217,8 +217,8 @@ impl<AuthorityId: AuthorityIdBound> BeefyKeystore<AuthorityId> {
 			.map_err(|_| ())
 			.unwrap();
 
-		let public: bls381::Public =
-			bls381::Public::try_from(public.as_slice()).unwrap();
+		let public: bls377::Public =
+			bls377::Public::try_from(public.as_slice()).unwrap();
 
 		let sig = store.acss_recover(
 			BEEFY_KEY_TYPE, 
@@ -331,17 +331,17 @@ pub mod tests {
 				AuthorityId::decode(&mut pk.as_ref()).unwrap()
 			},
 			#[cfg(feature = "bls-experimental")]
-			ecdsa_bls381::CRYPTO_ID => {
+			ecdsa_bls377::CRYPTO_ID => {
 				let pk = store
-					.ecdsa_bls381_generate_new(key_type, optional_seed.as_deref())
+					.ecdsa_bls377_generate_new(key_type, optional_seed.as_deref())
 					.ok()
 					.unwrap();
 				AuthorityId::decode(&mut pk.as_ref()).unwrap()
 			},
 			#[cfg(feature = "bls-experimental")]
-			bls381::CRYPTO_ID => {
+			bls377::CRYPTO_ID => {
 				let pk = store
-					.bls381_generate_new(key_type, optional_seed.as_deref())
+					.bls377_generate_new(key_type, optional_seed.as_deref())
 					.ok()
 					.unwrap();
 				AuthorityId::decode(&mut pk.as_ref()).unwrap()
@@ -537,7 +537,7 @@ pub mod tests {
 	// #[cfg(feature = "bls-experimental")]
 	// #[test]
 	// fn sign_error_for_ecdsa_n_bls() {
-	// 	sign_error::<ecdsa_bls_crypto::AuthorityId>("bls381_sign()  failed");
+	// 	sign_error::<ecdsa_bls_crypto::AuthorityId>("bls377_sign()  failed");
 	// }
 
 	#[test]
