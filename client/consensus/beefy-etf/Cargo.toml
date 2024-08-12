@@ -28,6 +28,7 @@ sc-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch 
 sc-network = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 sc-network-gossip = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 sc-network-sync = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
+sc-network-types = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 sc-utils = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 sp-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 sp-application-crypto = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
@@ -68,3 +69,4 @@ bls-experimental = [
 	"ark-bls12-377",
 	"w3f-bls"
 ]
+

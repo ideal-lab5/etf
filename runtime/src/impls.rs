@@ -17,6 +17,8 @@
 
 //! Some configurable implementations as associated type for the substrate runtime.
 
+use polkadot_sdk::*;
+
 use frame_support::{
 	pallet_prelude::*,
 	traits::{
@@ -30,10 +32,9 @@ use pallet_identity::legacy::IdentityField;
 use sp_std::prelude::*;
 
 use crate::{
-	AccountId, 
-	AllianceCollective, 
-	Hash,
-	NegativeImbalance,
+	AccountId, AllianceCollective, AllianceMotion, 
+	Assets, Authorship, Balances, Hash,
+	NegativeImbalance, Runtime, RuntimeCall,
 };
 
 pub struct Author;
@@ -65,7 +66,7 @@ impl IdentityVerifier<AccountId> for AllianceIdentityVerifier {
 
 	fn has_good_judgement(who: &AccountId) -> bool {
 		use pallet_identity::Judgement;
-		crate::Identity::identity(who.clone())
+		crate::Identity::identity(who)
 			.map(|(registration, _)| registration.judgements)
 			.map_or(false, |judgements| {
 				judgements
@@ -75,7 +76,7 @@ impl IdentityVerifier<AccountId> for AllianceIdentityVerifier {
 	}
 
 	fn super_account_id(who: &AccountId) -> Option<AccountId> {
-		crate::Identity::super_of(who.clone()).map(|parent| parent.0)
+		crate::Identity::super_of(who).map(|parent| parent.0)
 	}
 }
 
@@ -120,6 +121,7 @@ mod multiplier_tests {
 		weights::{Weight, WeightToFee},
 	};
 	use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
+	use polkadot_sdk::*;
 	use sp_runtime::{
 		assert_eq_error_rate,
 		traits::{Convert, One, Zero},

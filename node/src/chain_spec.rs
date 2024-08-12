@@ -20,7 +20,7 @@
 
 use beefy_primitives::bls_crypto::AuthorityId as BeefyId;
 use grandpa_primitives::AuthorityId as GrandpaId;
-use kitchensink_runtime::{
+use node_template_runtime::{
 	constants::currency::*, wasm_binary_unwrap, Block, MaxNominations, SessionKeys, StakerStatus,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -52,7 +52,8 @@ use ark_std::UniformRand;
 use rand::rngs::OsRng;
 use etf_crypto_primitives::dpss::acss::DoubleSecret;
 
-pub use kitchensink_runtime::RuntimeGenesisConfig;
+pub use node_template_runtime::RuntimeGenesisConfig;
+use node_template_runtime::constants::currency::DOLLARS;
 pub use node_primitives::{AccountId, Balance, Signature};
 
 type AccountPublic = <Signature as Verify>::Signer;
@@ -77,7 +78,7 @@ pub struct Extensions {
 }
 
 /// Specialized `ChainSpec`.
-pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 /// Flaming Fir testnet generator
 pub fn flaming_fir_config() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../res/flaming-fir.json")[..])
@@ -511,7 +512,7 @@ pub fn testnet_genesis(
 		},
 		"sudo": { "key": Some(root_key.clone()) },
 		"babe": {
-			"epochConfig": Some(kitchensink_runtime::BABE_GENESIS_EPOCH_CONFIG),
+			"epochConfig": Some(node_template_runtime::BABE_GENESIS_EPOCH_CONFIG),
 		},
 		"etf": {
 			"genesisResharing": genesis_shares,

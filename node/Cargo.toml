@@ -32,7 +32,7 @@ is-it-maintained-open-issues = { repository = "paritytech/substrate" }
 # but just exposed by this crate here.
 [[bin]]
 name = "node"
-path = "src/main.rs"
+path = "bin/main.rs"
 required-features = ["cli"]
 
 [lib]
@@ -44,7 +44,7 @@ array-bytes = "6.1"
 clap = { version = "4.5.3", features = ["derive"], optional = true }
 codec = { package = "parity-scale-codec", version = "3.6.1" }
 serde = { features = ["derive"], workspace = true, default-features = true }
-jsonrpsee = { version = "0.23", features = ["server"] }
+jsonrpsee = { version = "0.22", features = ["server"] }
 futures = "0.3.21"
 log = { workspace = true, default-features = true }
 rand = "0.8"
@@ -74,7 +74,7 @@ sp-statement-store = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", b
 sp-crypto-ec-utils = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true, features = ["bls12-381"]}
 
 # client dependencies
-polkadot-sdk = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
+polkadot-sdk = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true, features = ["node"] }
 sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 sc-chain-spec = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 sc-consensus = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
@@ -115,7 +115,7 @@ pallet-asset-tx-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.gi
 pallet-im-online = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 pallet-skip-feeless-payment = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 
-frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true, optional = true }
+frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 
 # node-specific dependencies
 node-template-runtime = { path = "../runtime" }
@@ -165,7 +165,7 @@ substrate-cli-test-utils = { git = "https://github.com/ideal-lab5/polkadot-sdk.g
 
 wat = "1.0"
 frame-support = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
-frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
+# frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 node-testing = { path = "./testing" }
 pallet-balances = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 pallet-contracts = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }

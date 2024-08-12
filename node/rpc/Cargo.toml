@@ -16,7 +16,7 @@ workspace = true
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-jsonrpsee = { version = "0.23", features = ["server"] }
+jsonrpsee = { version = "0.22", features = ["server"] }
 node-primitives = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 pallet-transaction-payment-rpc = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 mmr-rpc = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }

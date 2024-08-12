@@ -54,7 +54,13 @@ sp-statement-store = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", b
 sp-version = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false, features = ["serde"] }
 sp-io = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 
+polkadot-sdk = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false }
+
 # frame dependencies
+frame = { package = "polkadot-sdk-frame", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false, features = [
+	"experimental",
+	"runtime",
+]  }
 frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 frame-executive = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 frame-benchmarking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
@@ -92,6 +98,7 @@ pallet-elections-phragmen = { git = "https://github.com/ideal-lab5/polkadot-sdk.
 pallet-etf = { path = "../pallets/etf", default-features = false}
 # pallet-randomness-beacon = { path = "../pallets/randomness-beacon", default-features = false}
 pallet-example-tasks = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
+pallet-example-mbm = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-fast-unstake = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-migrations = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-nis = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
@@ -159,6 +166,7 @@ default = ["std"]
 with-tracing = ["frame-executive/with-tracing"]
 std = [
 	"codec/std",
+	"frame/std",
 	"frame-benchmarking-pallet-pov/std",
 	"frame-benchmarking/std",
 	"frame-election-provider-support/std",
@@ -277,6 +285,7 @@ std = [
 	"substrate-wasm-builder",
 	"frame-metadata-hash-extension/std",
 	"pallet-asset-conversion-ops/std",
+	"polkadot-sdk/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking-pallet-pov/runtime-benchmarks",
