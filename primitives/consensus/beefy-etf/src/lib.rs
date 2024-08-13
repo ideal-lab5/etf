@@ -488,10 +488,11 @@ sp_api::decl_runtime_apis! {
 		// #[cfg(feature = "bls-experimental")]
 		/// Return a proof of knowledge for async secret sharing
 		fn read_share(who: AuthorityId) -> Option<Vec<u8>>;
-
-		// #[cfg(feature = "bls-experimental")] 
-		/// Return a public key commitment for the current round for the authority if one exists
-		fn read_commitment(who: AuthorityId) -> Option<AuthorityId>;
+		
+		fn submit_unsigned_pulse(
+			signature_bytes: Vec<Vec<u8>>,
+			block_number: NumberFor<Block>
+		) -> Option<()>;
 	}
 
 }

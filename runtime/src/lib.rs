@@ -2470,6 +2470,9 @@ mod runtime {
 	#[runtime::pallet_index(141)]
 	pub type Etf = pallet_etf;
 
+	#[runtime::pallet_index(142)]
+	pub type RandomnessBeacon = pallet_randomness_beacon;
+
 	// MMR leaf construction must be after session in order to have a leaf's next_auth_set
 	// refer to block<N>. See issue polkadot-fellows/runtimes#160 for details.
 	#[runtime::pallet_index(42)]
@@ -2657,6 +2660,11 @@ impl pallet_etf::Config for Runtime {
 	type BeefyId = BeefyId;
 	type MaxAuthorities = MaxAuthorities;
 }
+
+impl pallet_randomness_beacon::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxPulses = ConstU32<1024>;
+} 
 
 parameter_types! {
 	pub const BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
@@ -3201,17 +3209,16 @@ impl_runtime_apis! {
 			None
 		}
 
-		fn read_commitment(who: BeefyId) -> Option<BeefyId> {
-			let authorities = pallet_beefy_etf::Authorities::<Runtime>::get();
-			if let Some(at) = authorities.iter().position(|auth| auth.eq(&who)) {
-				let commitments = pallet_etf::Commitments::<Runtime>::get();
-				if at as usize >= commitments.len() {
-					return None;
-				}
-				return Some(commitments[at as usize].clone());
-			}
-			None
-		}
+		fn submit_unsigned_pulse(
+            signature_bytes: Vec<Vec<u8>>,
+            block_number: BlockNumber
+        ) -> Option<()> {
+            RandomnessBeacon::write_pulse(
+                RuntimeOrigin::none(),
+                signature_bytes,
+                block_number,
+            ).ok()
+        }
 	}
 
 
