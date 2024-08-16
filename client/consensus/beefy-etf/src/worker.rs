@@ -39,6 +39,10 @@ use sc_utils::notification::NotificationReceiver;
 use sp_api::ProvideRuntimeApi;
 use sp_arithmetic::traits::{AtLeast32Bit, Saturating};
 use sp_consensus::SyncOracle;
+use sc_transaction_pool_api::{
+	LocalTransactionPool, OffchainTransactionPoolFactory, TransactionPool,
+};
+use sp_api::ApiExt;
 
 #[cfg(feature = "bls-experimental")]
 use sp_consensus_beefy_etf::bls_crypto::{AuthorityId, Signature};
@@ -409,6 +413,7 @@ pub(crate) struct BeefyWorker<B: Block, BE, P, RuntimeApi, S> {
 	pub metrics: Option<VoterMetrics>,
 }
 
+// impl<B, BE, P, R, S, T> BeefyWorker<B, BE, P, R, S, T>
 impl<B, BE, P, R, S> BeefyWorker<B, BE, P, R, S>
 where
 	B: Block + Codec,
@@ -417,6 +422,7 @@ where
 	S: SyncOracle,
 	R: ProvideRuntimeApi<B>,
 	R::Api: BeefyApi<B, AuthorityId>,
+	// T: TransactionPool<Block = B> + LocalTransactionPool<Block = B> + 'static,
 {
 	fn best_grandpa_block(&self) -> NumberFor<B> {
 		*self.persisted_state.voting_oracle.best_grandpa_block_header.number()
@@ -630,7 +636,7 @@ where
 		self.persisted_state.voting_oracle.finalize(block_num)?;
 
 		// Set new best BEEFY block number.
-	self.persisted_state.set_best_beefy(block_num);
+		self.persisted_state.set_best_beefy(block_num);
 		crate::aux_schema::write_voter_state(&*self.backend, &self.persisted_state)
 			.map_err(|e| Error::Backend(e.to_string()))?;
 
@@ -667,29 +673,31 @@ where
 			.gossip_filter_config()
 			.map(|filter| self.comms.gossip_validator.update_filter(filter))?;
 
-		// finally update the latest signatures in storage 
-		
-        let best_header = self.persisted_state
-            .voting_oracle
-            .best_grandpa_block_header
-            .clone();
-        let best_hash = best_header.hash();
+		// // finally update the latest signatures in storage 
+		// let best_header = self.persisted_state
+        //     .voting_oracle
+        //     .best_grandpa_block_header
+        //     .clone();
+        // let best_hash = best_header.hash();
 
-				
-        // let binding = Vec::new();
-        let mut signatures: Vec<Option<Signature>> = match finality_proof {
-            VersionedFinalityProof::V1(ref sc) => sc.signatures.clone()
-        };
+        // let mut signatures: Vec<Option<Signature>> = match finality_proof {
+        //     VersionedFinalityProof::V1(ref sc) => sc.signatures.clone()
+        // };
 
-		let signatures: Vec<Vec<u8>> = signatures.iter()
-			.flatten()
-			.map(|sig| sig.encode())
-			.collect::<Vec<_>>();
-		self.runtime.runtime_api().submit_unsigned_pulse(
-            best_hash,
-            signatures,
-            block_num,
-        );
+		// let signatures: Vec<Vec<u8>> = signatures.iter()
+		// 	.flatten()
+		// 	.map(|sig| sig.encode())
+		// 	.collect::<Vec<_>>();
+
+		// info!(
+		// 	target: LOG_TARGET,
+		// 	"🥩 attempting to write signatures to the beacon pallet"
+		// );
+		// self.runtime.runtime_api().submit_unsigned_pulse(
+        //     best_hash,
+        //     signatures,
+        //     block_num,
+        // );
 
 		Ok(())
 	}
@@ -950,16 +958,28 @@ where
 	///
 	/// Run the main async loop which is driven by finality notifications and gossiped votes.
 	/// Should never end, returns `Error` otherwise.
-	pub(crate) async fn run(
+	pub(crate) async fn run<T>(
 		mut self,
 		block_import_justif: &mut Fuse<NotificationReceiver<BeefyVersionedFinalityProof<B>>>,
 		finality_notifications: &mut Fuse<FinalityNotifications<B>>,
-	) -> (Error, BeefyComms<B>) {
+		transaction_pool: Arc<T>,
+	) -> (Error, BeefyComms<B>)
+	where T: TransactionPool<Block = B> + LocalTransactionPool<Block = B> + 'static {
 		info!(
 			target: LOG_TARGET,
 			"🥩 run BEEFY worker, best grandpa: #{:?}.",
 			self.best_grandpa_block()
 		);
+		
+		let offchain_transaction_pool_factory =
+			OffchainTransactionPoolFactory::new(transaction_pool.clone());
+		self.runtime.runtime_api().register_extension(offchain_transaction_pool_factory
+			.offchain_transaction_pool(<B as Block>::Hash::default())); //TODO
+		// self.runtime.runtime_api().submit_unsigned_pulse(
+        //     <B as Block>::Hash::default(),
+        //     vec![],
+        //     <<B as Block>::Header as Header>::Number::default(),
+        // );
 
 		let mut votes = Box::pin(
 			self.comms
@@ -1000,7 +1020,16 @@ where
 				// Use `select_biased!` to prioritize order below.
 				// Process finality notifications first since these drive the voter.
 				notification = finality_notifications.next() => {
+					// info!("process finality notifications");
+					// self.runtime.runtime_api().submit_unsigned_pulse(
+					// 	<B as Block>::Hash::default(),
+					// 	vec![],
+					// 	<<B as Block>::Header as Header>::Number::default(),
+					// ).map_err(|e| {
+					// 	panic!("well well well {:?}", e);
+					// });
 					if let Some(notif) = notification {
+						
 						if let Err(err) = self.handle_finality_notification(&notif) {
 							break err;
 						}

@@ -26,7 +26,10 @@ use frame_support::{
 };
 
 use sp_std::prelude::*;
-use frame_system::pallet_prelude::*;
+use frame_system::{
+	pallet_prelude::*,
+	offchain::SendTransactionTypes,
+};
 
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -35,9 +38,17 @@ use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use etf_crypto_primitives::utils::interpolate_threshold_bls;
 use w3f_bls::{DoublePublicKey, DoubleSignature, EngineBLS, Message, SerializableToBytes, TinyBLS377};
 use sp_consensus_beefy_etf::{
-	Commitment, ValidatorSetId, Payload, known_payloads,
+	Commitment, ValidatorSetId, Payload, known_payloads, BeefyAuthorityId,
+};
+use sp_runtime::{
+	transaction_validity::{
+		InvalidTransaction, TransactionPriority, TransactionSource, TransactionValidity,
+		TransactionValidityError, ValidTransaction,
+	},
+	DispatchError, KeyTypeId, Perbill, RuntimeAppPublic,
 };
 use sha3::{Digest, Sha3_512};
+use log::{info, debug, error};
 
 #[cfg(test)]
 mod mock;
@@ -46,6 +57,8 @@ mod tests;
 
 pub use pallet::*;
 
+const LOG_TARGET: &str = "runtime::randomness-beacon";
+
 pub type OpaqueSignature = BoundedVec<u8, ConstU32<48>>;
 
 #[derive(
@@ -53,14 +66,15 @@ pub type OpaqueSignature = BoundedVec<u8, ConstU32<48>>;
 	Encode, Decode, TypeInfo, MaxEncodedLen, Serialize, Deserialize)]
 pub struct PulseHeader<BN: core::fmt::Debug> {
 	pub block_number: BN,
-	pub hash_prev: BoundedVec<u8, ConstU32<64>>
+	// pub hash_prev: BoundedVec<u8, ConstU32<64>>
 }
 
 #[derive(
 	Default, Clone, Eq, PartialEq, RuntimeDebugNoBound, 
 	Encode, Decode, TypeInfo, MaxEncodedLen, Serialize, Deserialize)]
 pub struct PulseBody {
-	pub double_sig: BoundedVec<u8, ConstU32<48>>,
+	pub signature: BoundedVec<u8, ConstU32<48>>,
+	pub randomness: BoundedVec<u8, ConstU32<64>>,
 }
 
 #[derive(
@@ -77,22 +91,24 @@ impl<BN: core::fmt::Debug> Pulse<BN> {
 	pub fn build_next(
 		signature: OpaqueSignature,
 		block_number: BN,
-		prev: Pulse<BN>,
+		// prev: Pulse<BN>,
 	) -> Self {
 		let mut hasher = Sha3_512::new();
-		hasher.update(prev.body.double_sig.to_vec());
-		let hash_prev = hasher.finalize();
+		hasher.update(signature.to_vec());
+		let randomness = hasher.finalize();
 
-		let bounded_hash = BoundedVec::<u8, ConstU32<64>>::try_from(hash_prev.to_vec())
+		let bounded_rand = BoundedVec::<u8, ConstU32<64>>::try_from(randomness.to_vec())
 			.expect("the hasher should work fix this later though");
 
 		let header: PulseHeader<BN> = PulseHeader {
 			block_number,
-			hash_prev: bounded_hash
+			// hash_prev: bounded_hash
 		};
 
 		let body = PulseBody {
-			double_sig: signature,
+			signature,
+			randomness: bounded_rand,
+
 		};
 
 		Pulse {
@@ -107,25 +123,45 @@ pub mod pallet {
 	use super::*;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config +
-		pallet_etf::Config + 
-		pallet_beefy::Config {
+	pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>>
+		+ pallet_etf::Config
+		+ pallet_beefy::Config {
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		// /// Authority identifier type
+		// type BeefyId: Member
+		// 	+ Parameter
+		// 	// todo: use custom signature hashing type instead of hardcoded `Keccak256`
+		// 	+ BeefyAuthorityId<sp_runtime::traits::Keccak256>
+		// 	+ MaybeSerializeDeserialize
+		// 	+ MaxEncodedLen;
 		/// The maximum number of pulses to store in runtime storage
 		#[pallet::constant]
 		type MaxPulses: Get<u32>;
+
+		// type PulseReportSystem: crate::PulseReportSystem<Self>;
 		// TODO
 		// /// Weights for this pallet.
 		// type WeightInfo: WeightInfo;
 	}
+
+	#[pallet::validate_unsigned]
+	impl<T: Config> ValidateUnsigned for Pallet<T> {
+		type Call = Call<T>;
+
+		fn validate_unsigned(source: TransactionSource, call: &Self::Call) -> TransactionValidity {
+			Self::validate_unsigned(source, call)
+		}
+	}
 	
 	/// the chain of randomness
 	#[pallet::storage]
-	pub type Pulses<T: Config> = StorageValue<
+	pub type Pulses<T: Config> = StorageMap<
 		_,
-		BoundedVec<Pulse<BlockNumberFor<T>>, T::MaxPulses>,
-		ValueQuery,
+		Blake2_128Concat,
+		BlockNumberFor<T>,
+		Pulse<BlockNumberFor<T>>,
+		OptionQuery,
 	>;
 
 	#[pallet::pallet]
@@ -147,8 +183,9 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
-			Pallet::<T>::initialize(&self.genesis_pulse)
-				.expect("The genesis pulse must be well formatted.");
+			Pallet::<T>::initialize(
+				&self.genesis_pulse
+			).expect("The genesis pulse must be well formatted.");
 		}
 	}
 
@@ -183,7 +220,7 @@ pub mod pallet {
 			signatures: Vec<Vec<u8>>,
 			block_number: BlockNumberFor<T>,
 		) -> DispatchResult {
-			// do we want a signed origin? maybe...
+			// ensure_none(origin)?;
 			let round_pk_bytes: Vec<u8> = <pallet_etf::Pallet<T>>::round_pubkey().to_vec();
 			let rk = DoublePublicKey::<TinyBLS377>::deserialize_compressed(
 				&round_pk_bytes[..]
@@ -195,7 +232,10 @@ pub mod pallet {
 				rk, 
 				validator_set_id
 			)?;
+
 			Self::deposit_event(Event::PulseStored);
+			// Waive the fee since the pulse is valid and beneficial
+			// Ok(Pays::No.into())
 			Ok(())
 		}
 	}
@@ -203,15 +243,11 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	/// initialize the genesis state for this pallet
-	fn initialize(genesis_pulse: &Pulse<BlockNumberFor<T>>) -> Result<(), Error<T>> {
-		let mut pulses = <Pulses<T>>::get();
-		// check that it hasn't already been initialized
-		if !pulses.is_empty() {
-			return Err(Error::<T>::AlreadyInitialized);
-		}
-		pulses.try_push(genesis_pulse.clone())
-			.map_err(|_| Error::<T>::PulseOverflow)?;
-		<Pulses<T>>::put(pulses);
+	fn initialize(
+		genesis_pulse: &Pulse<BlockNumberFor<T>>,
+	) -> Result<(), Error<T>> {
+		let current_block = <frame_system::Pallet<T>>::block_number();
+		<Pulses<T>>::insert(current_block, genesis_pulse);
 		Ok(())
 	}
 
@@ -239,6 +275,7 @@ impl<T: Config> Pallet<T> {
 			let pk = DoublePublicKey::<TinyBLS377>::deserialize_compressed(
 				&etf_pk[..]
 			).unwrap();
+
 			if let Ok(sig) = DoubleSignature::<TinyBLS377>::from_bytes(&rs) {	
 				if sig.verify(&Message::new(b"", &commitment.encode()), &pk) {
 					good_sigs.push((<TinyBLS377 as EngineBLS>::Scalar::from((idx as u8) + 1), sig.0));
@@ -252,22 +289,70 @@ impl<T: Config> Pallet<T> {
 		let bounded_sig = 
 			BoundedVec::<u8, ConstU32<48>>::try_from(bytes)
 				.map_err(|_| Error::<T>::InvalidSignature)?;
-		let pulses = <Pulses<T>>::get();
 
-		let mut last_pulse = Pulse::default();
-		if !pulses.is_empty() {
-			last_pulse = pulses[pulses.len() - 1].clone();
-		}
-		
 		let pulse = Pulse::build_next(
 			bounded_sig, 
 			block_number, 
-			last_pulse
+			// last_pulse
 		);
-		let mut pulses = <Pulses<T>>::get();
-		pulses.try_push(pulse.clone())
-			.map_err(|_| Error::<T>::PulseOverflow)?;
-		<Pulses<T>>::put(pulses);
+
+		<Pulses<T>>::insert(block_number, pulse.clone());
 		Ok(())
+	}
+
+	pub fn validate_unsigned(source: TransactionSource, call: &Call<T>) -> TransactionValidity {
+		if let Call::write_pulse { signatures, block_number } = call {
+			// discard pulses not coming from the local node
+			// match source {
+			// 	TransactionSource::Local | TransactionSource::InBlock => { /* allowed */ },
+			// 	_ => {
+			// 		log::warn!(
+			// 			target: LOG_TARGET,
+			// 			"rejecting unsigned beacon pulse because it is not local/in-block."
+			// 		);
+			// 		return InvalidTransaction::Call.into()
+			// 	},
+			// }
+
+			// let evidence = (*equivocation_proof.clone(), key_owner_proof.clone());
+			// T::PulseReportSystem::verify_pulse(evidence)?;
+
+			// let longevity =
+			// 	<T::EquivocationReportSystem as OffenceReportSystem<_, _>>::Longevity::get();
+
+			ValidTransaction::with_tag_prefix("RandomnessBeacon")
+				// We assign the maximum priority for any equivocation report.
+				.priority(TransactionPriority::MAX)
+				// TODO: Only one pulse for the same slot.
+				// .and_provides((
+				// 	equivocation_proof.offender_id().clone(),
+				// 	equivocation_proof.set_id(),
+				// 	*equivocation_proof.round_number(),
+				// ))
+				// TODO
+				.longevity(3) 
+				// We don't propagate this. This can never be included on a remote node.
+				.propagate(false)
+				.build()
+		} else {
+			InvalidTransaction::Call.into()
+		}
+	}
+
+	pub fn publish_pulse(signatures: Vec<Vec<u8>>, block_number: BlockNumberFor<T>) -> Result<(), ()> {
+		use frame_system::offchain::{Signer, SubmitTransaction};
+		let call = Call::write_pulse {
+			signatures,
+			block_number,
+		};
+		info!("BEACON: prepared the call");
+		let res = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+		info!("BEACON submit unsigned created");
+		match res {
+			Ok(_) => info!("submitted transaction succesfully"),
+			Err(e) => error!("Failed to submit unsigned transaction: {:?}", e),
+		}
+		info!("BEACON done");
+		Ok(()) 
 	}
 }

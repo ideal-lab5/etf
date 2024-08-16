@@ -188,10 +188,6 @@ pub mod pallet {
 				// we panic here as runtime maintainers can simply reconfigure genesis and restart
 				// the chain easily
 				.expect("Authorities vec too big");
-			// Pallet::<T>::initialize_genesis_shares(
-			// 	&self.genesis_resharing,
-			// 	self.round_pubkey.clone(),
-			// ).expect("The genesis resharing should be correctly derived");
 			GenesisBlock::<T>::put(&self.genesis_block);
 		}
 	}
@@ -523,7 +519,8 @@ where
 
 		// Always issue a change on each `session`, even if validator set hasn't changed.
 		// We want to have at least one BEEFY mandatory block per session.
-		Self::change_authorities(bounded_next_authorities, bounded_next_queued_authorities);
+		// temporarily disabling this call
+		// Self::change_authorities(bounded_next_authorities, bounded_next_queued_authorities);
 
 		let validator_set_id = ValidatorSetId::<T>::get();
 		// Update the mapping for the new set id that corresponds to the latest session (i.e. now).

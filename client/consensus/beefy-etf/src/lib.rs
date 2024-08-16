@@ -42,7 +42,9 @@ use sc_network_gossip::{GossipEngine, Network as GossipNetwork, Syncing as Gossi
 use sp_api::{ApiExt, ProvideRuntimeApi};
 use sp_blockchain::{Backend as BlockchainBackend, HeaderBackend};
 use sp_consensus::{Error as ConsensusError, SyncOracle};
-
+use sc_transaction_pool_api::{
+	LocalTransactionPool, OffchainTransactionPoolFactory, TransactionPool,
+};
 #[cfg(feature = "bls-experimental")]
 use sp_consensus_beefy_etf::bls_crypto::AuthorityId;
 
@@ -231,6 +233,8 @@ pub struct BeefyParams<B: Block, BE, C, N, P, R, S> {
 	pub links: BeefyVoterLinks<B>,
 	/// Handler for incoming BEEFY justifications requests from a remote peer.
 	pub on_demand_justifications_handler: BeefyJustifsRequestHandler<B, C>,
+	// TransactionPool<Block = B> + LocalTransactionPool<Block = B> + 'static,
+	// pub transaction_pool: T,
 }
 /// Helper object holding BEEFY worker communication/gossip components.
 ///
@@ -477,8 +481,9 @@ where
 /// Start the BEEFY gadget.
 ///
 /// This is a thin shim around running and awaiting a BEEFY worker.
-pub async fn start_beefy_gadget<B, BE, C, N, P, R, S>(
+pub async fn start_beefy_gadget<B, BE, C, N, P, R, S, T>(
 	beefy_params: BeefyParams<B, BE, C, N, P, R, S>,
+	transaction_pool: Arc<T>,
 ) where
 	B: Block,
 	BE: Backend<B>,
@@ -488,6 +493,7 @@ pub async fn start_beefy_gadget<B, BE, C, N, P, R, S>(
 	R::Api: BeefyApi<B, AuthorityId> + MmrApi<B, MmrRootHash, NumberFor<B>>,
 	N: GossipNetwork<B> + NetworkRequest + Send + Sync + 'static,
 	S: GossipSyncing<B> + SyncOracle + 'static,
+	T: TransactionPool<Block = B> + LocalTransactionPool<Block = B> + 'static,
 {
 	let BeefyParams {
 		client,
@@ -500,6 +506,7 @@ pub async fn start_beefy_gadget<B, BE, C, N, P, R, S>(
 		prometheus_registry,
 		links,
 		mut on_demand_justifications_handler,
+		// transaction_pool,
 	} = beefy_params;
 
 	let BeefyNetworkParams {
@@ -552,6 +559,11 @@ pub async fn start_beefy_gadget<B, BE, C, N, P, R, S>(
 		let mut runtime_api = runtime.runtime_api();
 		runtime_api.register_extension(sp_keystore::KeystoreExt::from(keystore.clone()));
 	}
+
+	// let offchain_transaction_pool_factory =
+	// 	OffchainTransactionPoolFactory::new(transaction_pool.clone());
+	// runtime.runtime_api().register_extension(offchain_transaction_pool_factory
+	// 	.offchain_transaction_pool(<B as Block>::Hash::default())); //TODO
 	
 	// We re-create and re-run the worker in this loop in order to quickly reinit and resume after
 	// select recoverable errors.
@@ -597,7 +609,7 @@ pub async fn start_beefy_gadget<B, BE, C, N, P, R, S>(
 		);
 
 		match futures::future::select(
-			Box::pin(worker.run(&mut block_import_justif, &mut finality_notifications)),
+			Box::pin(worker.run(&mut block_import_justif, &mut finality_notifications, transaction_pool.clone())),
 			Box::pin(on_demand_justifications_handler.run()),
 		)
 		.await
