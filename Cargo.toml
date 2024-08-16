@@ -13,6 +13,7 @@ members = [
     "pallets/beefy-mmr-etf",
     "pallets/etf",
     "pallets/randomness-beacon",
+    "pallets/scheduler",
     "primitives/consensus/beefy-etf",
 ]
 resolver = "2"

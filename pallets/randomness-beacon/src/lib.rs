@@ -36,6 +36,16 @@ use scale_info::TypeInfo;
 
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use etf_crypto_primitives::utils::interpolate_threshold_bls;
+use etf_crypto_primitives::{
+	encryption::tlock::TLECiphertext,
+	// client::etf_client::{
+	// 	DefaultEtfClient, 
+	// 	EtfClient,
+	// 	DecryptionResult,
+	// },
+	// ibe::fullident::BfIbe,
+};
+
 use w3f_bls::{DoublePublicKey, DoubleSignature, EngineBLS, Message, SerializableToBytes, TinyBLS377};
 use sp_consensus_beefy_etf::{
 	Commitment, ValidatorSetId, Payload, known_payloads, BeefyAuthorityId,
@@ -356,3 +366,73 @@ impl<T: Config> Pallet<T> {
 		Ok(()) 
 	}
 }
+
+
+
+/// errors for timelock encryption
+pub enum TimelockError {
+	DecryptionFailed,
+	MissingSecret,
+	BoundCallFailure,
+	DecodeFailure,
+}
+
+/// represents a timelock ciphertext
+#[derive(Debug, Clone, PartialEq, Decode, Encode, MaxEncodedLen, TypeInfo)]
+pub struct Ciphertext {
+	/// the (AES) ciphertext
+	pub ciphertext: BoundedVec<u8, ConstU32<512>>,
+	/// the (AES) nonce
+	pub nonce: BoundedVec<u8, ConstU32<96>>,
+	/// the IBE ciphertext(s): for now we assume a single point in the future is used
+	pub capsule: BoundedVec<u8, ConstU32<512>>,
+}
+
+/// provides timelock encryption using the current slot
+pub trait TimelockEncryptionProvider<BN> {
+	/// attempt to decrypt the ciphertext with the current slot secret
+	fn decrypt_at(ciphertext: &[u8], block_number: BN) -> Result<DecryptionResult, TimelockError>;
+}
+
+// use ark_serialize::CanonicalDeserialize;
+// use w3f_bls::{EngineBLS};
+use etf_crypto_primitives::encryption::tlock::DecryptionResult;
+
+impl<T:Config> TimelockEncryptionProvider<BlockNumberFor<T>> for Pallet<T> {
+	fn decrypt_at(ciphertext_bytes: &[u8], block_number: BlockNumberFor<T>) -> Result<DecryptionResult, TimelockError> {
+		if let Some(secret) = Pulses::<T>::get(block_number) {
+			let pk = <pallet_etf::Pallet<T>>::round_pubkey();
+
+			// TODO: replace with optimized arkworks types?
+
+			let ciphertext:TLECiphertext<TinyBLS377> = 
+				TLECiphertext::deserialize_compressed(ciphertext_bytes)
+					.map_err(|_| TimelockError::DecodeFailure)?;
+
+			let sig: <TinyBLS377 as EngineBLS>::SignatureGroup = <TinyBLS377 as EngineBLS>::SignatureGroup::deserialize_compressed(
+				&secret.body.signature.to_vec()[..]
+			).map_err(|_| TimelockError::DecodeFailure)?;
+
+			let plaintext = ciphertext.tld(sig)
+				.map_err(|_| TimelockError::DecryptionFailed)?;
+
+			return Ok(plaintext);
+		}
+		Err(TimelockError::MissingSecret)
+	}
+}
+
+// impl<T: Config> Randomness<T::Hash, BlockNumberFor<T>> for Pallet<T> {
+// 	// this function hashes together the subject with the latest known randomness from quicknet
+// 	fn random(subject: &[u8]) -> (T::Hash, BlockNumberFor<T>) {
+// 		let block_number_minus_one = <frame_system::Pallet<T>>::block_number() - One::one();
+
+// 		let mut entropy = T::Hash::default();
+// 		if let Some(pulse) = Pulses::<T>::get(block_number_minus_one) {
+// 			entropy = (subject, block_number_minus_one, pulse.randomness.clone())
+// 				.using_encoded(T::Hashing::hash);
+// 		}
+
+// 		(entropy, block_number_minus_one)
+// 	}
+// }
