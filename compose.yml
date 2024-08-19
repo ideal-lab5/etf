@@ -1,0 +1,31 @@
+version: '3.7'
+services:
+  node_alice:
+    image: "ideallabs/etf"
+    ports:
+      - "30333:30333"
+      - "9933:9933"
+      - "9944:9944"
+    command: >
+      --tmp
+      --dev
+      --unsafe-rpc-external
+      --rpc-cors all
+      --alice
+    healthcheck:
+      test: ["CMD", "curl", "-f", "ws://localhost:9944"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.1
+        aliases:
+          - alice
+
+networks:
+  testing_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
