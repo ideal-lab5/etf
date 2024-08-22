@@ -137,7 +137,8 @@ pallet-staking-reward-curve = { git = "https://github.com/ideal-lab5/polkadot-sd
 pallet-staking-runtime-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-state-trie-migration = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-statement = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
-pallet-scheduler = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
+# pallet-scheduler = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
+pallet-scheduler = { path = "../pallets/scheduler",  default-features = false }
 pallet-society = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-sudo = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-timestamp = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }

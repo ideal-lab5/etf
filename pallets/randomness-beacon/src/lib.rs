@@ -31,6 +31,8 @@ use frame_system::{
 	offchain::SendTransactionTypes,
 };
 
+use sp_staking::{offence::OffenceReportSystem, SessionIndex};
+
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
@@ -46,10 +48,13 @@ use etf_crypto_primitives::{
 	// ibe::fullident::BfIbe,
 };
 
+use sp_session::{GetSessionNumber, GetValidatorCount};
+// use sp_staking::{offence::OffenceReportSystem, SessionIndex};
 use w3f_bls::{DoublePublicKey, DoubleSignature, EngineBLS, Message, SerializableToBytes, TinyBLS377};
 use sp_consensus_beefy_etf::{
 	Commitment, ValidatorSetId, Payload, known_payloads, BeefyAuthorityId,
 };
+
 use sp_runtime::{
 	transaction_validity::{
 		InvalidTransaction, TransactionPriority, TransactionSource, TransactionValidity,
@@ -60,10 +65,15 @@ use sp_runtime::{
 use sha3::{Digest, Sha3_512};
 use log::{info, debug, error};
 
+mod beacon;
+
 #[cfg(test)]
 mod mock;
 #[cfg(test)]
 mod tests;
+
+pub use crate::beacon::BeaconReportSystem;
+use crate::beacon::PulseEvidenceFor;
 
 pub use pallet::*;
 
@@ -118,7 +128,6 @@ impl<BN: core::fmt::Debug> Pulse<BN> {
 		let body = PulseBody {
 			signature,
 			randomness: bounded_rand,
-
 		};
 
 		Pulse {
@@ -133,12 +142,10 @@ pub mod pallet {
 	use super::*;
 
 	#[pallet::config]
-	pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>>
-		+ pallet_etf::Config
-		+ pallet_beefy::Config {
+	pub trait Config: frame_system::Config + SendTransactionTypes<Call<Self>> + pallet_etf::Config {
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-		// /// Authority identifier type
+		/// Authority identifier type
 		// type BeefyId: Member
 		// 	+ Parameter
 		// 	// todo: use custom signature hashing type instead of hardcoded `Keccak256`
@@ -148,8 +155,19 @@ pub mod pallet {
 		/// The maximum number of pulses to store in runtime storage
 		#[pallet::constant]
 		type MaxPulses: Get<u32>;
+		
+		/// The proof of key ownership, used for validating equivocation reports
+		/// The proof must include the session index and validator count of the
+		/// session at which the equivocation occurred.
+		type KeyOwnerProof: Parameter + GetSessionNumber + GetValidatorCount;
 
-		// type PulseReportSystem: crate::PulseReportSystem<Self>;
+		/// The equivocation handling subsystem.
+		///
+		/// Defines methods to publish, check and process new beacon pulses
+		type BeaconReportSystem: OffenceReportSystem<
+			Option<Self::AccountId>,
+			PulseEvidenceFor<Self>,
+		>;
 		// TODO
 		// /// Weights for this pallet.
 		// type WeightInfo: WeightInfo;
@@ -173,6 +191,10 @@ pub mod pallet {
 		Pulse<BlockNumberFor<T>>,
 		OptionQuery,
 	>;
+
+	/// the highest block number for which we have encoded a pulse
+	#[pallet::storage]
+	pub type Height<T: Config> = StorageValue<_, BlockNumberFor<T>, ValueQuery>;
 
 	#[pallet::pallet]
 	pub struct Pallet<T>(_);
@@ -235,7 +257,7 @@ pub mod pallet {
 			let rk = DoublePublicKey::<TinyBLS377>::deserialize_compressed(
 				&round_pk_bytes[..]
 			).unwrap();
-			let validator_set_id = <pallet_beefy::Pallet<T>>::validator_set_id();
+			let validator_set_id = 0;//<pallet_beefy::Pallet<T>>::validator_set_id();
 			let _ = Self::try_add_pulse(
 				signatures, 
 				block_number, 
@@ -243,6 +265,7 @@ pub mod pallet {
 				validator_set_id
 			)?;
 
+			Height::<T>::set(block_number);
 			Self::deposit_event(Event::PulseStored);
 			// Waive the fee since the pulse is valid and beneficial
 			// Ok(Pays::No.into())
@@ -310,60 +333,68 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
-	pub fn validate_unsigned(source: TransactionSource, call: &Call<T>) -> TransactionValidity {
-		if let Call::write_pulse { signatures, block_number } = call {
-			// discard pulses not coming from the local node
-			// match source {
-			// 	TransactionSource::Local | TransactionSource::InBlock => { /* allowed */ },
-			// 	_ => {
-			// 		log::warn!(
-			// 			target: LOG_TARGET,
-			// 			"rejecting unsigned beacon pulse because it is not local/in-block."
-			// 		);
-			// 		return InvalidTransaction::Call.into()
-			// 	},
-			// }
+	// pub fn validate_unsigned(source: TransactionSource, call: &Call<T>) -> TransactionValidity {
+	// 	if let Call::write_pulse { signatures, block_number } = call {
+	// 		// discard pulses not coming from the local node
+	// 		// match source {
+	// 		// 	TransactionSource::Local | TransactionSource::InBlock => { /* allowed */ },
+	// 		// 	_ => {
+	// 		// 		log::warn!(
+	// 		// 			target: LOG_TARGET,
+	// 		// 			"rejecting unsigned beacon pulse because it is not local/in-block."
+	// 		// 		);
+	// 		// 		return InvalidTransaction::Call.into()
+	// 		// 	},
+	// 		// }
 
-			// let evidence = (*equivocation_proof.clone(), key_owner_proof.clone());
-			// T::PulseReportSystem::verify_pulse(evidence)?;
+	// 		// let evidence = (*equivocation_proof.clone(), key_owner_proof.clone());
+	// 		// T::PulseReportSystem::verify_pulse(evidence)?;
 
-			// let longevity =
-			// 	<T::EquivocationReportSystem as OffenceReportSystem<_, _>>::Longevity::get();
+	// 		// let longevity =
+	// 		// 	<T::EquivocationReportSystem as OffenceReportSystem<_, _>>::Longevity::get();
 
-			ValidTransaction::with_tag_prefix("RandomnessBeacon")
-				// We assign the maximum priority for any equivocation report.
-				.priority(TransactionPriority::MAX)
-				// TODO: Only one pulse for the same slot.
-				// .and_provides((
-				// 	equivocation_proof.offender_id().clone(),
-				// 	equivocation_proof.set_id(),
-				// 	*equivocation_proof.round_number(),
-				// ))
-				// TODO
-				.longevity(3) 
-				// We don't propagate this. This can never be included on a remote node.
-				.propagate(false)
-				.build()
-		} else {
-			InvalidTransaction::Call.into()
-		}
-	}
+	// 		ValidTransaction::with_tag_prefix("RandomnessBeacon")
+	// 			// We assign the maximum priority for any equivocation report.
+	// 			.priority(TransactionPriority::MAX)
+	// 			// TODO: Only one pulse for the same slot.
+	// 			// .and_provides((
+	// 			// 	equivocation_proof.offender_id().clone(),
+	// 			// 	equivocation_proof.set_id(),
+	// 			// 	*equivocation_proof.round_number(),
+	// 			// ))
+	// 			// TODO
+	// 			.longevity(3) 
+	// 			// We don't propagate this. This can never be included on a remote node.
+	// 			.propagate(false)
+	// 			.build()
+	// 	} else {
+	// 		InvalidTransaction::Call.into()
+	// 	}
+	// }
 
-	pub fn publish_pulse(signatures: Vec<Vec<u8>>, block_number: BlockNumberFor<T>) -> Result<(), ()> {
-		use frame_system::offchain::{Signer, SubmitTransaction};
-		let call = Call::write_pulse {
-			signatures,
-			block_number,
-		};
-		info!("BEACON: prepared the call");
-		let res = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
-		info!("BEACON submit unsigned created");
-		match res {
-			Ok(_) => info!("submitted transaction succesfully"),
-			Err(e) => error!("Failed to submit unsigned transaction: {:?}", e),
-		}
-		info!("BEACON done");
-		Ok(()) 
+	pub fn publish_pulse(
+		signatures: Vec<Vec<u8>>, 
+		block_number: BlockNumberFor<T>,
+		key_owner_proof: T::KeyOwnerProof,
+	) -> Option<()> {
+		T::BeaconReportSystem::publish_evidence(
+			((signatures, block_number),
+			key_owner_proof)
+		).ok()
+		// use frame_system::offchain::{Signer, SubmitTransaction};
+		// let call = Call::write_pulse {
+		// 	signatures,
+		// 	block_number,
+		// };
+		// info!("BEACON: prepared the call");
+		// let res = SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into());
+		// info!("BEACON submit unsigned created");
+		// match res {
+		// 	Ok(_) => info!("submitted transaction succesfully"),
+		// 	Err(e) => error!("Failed to submit unsigned transaction: {:?}", e),
+		// }
+		// info!("BEACON done");
+		// Ok(()) 
 	}
 }
 
@@ -392,6 +423,8 @@ pub struct Ciphertext {
 pub trait TimelockEncryptionProvider<BN> {
 	/// attempt to decrypt the ciphertext with the current slot secret
 	fn decrypt_at(ciphertext: &[u8], block_number: BN) -> Result<DecryptionResult, TimelockError>;
+
+	fn latest() -> BN;
 }
 
 // use ark_serialize::CanonicalDeserialize;
@@ -419,6 +452,10 @@ impl<T:Config> TimelockEncryptionProvider<BlockNumberFor<T>> for Pallet<T> {
 			return Ok(plaintext);
 		}
 		Err(TimelockError::MissingSecret)
+	}
+
+	fn latest() -> BlockNumberFor<T> {
+		return Height::<T>::get()
 	}
 }
 

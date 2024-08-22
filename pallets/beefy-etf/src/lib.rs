@@ -400,8 +400,10 @@ impl<T: Config> Pallet<T> {
 	) {
 		Authorities::<T>::put(&new);
 
-		let new_id = ValidatorSetId::<T>::get() + 1u64;
-		ValidatorSetId::<T>::put(new_id);
+		// for now.. never update the validator set id
+		let new_id = ValidatorSetId::<T>::get();
+		// let new_id = ValidatorSetId::<T>::get() + 1u64;
+		// ValidatorSetId::<T>::put(new_id);
 
 		NextAuthorities::<T>::put(&queued);
 

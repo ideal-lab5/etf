@@ -11,23 +11,23 @@ readme = "README.md"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = ["derive"] }
-log = { version = "0.4.17", default-features = false }
-scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
-frame-benchmarking = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" , optional = true }
-frame-support = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-frame-system = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-io = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-runtime = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-std = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-weights = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+log = { workspace = true }
+scale-info = { version = "2.10.0", default-features = false, features = ["derive", "serde"] }
+frame-benchmarking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false , optional = true }
+frame-support = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false }
+frame-system = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false }
+sp-io = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false }
+sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false }
+sp-std = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false }
+sp-weights = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false }
 docify = "0.2.6"
 pallet-randomness-beacon = { default-features = false, path = "../randomness-beacon" }
 
 [dev-dependencies]
-pallet-preimage = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-sp-core = { default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
-substrate-test-utils = { git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1" }
+pallet-preimage = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
+pallet-timestamp = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
+sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false }
+substrate-test-utils = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 etf-crypto-primitives = { git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "main" }
 ark-std = { version = "0.4.0", default-features = false }
 ark-ff = { version = "0.4.0", default-features = false }
@@ -39,7 +39,7 @@ ark-crypto-primitives = { version = "0.4.0", default-features = false, features 
 # sp-consensus-etf-aura = { path = "../../primitives/consensus/aura" }
 pallet-etf = { default-features = false, path = "../etf" }
 # pallet-etf-aura = { version = "4.0.0-dev", default-features = false, path = "../aura" }
-pallet-insecure-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "v1.4.0-rc1"  }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false  }
 rand_chacha = { version = "0.3.1", default-features = false }
 
 [features]
@@ -68,6 +68,7 @@ std = [
 	"sp-weights/std",
 	"pallet-etf/std",
 	"pallet-timestamp/std",
+	"pallet-randomness-beacon/std"
 	# "sha3/std",
 ]
 try-runtime = [

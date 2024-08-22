@@ -450,14 +450,15 @@ impl pallet_scheduler::Config for Runtime {
 	type PalletsOrigin = OriginCaller;
 	type RuntimeCall = RuntimeCall;
 	type MaximumWeight = MaximumSchedulerWeight;
-	type ScheduleOrigin = EnsureRoot<AccountId>;
+	type ScheduleOrigin = EnsureSigned<AccountId>;
 	#[cfg(feature = "runtime-benchmarks")]
 	type MaxScheduledPerBlock = ConstU32<512>;
 	#[cfg(not(feature = "runtime-benchmarks"))]
 	type MaxScheduledPerBlock = ConstU32<50>;
-	type WeightInfo = pallet_scheduler::weights::SubstrateWeight<Runtime>;
+	type WeightInfo = pallet_scheduler::weights::SubstrateWeightInfo<Runtime>;
 	type OriginPrivilegeCmp = EqualPrivilegeOnly;
 	type Preimages = Preimage;
+	type TlockProvider = RandomnessBeacon;
 }
 
 impl pallet_glutton::Config for Runtime {
@@ -2565,9 +2566,11 @@ impl pallet_etf::Config for Runtime {
 
 impl pallet_randomness_beacon::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-	// type BeefyId = BeefyId;
+	// type BeefyId = BeefyId; we inherit this from pallet_etf
     type MaxPulses = ConstU32<1024>;
-	// type PulseReportSystem = pallet_randomness_beacon::PulseReportSystem
+	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
+	type BeaconReportSystem = 
+		pallet_randomness_beacon::BeaconReportSystem<Self, Offences, Historical, ReportLongevity>;
 } 
 
 parameter_types! {
@@ -3115,12 +3118,15 @@ impl_runtime_apis! {
 
 		fn submit_unsigned_pulse(
             signature_bytes: Vec<Vec<u8>>,
-            block_number: BlockNumber
+            block_number: BlockNumber,
+			key_owner_proof: beefy_primitives::OpaqueKeyOwnershipProof,
         ) -> Option<()> {
+			let key_owner_proof = key_owner_proof.decode()?;
             RandomnessBeacon::publish_pulse(
                 signature_bytes,
                 block_number,
-            ).ok()
+				key_owner_proof,
+            )
         }
 	}
 

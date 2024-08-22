@@ -305,7 +305,15 @@ pub mod pallet {
 		/// Execute the scheduled calls
 		fn on_initialize(now: BlockNumberFor<T>) -> Weight {
 			let mut weight_counter = WeightMeter::with_limit(T::MaximumWeight::get());
-			Self::service_agendas(&mut weight_counter, now, u32::max_value());
+			// first service anything scheduled (non-encrypted)
+			Self::service_agendas(&mut weight_counter, now, u32::max_value(), false);
+			// get the highest known pulse
+			Self::service_agendas(
+				&mut weight_counter, 
+				T::TlockProvider::latest(), 
+				u32::max_value(), 
+				true
+			);
 			weight_counter.consumed()
 		}
 	}
@@ -774,7 +782,7 @@ use ServiceTaskError::*;
 
 impl<T: Config> Pallet<T> {
 	/// Service up to `max` agendas queue starting from earliest incompletely executed agenda.
-	fn service_agendas(weight: &mut WeightMeter, now: BlockNumberFor<T>, max: u32) {
+	fn service_agendas(weight: &mut WeightMeter, now: BlockNumberFor<T>, max: u32, encrypted: bool) {
 		if weight.try_consume(T::WeightInfo::service_agendas_base()).is_err() {
 			return
 		}
@@ -787,9 +795,16 @@ impl<T: Config> Pallet<T> {
 		let mut count_down = max;
 		let service_agenda_base_weight = T::WeightInfo::service_agenda_base(max_items);
 		while count_down > 0 && when <= now && weight.can_consume(service_agenda_base_weight) {
-			if !Self::service_agenda(weight, &mut executed, now, when, u32::max_value()) {
-				incomplete_since = incomplete_since.min(when);
+			if encrypted {
+				if !Self::service_agenda_encrypted(weight, &mut executed, now, when, u32::max_value()) {
+					incomplete_since = incomplete_since.min(when);
+				}	
+			} else {
+				if !Self::service_agenda(weight, &mut executed, now, when, u32::max_value()) {
+					incomplete_since = incomplete_since.min(when);
+				}
 			}
+			
 			when.saturating_inc();
 			count_down.saturating_dec();
 		}
@@ -801,7 +816,7 @@ impl<T: Config> Pallet<T> {
 
 	/// Returns `true` if the agenda was fully completed, `false` if it should be revisited at a
 	/// later block.
-	fn service_agenda(
+	fn service_agenda_encrypted(
 		weight: &mut WeightMeter,
 		executed: &mut u32,
 		now: BlockNumberFor<T>,
@@ -846,6 +861,98 @@ impl<T: Config> Pallet<T> {
 					.and_then(|call| T::Preimages::bound(call)
 					.map_err(|_| pallet_randomness_beacon::TimelockError::DecryptionFailed))
 					.ok();
+			}
+
+			if task.maybe_call.is_none() {
+				continue
+			}
+
+			let base_weight = T::WeightInfo::service_task(
+				task.maybe_call.clone().unwrap().lookup_len().map(|x| x as usize),
+				task.maybe_id.is_some(),
+				task.maybe_periodic.is_some(),
+			);
+			if !weight.can_consume(base_weight) {
+				postponed += 1;
+				break
+			}
+			let result = Self::service_task(weight, now, when, agenda_index, *executed == 0, task);
+			agenda[agenda_index as usize] = match result {
+				Err((Unavailable, slot)) => {
+					dropped += 1;
+					slot
+				},
+				Err((Overweight, slot)) => {
+					postponed += 1;
+					slot
+				},
+				Ok(()) => {
+					*executed += 1;
+					None
+				},
+			};
+		}
+		if postponed > 0 || dropped > 0 {
+			Agenda::<T>::insert(when, agenda);
+		} else {
+			Agenda::<T>::remove(when);
+		}
+
+		postponed == 0
+	}
+
+	/// Returns `true` if the agenda was fully completed, `false` if it should be revisited at a
+	/// later block.
+	fn service_agenda(
+		weight: &mut WeightMeter,
+		executed: &mut u32,
+		now: BlockNumberFor<T>,
+		when: BlockNumberFor<T>,
+		max: u32,
+	) -> bool {
+		let mut agenda = Agenda::<T>::get(when);
+		let mut ordered = agenda
+			.iter()
+			.enumerate()
+			.filter_map(|(index, maybe_item)| {
+				maybe_item.as_ref().map(|item| (index as u32, item.priority))
+			})
+			.collect::<Vec<_>>();
+		ordered.sort_by_key(|k| k.1);
+		let within_limit = weight
+			.try_consume(T::WeightInfo::service_agenda_base(ordered.len() as u32))
+			.is_ok();
+		debug_assert!(within_limit, "weight limit should have been checked in advance");
+
+		// Items which we know can be executed and have postponed for execution in a later block.
+		let mut postponed = (ordered.len() as u32).saturating_sub(max);
+		// Items which we don't know can ever be executed.
+		let mut dropped = 0;
+
+		for (agenda_index, _) in ordered.into_iter().take(max as usize) {
+			let mut task = match agenda[agenda_index as usize].take() {
+				None => continue,
+				Some(t) => t,
+			};
+
+			// if let Some(ref ciphertext) = task.maybe_ciphertext {
+			// 	task.maybe_call = T::TlockProvider::decrypt_at(&ciphertext.clone(), now)
+			// 		.map_err(|_| pallet_randomness_beacon::TimelockError::DecryptionFailed)
+			// 		.and_then(|bare| {
+			// 			if let Ok(call) = <T as Config>::RuntimeCall::decode(&mut bare.message.as_slice()) {
+			// 				Ok(call)
+			// 			} else {
+			// 				Err(pallet_randomness_beacon::TimelockError::DecryptionFailed)
+			// 			}
+			// 		})
+			// 		.and_then(|call| T::Preimages::bound(call)
+			// 		.map_err(|_| pallet_randomness_beacon::TimelockError::DecryptionFailed))
+			// 		.ok();
+			// }
+
+			// ignore if encrypted
+			if task.maybe_ciphertext.is_some() {
+				continue
 			}
 
 			if task.maybe_call.is_none() {
