@@ -411,6 +411,8 @@ pub(crate) struct BeefyWorker<B: Block, BE, P, RuntimeApi, S> {
 	pub persisted_state: PersistedState<B>,
 	/// BEEFY voter metrics
 	pub metrics: Option<VoterMetrics>,
+	/// submit equivocations and pulses
+	pub offchain_tx_pool_factory: OffchainTransactionPoolFactory<B>,
 }
 
 // impl<B, BE, P, R, S, T> BeefyWorker<B, BE, P, R, S, T>
@@ -564,7 +566,7 @@ where
 					warn!(
 						target: LOG_TARGET,
 						"🥩 Buffer justification dropped for round: {:?}.", block_num
-					);
+				);
 				}
 			},
 			RoundAction::Drop => metric_inc!(self.metrics, beefy_stale_justifications),
@@ -700,27 +702,16 @@ where
 		// TODO: error handling
 		let offender_id = self.key_store.authority_id(validators).unwrap();
 
-		let runtime_api = self.runtime.runtime_api();
-		// generate key ownership proof at that block
-		let key_owner_proof = match runtime_api
-			.generate_key_ownership_proof(best_hash, validator_set_id, offender_id)
-			.map_err(Error::RuntimeApi)?
-		{
-			Some(proof) => proof,
-			None => {
-				debug!(
-					target: LOG_TARGET,
-					"🥩 Equivocation offender not part of the authority set."
-				);
-				return Ok(())
-			},
-		};
+		let mut runtime_api = self.runtime.runtime_api();
+
+		// Register the offchain tx pool to be able to use it from the runtime.
+		runtime_api
+			.register_extension(self.offchain_tx_pool_factory.offchain_transaction_pool(best_hash));
 
 		runtime_api.submit_unsigned_pulse(
             best_hash,
             signatures,
             block_num,
-			key_owner_proof
         );
 
 		Ok(())
@@ -982,28 +973,16 @@ where
 	///
 	/// Run the main async loop which is driven by finality notifications and gossiped votes.
 	/// Should never end, returns `Error` otherwise.
-	pub(crate) async fn run<T>(
+	pub(crate) async fn run(
 		mut self,
 		block_import_justif: &mut Fuse<NotificationReceiver<BeefyVersionedFinalityProof<B>>>,
 		finality_notifications: &mut Fuse<FinalityNotifications<B>>,
-		transaction_pool: Arc<T>,
-	) -> (Error, BeefyComms<B>)
-	where T: TransactionPool<Block = B> + LocalTransactionPool<Block = B> + 'static {
+	) -> (Error, BeefyComms<B>) {
 		info!(
 			target: LOG_TARGET,
 			"🥩 run BEEFY worker, best grandpa: #{:?}.",
 			self.best_grandpa_block()
 		);
-		
-		let offchain_transaction_pool_factory =
-			OffchainTransactionPoolFactory::new(transaction_pool.clone());
-		self.runtime.runtime_api().register_extension(offchain_transaction_pool_factory
-			.offchain_transaction_pool(<B as Block>::Hash::default())); //TODO
-		// self.runtime.runtime_api().submit_unsigned_pulse(
-        //     <B as Block>::Hash::default(),
-        //     vec![],
-        //     <<B as Block>::Header as Header>::Number::default(),
-        // );
 
 		let mut votes = Box::pin(
 			self.comms
@@ -1044,14 +1023,6 @@ where
 				// Use `select_biased!` to prioritize order below.
 				// Process finality notifications first since these drive the voter.
 				notification = finality_notifications.next() => {
-					// info!("process finality notifications");
-					// self.runtime.runtime_api().submit_unsigned_pulse(
-					// 	<B as Block>::Hash::default(),
-					// 	vec![],
-					// 	<<B as Block>::Header as Header>::Number::default(),
-					// ).map_err(|e| {
-					// 	panic!("well well well {:?}", e);
-					// });
 					if let Some(notif) = notification {
 						
 						if let Err(err) = self.handle_finality_notification(&notif) {

@@ -2568,9 +2568,6 @@ impl pallet_randomness_beacon::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 	// type BeefyId = BeefyId; we inherit this from pallet_etf
     type MaxPulses = ConstU32<1024>;
-	type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
-	type BeaconReportSystem = 
-		pallet_randomness_beacon::BeaconReportSystem<Self, Offences, Historical, ReportLongevity>;
 } 
 
 parameter_types! {
@@ -3118,14 +3115,12 @@ impl_runtime_apis! {
 
 		fn submit_unsigned_pulse(
             signature_bytes: Vec<Vec<u8>>,
-            block_number: BlockNumber,
-			key_owner_proof: beefy_primitives::OpaqueKeyOwnershipProof,
+			block_number: BlockNumber,
         ) -> Option<()> {
-			let key_owner_proof = key_owner_proof.decode()?;
+			// let key_owner_proof = key_owner_proof.decode()?;
             RandomnessBeacon::publish_pulse(
                 signature_bytes,
                 block_number,
-				key_owner_proof,
             )
         }
 	}

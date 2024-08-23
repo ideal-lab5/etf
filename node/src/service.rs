@@ -687,10 +687,10 @@ pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>>(
 		prometheus_registry: prometheus_registry.clone(),
 		links: beefy_links,
 		on_demand_justifications_handler: beefy_on_demand_justifications_handler,
-		// transaction_pool: transaction_pool.clone(),
+		offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool.clone()),
 	};
 
-	let beefy_gadget = beefy::start_beefy_gadget::<_, _, _, _, _, _, _, _>(beefy_params, transaction_pool.clone());
+	let beefy_gadget = beefy::start_beefy_gadget::<_, _, _, _, _, _, _>(beefy_params);
 	// BEEFY is part of consensus, if it fails we'll bring the node down with it to make sure it
 	// is noticed.
 	task_manager

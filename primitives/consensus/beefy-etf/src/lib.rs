@@ -492,7 +492,6 @@ sp_api::decl_runtime_apis! {
 		fn submit_unsigned_pulse(
 			signature_bytes: Vec<Vec<u8>>,
 			block_number: NumberFor<Block>,
-			key_owner_proof: OpaqueKeyOwnershipProof,
 		) -> Option<()>;
 	}
 

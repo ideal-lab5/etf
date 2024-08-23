@@ -233,8 +233,8 @@ pub struct BeefyParams<B: Block, BE, C, N, P, R, S> {
 	pub links: BeefyVoterLinks<B>,
 	/// Handler for incoming BEEFY justifications requests from a remote peer.
 	pub on_demand_justifications_handler: BeefyJustifsRequestHandler<B, C>,
-	// TransactionPool<Block = B> + LocalTransactionPool<Block = B> + 'static,
-	// pub transaction_pool: T,
+	/// Will be used when sending equivocation reports.
+	pub offchain_tx_pool_factory: OffchainTransactionPoolFactory<B>,
 }
 /// Helper object holding BEEFY worker communication/gossip components.
 ///
@@ -314,6 +314,7 @@ where
 		comms: BeefyComms<B>,
 		links: BeefyVoterLinks<B>,
 		pending_justifications: BTreeMap<NumberFor<B>, BeefyVersionedFinalityProof<B>>,
+		offchain_tx_pool_factory: OffchainTransactionPoolFactory<B>,
 	) -> BeefyWorker<B, BE, P, R, S> {
 		BeefyWorker {
 			backend: self.backend,
@@ -326,6 +327,7 @@ where
 			comms,
 			links,
 			pending_justifications,
+			offchain_tx_pool_factory,
 		}
 	}
 
@@ -481,9 +483,8 @@ where
 /// Start the BEEFY gadget.
 ///
 /// This is a thin shim around running and awaiting a BEEFY worker.
-pub async fn start_beefy_gadget<B, BE, C, N, P, R, S, T>(
+pub async fn start_beefy_gadget<B, BE, C, N, P, R, S>(
 	beefy_params: BeefyParams<B, BE, C, N, P, R, S>,
-	transaction_pool: Arc<T>,
 ) where
 	B: Block,
 	BE: Backend<B>,
@@ -493,7 +494,6 @@ pub async fn start_beefy_gadget<B, BE, C, N, P, R, S, T>(
 	R::Api: BeefyApi<B, AuthorityId> + MmrApi<B, MmrRootHash, NumberFor<B>>,
 	N: GossipNetwork<B> + NetworkRequest + Send + Sync + 'static,
 	S: GossipSyncing<B> + SyncOracle + 'static,
-	T: TransactionPool<Block = B> + LocalTransactionPool<Block = B> + 'static,
 {
 	let BeefyParams {
 		client,
@@ -506,7 +506,7 @@ pub async fn start_beefy_gadget<B, BE, C, N, P, R, S, T>(
 		prometheus_registry,
 		links,
 		mut on_demand_justifications_handler,
-		// transaction_pool,
+		offchain_tx_pool_factory,
 	} = beefy_params;
 
 	let BeefyNetworkParams {
@@ -560,9 +560,9 @@ pub async fn start_beefy_gadget<B, BE, C, N, P, R, S, T>(
 		runtime_api.register_extension(sp_keystore::KeystoreExt::from(keystore.clone()));
 	}
 
-	// let offchain_transaction_pool_factory =
+	// let offchain_tx_pool_factory =
 	// 	OffchainTransactionPoolFactory::new(transaction_pool.clone());
-	// runtime.runtime_api().register_extension(offchain_transaction_pool_factory
+	// runtime.runtime_api().register_extension(offchain_tx_pool_factory
 	// 	.offchain_transaction_pool(<B as Block>::Hash::default())); //TODO
 	
 	// We re-create and re-run the worker in this loop in order to quickly reinit and resume after
@@ -606,10 +606,11 @@ pub async fn start_beefy_gadget<B, BE, C, N, P, R, S, T>(
 			beefy_comms,
 			links.clone(),
 			BTreeMap::new(),
+			offchain_tx_pool_factory.clone(),
 		);
 
 		match futures::future::select(
-			Box::pin(worker.run(&mut block_import_justif, &mut finality_notifications, transaction_pool.clone())),
+			Box::pin(worker.run(&mut block_import_justif, &mut finality_notifications)),
 			Box::pin(on_demand_justifications_handler.run()),
 		)
 		.await

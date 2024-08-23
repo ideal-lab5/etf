@@ -137,6 +137,25 @@ impl From<Keyring<bls_crypto::AuthorityId>> for bls_crypto::Public {
 }
 
 /// Create a new `EquivocationProof` based on given arguments.
+pub fn test_generate_equivocation_proof<BN>(
+	vote1: (BN, Payload, ValidatorSetId, &Keyring<bls_crypto::AuthorityId>),
+	vote2: (BN, Payload, ValidatorSetId, &Keyring<bls_crypto::AuthorityId>),
+) -> EquivocationProof<BN, bls_crypto::Public, bls_crypto::Signature> {
+	let signed_vote = |block_number: BN,
+	                   payload: Payload,
+	                   validator_set_id: ValidatorSetId,
+	                   keyring: &Keyring<bls_crypto::AuthorityId>| {
+		let commitment = Commitment { validator_set_id, block_number, payload };
+		let signature = keyring.sign(&b"idc".to_vec());
+		VoteMessage { commitment, id: keyring.public(), signature }
+	};
+	let first = signed_vote(vote1.0, vote1.1, vote1.2, vote1.3);
+	let second = signed_vote(vote2.0, vote2.1, vote2.2, vote2.3);
+	EquivocationProof { first, second }
+}
+
+
+/// Create a new `EquivocationProof` based on given arguments.
 pub fn generate_equivocation_proof(
 	vote1: (u64, Payload, ValidatorSetId, &Keyring<bls_crypto::AuthorityId>),
 	vote2: (u64, Payload, ValidatorSetId, &Keyring<bls_crypto::AuthorityId>),
