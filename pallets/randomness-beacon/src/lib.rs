@@ -21,7 +21,7 @@ use serde::{Serialize, Deserialize};
 
 use frame_support::{
 	pallet_prelude::*,
-	traits::Get,
+	traits::{Get, Randomness},
 	BoundedVec,
 	dispatch::{DispatchResultWithPostInfo, Pays},
 };
@@ -55,6 +55,7 @@ use sp_runtime::{
 		TransactionValidityError, ValidTransaction,
 	},
 	DispatchError, KeyTypeId, Perbill, RuntimeAppPublic,
+	traits::Hash,
 };
 use sha3::{Digest, Sha3_512};
 use log::{info, debug, error};
@@ -219,7 +220,7 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
 		pub fn write_pulse(
-			_origin: OriginFor<T>,
+			origin: OriginFor<T>,
 			signatures: Vec<Vec<u8>>,
 			block_number: BlockNumberFor<T>,
 		) -> DispatchResultWithPostInfo {
@@ -303,10 +304,18 @@ impl<T: Config> Pallet<T> {
 		Ok(())
 	}
 
+	pub fn height() -> BlockNumberFor<T> {
+		Height::<T>::get()
+	}
+
+	pub fn random_at(at: BlockNumberFor<T>) -> Option<Pulse<BlockNumberFor<T>>> {
+		Pulses::<T>::get(at)
+	}
+
 	/// validate an unsigned transaction sent to this module
 	pub fn validate_unsigned(source: TransactionSource, call: &Call<T>) -> TransactionValidity {
 		if let Call::write_pulse { signatures, block_number } = call {
-			discard pulses not coming from the local node
+			// discard pulses not coming from the local node
 			match source {
 				TransactionSource::Local | TransactionSource::InBlock => { /* allowed */ },
 				_ => {
@@ -410,17 +419,20 @@ impl<T:Config> TimelockEncryptionProvider<BlockNumberFor<T>> for Pallet<T> {
 	}
 }
 
-// impl<T: Config> Randomness<T::Hash, BlockNumberFor<T>> for Pallet<T> {
-// 	// this function hashes together the subject with the latest known randomness from quicknet
-// 	fn random(subject: &[u8]) -> (T::Hash, BlockNumberFor<T>) {
-// 		let block_number_minus_one = <frame_system::Pallet<T>>::block_number() - One::one();
+// use frame_support::StorageHasher;
 
-// 		let mut entropy = T::Hash::default();
-// 		if let Some(pulse) = Pulses::<T>::get(block_number_minus_one) {
-// 			entropy = (subject, block_number_minus_one, pulse.randomness.clone())
-// 				.using_encoded(T::Hashing::hash);
-// 		}
 
-// 		(entropy, block_number_minus_one)
-// 	}
-// }
+impl<T: Config> Randomness<T::Hash, BlockNumberFor<T>> for Pallet<T> {
+	// this function hashes together the subject with the latest known randomness
+	fn random(subject: &[u8]) -> (T::Hash, BlockNumberFor<T>) {
+		let height = Height::<T>::get();
+
+		let mut entropy = T::Hash::default();
+		if let Some(pulse) = Pulses::<T>::get(height) {
+			entropy = (subject, height, pulse.body.randomness.clone())
+				.using_encoded(T::Hashing::hash);
+		}
+
+		(entropy, height)
+	}
+}

@@ -101,11 +101,26 @@ use sp_runtime::{
 	ApplyExtrinsicResult, FixedPointNumber, FixedU128, Perbill, Percent, Permill, Perquintill,
 	RuntimeDebug,
 };
+// use ark_ec::Hashing::HashToCurve;
 use sp_std::prelude::*;
 #[cfg(any(feature = "std", test))]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
+
+use sp_core::crypto::UncheckedFrom;
+use sp_runtime::DispatchError;
+use pallet_contracts::{
+	DebugInfo, 
+	chain_extension::{
+		ChainExtension,
+		Environment,
+		Ext,
+		InitState,
+		RetVal,
+		SysConfig,
+	}
+};
 
 #[cfg(any(feature = "std", test))]
 pub use frame_system::Call as SystemCall;
@@ -128,6 +143,9 @@ use impls::{AllianceProposalProvider, Author, CreditToBlockAuthor};
 pub mod constants;
 use constants::{currency::*, time::*};
 use sp_runtime::generic::Era;
+
+// /// the chain extension to use randomness
+// mod chain_extension;
 
 /// Generated voter bag information.
 mod voter_bags;
@@ -319,7 +337,7 @@ impl frame_system::Config for Runtime {
 	type MultiBlockMigrator = MultiBlockMigrations;
 }
 
-impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
+// impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
 impl pallet_example_tasks::Config for Runtime {
 	type RuntimeTask = RuntimeTask;
@@ -1347,7 +1365,7 @@ parameter_types! {
 
 impl pallet_contracts::Config for Runtime {
 	type Time = Timestamp;
-	type Randomness = RandomnessCollectiveFlip;
+	type Randomness = RandomnessBeacon;
 	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
@@ -1364,7 +1382,7 @@ impl pallet_contracts::Config for Runtime {
 	type CallStack = [pallet_contracts::Frame<Self>; 5];
 	type WeightPrice = pallet_transaction_payment::Pallet<Self>;
 	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
-	type ChainExtension = ();
+	type ChainExtension = RandomnessExtension;
 	type Schedule = Schedule;
 	type AddressGenerator = pallet_contracts::DefaultAddressGenerator;
 	type MaxCodeLen = ConstU32<{ 123 * 1024 }>;
@@ -1564,7 +1582,7 @@ impl pallet_society::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type PalletId = SocietyPalletId;
 	type Currency = Balances;
-	type Randomness = RandomnessCollectiveFlip;
+	type Randomness = RandomnessBeacon;
 	type GraceStrikes = GraceStrikes;
 	type PeriodSpend = PeriodSpend;
 	type VotingPeriod = SocietyVotingPeriod;
@@ -1627,7 +1645,7 @@ impl pallet_lottery::Config for Runtime {
 	type PalletId = LotteryPalletId;
 	type RuntimeCall = RuntimeCall;
 	type Currency = Balances;
-	type Randomness = RandomnessCollectiveFlip;
+	type Randomness = RandomnessBeacon;
 	type RuntimeEvent = RuntimeEvent;
 	type ManagerOrigin = EnsureRoot<AccountId>;
 	type MaxCalls = MaxCalls;
@@ -2325,8 +2343,8 @@ mod runtime {
 	#[runtime::pallet_index(26)]
 	pub type Historical = pallet_session_historical;
 
-	#[runtime::pallet_index(27)]
-	pub type RandomnessCollectiveFlip = pallet_insecure_randomness_collective_flip;
+	// #[runtime::pallet_index(27)]
+	// pub type RandomnessCollectiveFlip = pallet_insecure_randomness_collective_flip;
 
 	#[runtime::pallet_index(28)]
 	pub type Identity = pallet_identity;
@@ -3348,4 +3366,48 @@ mod tests {
 			size,
 		);
 	}
+}
+
+
+#[derive(Default)]
+pub struct RandomnessExtension;
+
+impl ChainExtension<Runtime> for RandomnessExtension {
+	
+    fn call<E: Ext>(
+        &mut self,
+        env: Environment<E, InitState>,
+    ) -> Result<RetVal, DispatchError>
+    where
+        <E::T as SysConfig>::AccountId:
+            UncheckedFrom<<E::T as SysConfig>::Hash> + AsRef<[u8]>,
+    {
+		let func_id = env.func_id();
+		log::trace!(
+			target: "runtime",
+			"[ChainExtension]|call|func_id:{:}",
+			func_id
+		);
+        match func_id {	
+            1101 => {
+                let mut env = env.buf_in_buf_out();
+				// let prev_block = System::block_number() - 1;
+				let latest = RandomnessBeacon::height();
+				let rand = RandomnessBeacon::random_at(latest);
+				env.write(&rand.encode(), false, None).map_err(|_| {
+					DispatchError::Other("Failed to write output randomness")
+				})?;
+				
+				Ok(RetVal::Converging(0))
+            },
+            _ => {
+                log::error!("Called an unregistered `func_id`: {:}", func_id);
+                Err(DispatchError::Other("Unimplemented func_id"))
+            }
+        }
+    }
+
+    fn enabled() -> bool {
+        true
+    }
 }

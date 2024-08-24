@@ -50,13 +50,18 @@ use std::{path::Path, sync::Arc};
 /// Host functions required for node_template runtime and Substrate node.
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type HostFunctions =
-	(sp_io::SubstrateHostFunctions, sp_statement_store::runtime_api::HostFunctions);
+	(
+		sp_io::SubstrateHostFunctions, 
+		sp_statement_store::runtime_api::HostFunctions,
+		sp_crypto_ec_utils::bls12_381::host_calls::HostFunctions,
+	);
 
 /// Host functions required for node_template runtime and Substrate node.
 #[cfg(feature = "runtime-benchmarks")]
 pub type HostFunctions = (
 	sp_io::SubstrateHostFunctions,
 	sp_statement_store::runtime_api::HostFunctions,
+	sp_crypto_ec_utils::bls12_381::host_calls::HostFunctions,
 	frame_benchmarking::benchmarking::HostFunctions,
 );
 
