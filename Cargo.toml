@@ -14,6 +14,8 @@ members = [
     "pallets/etf",
     "pallets/randomness-beacon",
     "pallets/scheduler",
+    "pallets/proxy",
+    "pallets/otp",
     "primitives/consensus/beefy-etf",
 ]
 resolver = "2"
