@@ -36,7 +36,12 @@ use pallet_randomness_beacon::{Ciphertext, TimelockEncryptionProvider};
 
 pub type Name = BoundedVec<u8, ConstU32<32>>;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Encode, Decode, TypeInfo, serde::Serialize, serde::Deserialize)]
+#[derive(
+	Debug, 
+	PartialEq, Eq, Hash, 
+	Clone, Encode, Decode, TypeInfo, 
+	serde::Serialize, serde::Deserialize
+)]
 pub struct OtpProxyDetails<AccountId> {
 	pub address: AccountId,
 	pub root: Vec<u8>,
@@ -164,9 +169,10 @@ pub mod pallet {
 		}
 
 		/// proxy a call after verifying the ciphertext
-		/// note: I recently saw a circom circuit in development to verify ciphertexts encrypted with AES_GCM
-		/// perhaps we could actually use the circom circuit in this context as well, then we don't even
-		/// need to actually decrypt the ciphertext, we only need to check the proof
+		/// this function first checks the validity of the merkle proof (using the ciphertext)
+		/// if valid, it decrypts the ciphertext and uses it to verify the hash
+		/// if valid, it proxies the call
+		///
 		#[pallet::weight(0)]
 		#[pallet::call_index(1)]
 		pub fn proxy(
@@ -174,26 +180,33 @@ pub mod pallet {
 			name: BoundedVec<u8, ConstU32<32>>,
 			position: u64, // the position of the leaf in the mmr
 			ciphertext_bytes: Vec<u8>, // TODO: the leaf of the mmr, should be bounded though
-			proof: Vec<Vec<u8>>,
+			hash: Vec<u8>, // a hash of the otp code and the call data
+			proof: Vec<Vec<u8>>, // the merkle proof
 			call: sp_std::boxed::Box<<T as pallet_proxy::Config>::RuntimeCall>,
 			when: BlockNumberFor<T>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			if let Some(proxy_details) = Registry::<T>::get(name) {
-
-				// we expect that this value is the correct OTP code
-				let plaintext = T::TlockProvider::decrypt_at(&ciphertext_bytes, when)
-					.map_err(|_| Error::<T>::BadCiphertext)?;
 				// verify the merkle proof
 				let leaves: Vec<Leaf> = proof.clone().into_iter().map(|p| Leaf::from(p)).collect::<Vec<_>>();
 				let merkle_proof = MerkleProof::<Leaf, MergeLeaves>::new(proof.len() as u64, leaves);
 				let root = Leaf::from(proxy_details.root);
 
 				ensure!(
-					merkle_proof.verify(root, vec![(position, Leaf::from(plaintext.message))]).unwrap(),
+					merkle_proof.verify(root, vec![(position, Leaf::from(ciphertext_bytes.clone()))]).unwrap(),
 					Error::<T>::InvalidMerkleProof,
 				);
+
+				// now verify the hash 
+				// we expect: hash = H(OTP || CALL_DATA)
+				let result = T::TlockProvider::decrypt_at(&ciphertext_bytes, when)
+					.map_err(|_| Error::<T>::BadCiphertext)?;
+				let mut otp = result.message;
+				let data: &[u8] = &call.encode();
+				otp.extend_from_slice(data);
+				// let hash = sha256(expected_otp, call_data)
+
 				
 				let signed_origin: T::RuntimeOrigin = frame_system::RawOrigin::Signed(who.clone()).into();
 				let def = pallet_proxy::Pallet::<T>::find_proxy(

@@ -382,8 +382,12 @@ pub struct Ciphertext {
 /// provides timelock encryption using the current slot
 pub trait TimelockEncryptionProvider<BN> {
 	/// attempt to decrypt the ciphertext with the current slot secret
-	fn decrypt_at(ciphertext: &[u8], block_number: BN) -> Result<DecryptionResult, TimelockError>;
+	fn decrypt_at(
+		ciphertext: &[u8], 
+		block_number: BN
+	) -> Result<DecryptionResult, TimelockError>;
 
+	/// get the latest block number for which randomness is known
 	fn latest() -> BN;
 }
 
@@ -392,19 +396,21 @@ pub trait TimelockEncryptionProvider<BN> {
 use etf_crypto_primitives::encryption::tlock::DecryptionResult;
 
 impl<T:Config> TimelockEncryptionProvider<BlockNumberFor<T>> for Pallet<T> {
-	fn decrypt_at(ciphertext_bytes: &[u8], block_number: BlockNumberFor<T>) -> Result<DecryptionResult, TimelockError> {
+	fn decrypt_at(
+		ciphertext_bytes: &[u8], 
+		block_number: BlockNumberFor<T>
+	) -> Result<DecryptionResult, TimelockError> {
 		if let Some(secret) = Pulses::<T>::get(block_number) {
 			let pk = <pallet_etf::Pallet<T>>::round_pubkey();
-
 			// TODO: replace with optimized arkworks types?
-
 			let ciphertext:TLECiphertext<TinyBLS377> = 
 				TLECiphertext::deserialize_compressed(ciphertext_bytes)
 					.map_err(|_| TimelockError::DecodeFailure)?;
 
-			let sig: <TinyBLS377 as EngineBLS>::SignatureGroup = <TinyBLS377 as EngineBLS>::SignatureGroup::deserialize_compressed(
-				&secret.body.signature.to_vec()[..]
-			).map_err(|_| TimelockError::DecodeFailure)?;
+			let sig: <TinyBLS377 as EngineBLS>::SignatureGroup = 
+				<TinyBLS377 as EngineBLS>::SignatureGroup::deserialize_compressed(
+					&secret.body.signature.to_vec()[..]
+				).map_err(|_| TimelockError::DecodeFailure)?;
 
 			let plaintext = ciphertext.tld(sig)
 				.map_err(|_| TimelockError::DecryptionFailed)?;
