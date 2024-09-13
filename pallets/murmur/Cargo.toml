@@ -1,5 +1,5 @@
 [package]
-name = "pallet-otp"
+name = "pallet-murmur"
 version = "4.0.0-dev"
 description = "FRAME pallet to store and manage IBE public params"
 authors = ["Ideal Labs <https://github.com/ideal-lab5>"]

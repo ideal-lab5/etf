@@ -7613,6 +7613,7 @@ dependencies = [
  "pallet-mixnet",
  "pallet-mmr",
  "pallet-multisig",
+ "pallet-murmur",
  "pallet-nft-fractionalization",
  "pallet-nfts",
  "pallet-nfts-runtime-api",
@@ -7622,7 +7623,6 @@ dependencies = [
  "pallet-nomination-pools-runtime-api",
  "pallet-offences",
  "pallet-offences-benchmarking",
- "pallet-otp",
  "pallet-parameters",
  "pallet-preimage",
  "pallet-proxy 28.1.0",
@@ -9151,6 +9151,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-murmur"
+version = "4.0.0-dev"
+dependencies = [
+ "ark-bls12-381",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+ "array-bytes 4.2.0",
+ "ckb-merkle-mountain-range",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-support-test",
+ "frame-system",
+ "hex",
+ "log",
+ "pallet-balances",
+ "pallet-proxy 28.1.0",
+ "pallet-randomness-beacon",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "primitive-types",
+ "rand_chacha 0.3.1",
+ "scale-info",
+ "serde",
+ "sha3",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
+]
+
+[[package]]
 name = "pallet-nft-fractionalization"
 version = "10.0.0"
 source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1f08ed576063e678539edafdf3a589ff3989e"
@@ -9317,37 +9348,6 @@ dependencies = [
  "scale-info",
  "sp-runtime",
  "sp-staking",
- "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
-]
-
-[[package]]
-name = "pallet-otp"
-version = "4.0.0-dev"
-dependencies = [
- "ark-bls12-381",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
- "array-bytes 4.2.0",
- "ckb-merkle-mountain-range",
- "frame-benchmarking",
- "frame-support",
- "frame-support-test",
- "frame-system",
- "hex",
- "log",
- "pallet-balances",
- "pallet-proxy 28.1.0",
- "pallet-randomness-beacon",
- "pallet-timestamp",
- "parity-scale-codec",
- "primitive-types",
- "rand_chacha 0.3.1",
- "scale-info",
- "serde",
- "sha3",
- "sp-core",
- "sp-io",
- "sp-runtime",
  "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
 ]
 

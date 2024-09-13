@@ -45,6 +45,7 @@ pub type Name = BoundedVec<u8, ConstU32<32>>;
 pub struct OtpProxyDetails<AccountId> {
 	pub address: AccountId,
 	pub root: Vec<u8>,
+	pub size: u64,
 }
 
 // #[cfg(feature = "std")]
@@ -143,7 +144,8 @@ pub mod pallet {
 		#[pallet::call_index(0)]
 		pub fn create(
 			origin: OriginFor<T>,
-			root: Vec<u8>, // should really be THash::?
+			root: Vec<u8>,
+			size: u64,
 			name: BoundedVec<u8, ConstU32<32>>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -162,7 +164,7 @@ pub mod pallet {
 			)?;
 
 			let address = pallet_proxy::Pallet::<T>::pure_account(&who, &T::ProxyType::default(), 0, None);
-			Registry::<T>::insert(name, &OtpProxyDetails { address, root });
+			Registry::<T>::insert(name, &OtpProxyDetails { address, root, size });
 			Self::deposit_event(Event::OtpProxyCreated);
 
 			Ok(())
@@ -179,7 +181,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			name: BoundedVec<u8, ConstU32<32>>,
 			position: u64, // the position of the leaf in the mmr
-			ciphertext_bytes: Vec<u8>, // TODO: the leaf of the mmr, should be bounded though
+			target_leaf: Vec<u8>, // TODO: the leaf of the mmr, should be bounded though
 			hash: Vec<u8>, // a hash of the otp code and the call data
 			proof: Vec<Vec<u8>>, // the merkle proof
 			call: sp_std::boxed::Box<<T as pallet_proxy::Config>::RuntimeCall>,
@@ -189,25 +191,27 @@ pub mod pallet {
 
 			if let Some(proxy_details) = Registry::<T>::get(name) {
 				// verify the merkle proof
-				let leaves: Vec<Leaf> = proof.clone().into_iter().map(|p| Leaf::from(p)).collect::<Vec<_>>();
-				let merkle_proof = MerkleProof::<Leaf, MergeLeaves>::new(proof.len() as u64, leaves);
-				let root = Leaf::from(proxy_details.root);
+				let leaves: Vec<Leaf> = proof.clone().into_iter().map(|p| Leaf(p)).collect::<Vec<_>>();
+				let size = proxy_details.size;
+				let merkle_proof = MerkleProof::<Leaf, MergeLeaves>::new(size, leaves);
+				let root = Leaf(proxy_details.root);
 
 				ensure!(
-					merkle_proof.verify(root, vec![(position, Leaf::from(ciphertext_bytes.clone()))]).unwrap(),
+					merkle_proof.verify(root, vec![(position, Leaf(target_leaf.clone()))]).unwrap(),
 					Error::<T>::InvalidMerkleProof,
 				);
 
 				// now verify the hash 
-				// we expect: hash = H(OTP || CALL_DATA)
-				let result = T::TlockProvider::decrypt_at(&ciphertext_bytes, when)
+			// we expect: hash = H(OTP || CALL_DATA)
+				let result = T::TlockProvider::decrypt_at(&target_leaf, when)
 					.map_err(|_| Error::<T>::BadCiphertext)?;
 				let mut otp = result.message;
-				let data: &[u8] = &call.encode();
-				otp.extend_from_slice(data);
-				// let hash = sha256(expected_otp, call_data)
+				let mut hasher = sha3::Sha3_256::default();
+				hasher.update(otp);
+				hasher.update(&call.encode());
+				let h_b = hasher.finalize().to_vec();
+				ensure!(h_b == hash, Error::<T>::InvalidOTP);
 
-				
 				let signed_origin: T::RuntimeOrigin = frame_system::RawOrigin::Signed(who.clone()).into();
 				let def = pallet_proxy::Pallet::<T>::find_proxy(
 					&proxy_details.address, 

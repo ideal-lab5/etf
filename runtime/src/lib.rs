@@ -132,6 +132,8 @@ pub use pallet_staking::StakerStatus;
 pub use pallet_sudo::Call as SudoCall;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+#[cfg(any(feature = "std", test))]
+pub use pallet_murmur::Call as MurmurCall;
 
 /// Implementations of some helper traits passed into runtime modules as associated types.
 pub mod impls;
@@ -457,7 +459,7 @@ impl pallet_proxy::Config for Runtime {
 	type AnnouncementDepositFactor = AnnouncementDepositFactor;
 }
 
-impl pallet_otp::Config for Runtime {
+impl pallet_murmur::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type TlockProvider = RandomnessBeacon;
@@ -2517,7 +2519,7 @@ mod runtime {
 	pub type AssetConversionMigration = pallet_asset_conversion_ops;
 
 	#[runtime::pallet_index(80)]
-	pub type Otp = pallet_otp;
+	pub type Murmur = pallet_murmur;
 }
 
 /// The address format for describing accounts.

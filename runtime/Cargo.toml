@@ -65,7 +65,7 @@ frame = { package = "polkadot-sdk-frame", git = "https://github.com/ideal-lab5/p
 # local dependencies
 pallet-scheduler = { path = "../pallets/scheduler",  default-features = false }
 pallet-proxy = { path = "../pallets/proxy",  default-features = false }
-pallet-otp = { path = "../pallets/otp",  default-features = false }
+pallet-murmur = { path = "../pallets/murmur",  default-features = false }
 pallet-etf = { path = "../pallets/etf", default-features = false }
 pallet-randomness-beacon = { path = "../pallets/randomness-beacon", default-features = false }
 pallet-beefy-etf = { path = "../pallets/beefy-etf",  default-features = false }
@@ -236,7 +236,7 @@ std = [
 	"pallet-parameters/std",
 	"pallet-preimage/std",
 	"pallet-proxy/std",
-	"pallet-otp/std",
+	"pallet-murmur/std",
 	"pallet-ranked-collective/std",
 	"pallet-recovery/std",
 	"pallet-referenda/std",
