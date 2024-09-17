@@ -748,7 +748,7 @@ impl<T: Config> Pallet<T> {
 	) -> Result<TaskAddress<BlockNumberFor<T>>, DispatchError> {
 		let when = Self::resolve_time(when)?;
 
-		let id = blake2_256(&ciphertext[..])
+		let id = blake2_256(&ciphertext[..]);
 
 		let task = Scheduled {
 			maybe_id: Some(id),
