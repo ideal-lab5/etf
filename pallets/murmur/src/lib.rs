@@ -31,7 +31,13 @@ use ckb_merkle_mountain_range::{
     MMR, Merge, Result as MMRResult,
     util::{MemMMR, MemStore},
 };
-
+use murmur_core::{
+	murmur,
+	types::{
+		Leaf, MergeLeaves,
+		BlockNumber,
+	}
+};
 use pallet_randomness_beacon::{Ciphertext, TimelockEncryptionProvider};
 
 pub type Name = BoundedVec<u8, ConstU32<32>>;
@@ -48,37 +54,8 @@ pub struct OtpProxyDetails<AccountId> {
 	pub size: u64,
 }
 
-// #[cfg(feature = "std")]
-// use blake2b_rs::{Blake2b, Blake2bBuilder};
 use sp_core::Bytes;
 use sha3::Digest;
-
-#[derive(Eq, PartialEq, Clone, Debug, Default)]
-struct Leaf(pub Vec<u8>);
-impl From<Vec<u8>> for Leaf {
-    fn from(data: Vec<u8>) -> Self {
-        // let mut hasher = new_blake2b();
-        let mut hasher = sha3::Sha3_256::default();
-        // let bytes = serde_json::to_vec(&data).unwrap();
-        hasher.update(&data);
-        let hash = hasher.finalize();
-        Leaf(hash.to_vec().into())
-        // NumberHash(num.into())
-    }
-}
-
-struct MergeLeaves;
-
-impl Merge for MergeLeaves {
-    type Item = Leaf;
-    fn merge(lhs: &Self::Item, rhs: &Self::Item) -> MMRResult<Self::Item> {
-		let mut hasher = sha3::Sha3_256::default();
-        hasher.update(&lhs.0);
-        hasher.update(&rhs.0);
-        let hash = hasher.finalize();
-        Ok(Leaf(hash.to_vec().into()))
-    }
-}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -136,7 +113,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 
-		/// Vreate a time-based proxy account
+		/// Create a time-based proxy account
 		///
 		/// * `root`: 
 		///
@@ -186,6 +163,7 @@ pub mod pallet {
 			proof: Vec<Vec<u8>>, // the merkle proof
 			call: sp_std::boxed::Box<<T as pallet_proxy::Config>::RuntimeCall>,
 			when: BlockNumberFor<T>,
+			signature: Option<Vec<u8>>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
@@ -196,31 +174,34 @@ pub mod pallet {
 				let merkle_proof = MerkleProof::<Leaf, MergeLeaves>::new(size, leaves);
 				let root = Leaf(proxy_details.root);
 
-				ensure!(
-					merkle_proof.verify(root, vec![(position, Leaf(target_leaf.clone()))]).unwrap(),
-					Error::<T>::InvalidMerkleProof,
-				);
-
-				// now verify the hash 
-			// we expect: hash = H(OTP || CALL_DATA)
 				let result = T::TlockProvider::decrypt_at(&target_leaf, when)
 					.map_err(|_| Error::<T>::BadCiphertext)?;
 				let mut otp = result.message;
-				let mut hasher = sha3::Sha3_256::default();
-				hasher.update(otp);
-				hasher.update(&call.encode());
-				let h_b = hasher.finalize().to_vec();
-				ensure!(h_b == hash, Error::<T>::InvalidOTP);
 
-				let signed_origin: T::RuntimeOrigin = frame_system::RawOrigin::Signed(who.clone()).into();
-				let def = pallet_proxy::Pallet::<T>::find_proxy(
-					&proxy_details.address, 
-					None, 
-					Some(T::ProxyType::default())
-				)?;
-				// ensure!(def.delay.is_zero(), Error::<T>::Unannounced);
-				pallet_proxy::Pallet::<T>::do_proxy(def, proxy_details.address, *call);
-				Self::deposit_event(Event::OtpProxyExecuted);
+				let execution_payload = murmur_core::types::ExecutionPayload {
+					root: root.clone(),
+					proof: merkle_proof,
+					target: Leaf(target_leaf),
+					pos: position,
+					hash,
+					sk: Vec::new(), // TODO: should be based on signature passed to this function
+				};
+				match murmur::verify(root, otp, call.encode().to_vec(), execution_payload) {
+					true => {
+						let signed_origin: T::RuntimeOrigin = frame_system::RawOrigin::Signed(who.clone()).into();
+						let def = pallet_proxy::Pallet::<T>::find_proxy(
+							&proxy_details.address, 
+							None, 
+							Some(T::ProxyType::default())
+						)?;
+						// ensure!(def.delay.is_zero(), Error::<T>::Unannounced);
+						pallet_proxy::Pallet::<T>::do_proxy(def, proxy_details.address, *call);
+						Self::deposit_event(Event::OtpProxyExecuted);
+					},
+					false => {
+						// couldn't verify the code, fail
+					}
+				}
 			} else {
 				// an error
 			}

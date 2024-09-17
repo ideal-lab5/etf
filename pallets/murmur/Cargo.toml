@@ -33,6 +33,9 @@ sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "te
 # etf-crypto-primitives = { default-features =  false, git = "https://github.com/ideal-lab5/etf-sdk.git", branch = "tony/dev"}
 ckb-merkle-mountain-range = { version = "0.5.2", default-features = false }
 sha3 = { version = "0.10.8", default-features = false }
+murmur-core = { package="murmur-core", path="../../../murmur/core", default-features = false }
+# murmur-core = { package="murmur-core", git = "https://github.com/ideal-lab5/murmur.git", branch = "dev", default-features = false }
+# totp-rs = { version = "5.5.1", default-features = false, optional = true }
 
 # local dependencies
 pallet-proxy = { default-features = false, path = "../proxy" }
@@ -47,10 +50,10 @@ ark-std = { version = "0.4.0", default-features = false }
 hex = "0.4.3"
 sp-io = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = false  }
 
-
 [features]
 default = ["std"]
 std = [
+	# "totp-rs",
 	"serde/std",
 	"codec/std",
 	"frame-benchmarking?/std",
@@ -69,6 +72,7 @@ std = [
 	"pallet-randomness-beacon/std",
 	"ckb-merkle-mountain-range/std",
 	"sha3/std",
+	"murmur-core/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

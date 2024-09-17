@@ -85,6 +85,7 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use beefy_primitives::{
 	bls_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
 	mmr::MmrLeafVersion,
+	known_payloads,  Commitment, Payload,
 };
 use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
