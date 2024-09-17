@@ -31,13 +31,13 @@ use ckb_merkle_mountain_range::{
     MMR, Merge, Result as MMRResult,
     util::{MemMMR, MemStore},
 };
-use murmur_core::{
-	murmur,
-	types::{
-		Leaf, MergeLeaves,
-		BlockNumber,
-	}
-};
+// use murmur_core::{
+// 	murmur,
+// 	types::{
+// 		Leaf, MergeLeaves,
+// 		BlockNumber,
+// 	}
+// };
 use pallet_randomness_beacon::{Ciphertext, TimelockEncryptionProvider};
 
 pub type Name = BoundedVec<u8, ConstU32<32>>;
@@ -174,26 +174,26 @@ pub mod pallet {
 			let when = T::TlockProvider::latest();
 			// let proxy_details = Registry::<T>::get(name).unwrap_or(return Err(Error::<T>::InvalidMerkleProof));
 			if let Some(proxy_details) = Registry::<T>::get(name) {
-				// verify the merkle proof
-				let leaves: Vec<Leaf> = proof.clone().into_iter().map(|p| Leaf(p)).collect::<Vec<_>>();
-				let size = proxy_details.size;
-				let merkle_proof = MerkleProof::<Leaf, MergeLeaves>::new(size, leaves);
-				let root = Leaf(proxy_details.root);
+				// // verify the merkle proof
+				// let leaves: Vec<Leaf> = proof.clone().into_iter().map(|p| Leaf(p)).collect::<Vec<_>>();
+				// let size = proxy_details.size;
+				// let merkle_proof = MerkleProof::<Leaf, MergeLeaves>::new(size, leaves);
+				// let root = Leaf(proxy_details.root);
 
-				let result = T::TlockProvider::decrypt_at(&target_leaf, when)
-					.map_err(|_| Error::<T>::BadCiphertext)?;
-				let mut otp = result.message;
+				// let result = T::TlockProvider::decrypt_at(&target_leaf, when)
+				// 	.map_err(|_| Error::<T>::BadCiphertext)?;
+				// let mut otp = result.message;
 
-				let execution_payload = murmur_core::types::ExecutionPayload {
-					root: root.clone(),
-					proof: merkle_proof,
-					target: Leaf(target_leaf),
-					pos: position,
-					hash,
-				};
+				// let execution_payload = murmur_core::types::ExecutionPayload {
+				// 	root: root.clone(),
+				// 	proof: merkle_proof,
+				// 	target: Leaf(target_leaf),
+				// 	pos: position,
+				// 	hash,
+				// };
 
-				let validity = murmur::verify(root, otp, call.encode().to_vec(), execution_payload);
-				frame_support::ensure!(validity, Error::<T>::InvalidMerkleProof);
+				// let validity = murmur::verify(root, otp, call.encode().to_vec(), execution_payload);
+				// frame_support::ensure!(validity, Error::<T>::InvalidMerkleProof);
 
 				let signed_origin: T::RuntimeOrigin = frame_system::RawOrigin::Signed(who.clone()).into();
 				let def = pallet_proxy::Pallet::<T>::find_proxy(
