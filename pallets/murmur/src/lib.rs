@@ -147,26 +147,32 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// proxy a call after verifying the ciphertext
+		/// Proxy a call after verifying the ciphertext
 		/// this function first checks the validity of the merkle proof (using the ciphertext)
 		/// if valid, it decrypts the ciphertext and uses it to verify the hash
 		/// if valid, it proxies the call
+		///
+		/// * `name`: The uid of the murmur proxy
+		/// * `position`: The position in the MMR of the encrypted OTP code
+		/// * `target_leaf`: The target leaf data (ciphertext)
+		/// * `hash`: A hash to commit to the OTP code and call data
+		/// * `proof`: A merkle proof the the target leaf is in the expected MMR
+		/// * `call`: The call to be proxied
 		///
 		#[pallet::weight(0)]
 		#[pallet::call_index(1)]
 		pub fn proxy(
 			origin: OriginFor<T>,
 			name: BoundedVec<u8, ConstU32<32>>,
-			position: u64, // the position of the leaf in the mmr
-			target_leaf: Vec<u8>, // TODO: the leaf of the mmr, should be bounded though
-			hash: Vec<u8>, // a hash of the otp code and the call data
-			proof: Vec<Vec<u8>>, // the merkle proof
+			position: u64,
+			target_leaf: Vec<u8>,
+			hash: Vec<u8>,
+			proof: Vec<Vec<u8>>,
 			call: sp_std::boxed::Box<<T as pallet_proxy::Config>::RuntimeCall>,
-			when: BlockNumberFor<T>,
-			signature: Option<Vec<u8>>,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-
+			let when = T::TlockProvider::latest();
+			// let proxy_details = Registry::<T>::get(name).unwrap_or(return Err(Error::<T>::InvalidMerkleProof));
 			if let Some(proxy_details) = Registry::<T>::get(name) {
 				// verify the merkle proof
 				let leaves: Vec<Leaf> = proof.clone().into_iter().map(|p| Leaf(p)).collect::<Vec<_>>();
@@ -184,26 +190,22 @@ pub mod pallet {
 					target: Leaf(target_leaf),
 					pos: position,
 					hash,
-					sk: Vec::new(), // TODO: should be based on signature passed to this function
 				};
-				match murmur::verify(root, otp, call.encode().to_vec(), execution_payload) {
-					true => {
-						let signed_origin: T::RuntimeOrigin = frame_system::RawOrigin::Signed(who.clone()).into();
-						let def = pallet_proxy::Pallet::<T>::find_proxy(
-							&proxy_details.address, 
-							None, 
-							Some(T::ProxyType::default())
-						)?;
-						// ensure!(def.delay.is_zero(), Error::<T>::Unannounced);
-						pallet_proxy::Pallet::<T>::do_proxy(def, proxy_details.address, *call);
-						Self::deposit_event(Event::OtpProxyExecuted);
-					},
-					false => {
-						// couldn't verify the code, fail
-					}
-				}
+
+				let validity = murmur::verify(root, otp, call.encode().to_vec(), execution_payload);
+				frame_support::ensure!(validity, Error::<T>::InvalidMerkleProof);
+
+				let signed_origin: T::RuntimeOrigin = frame_system::RawOrigin::Signed(who.clone()).into();
+				let def = pallet_proxy::Pallet::<T>::find_proxy(
+					&proxy_details.address, 
+					None, 
+					Some(T::ProxyType::default())
+				)?;
+				// ensure!(def.delay.is_zero(), Error::<T>::Unannounced);
+				pallet_proxy::Pallet::<T>::do_proxy(def, proxy_details.address, *call);
+				Self::deposit_event(Event::OtpProxyExecuted);
 			} else {
-				// an error
+				// an error? 
 			}
 
 			Ok(())

@@ -1,4 +1,4 @@
-use crate as pallet_etf;
+use crate as pallet_murmur;
 use frame_support::traits::{ConstBool, ConstU64};
 use sp_core::{ConstU32, H256};
 use sp_runtime::{
@@ -6,7 +6,7 @@ use sp_runtime::{
 };
 use sp_runtime::BuildStorage;
 use etf_crypto_primitives::encryption::tlock::DecryptionResult;
-use sp_consensus_etf_aura::sr25519::AuthorityId as AuraId;
+use pallet_randomness_beacon::TimelockEncryptionProvider;
 
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -15,8 +15,9 @@ frame_support::construct_runtime!(
 	pub enum Test
 	{
 		System: frame_system,
+		Balances: pallet_balance,
         Proxy: pallet_proxy,
-        Otp: pallet_otp,
+        Murmur: pallet_murmur,
 		// Balances: pallet_balances,
 		// Aura: pallet_etf_aura,
 		// Etf: pallet_etf,
@@ -25,71 +26,27 @@ frame_support::construct_runtime!(
 
 type AccountId = u64;
 
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
 impl frame_system::Config for Test {
-	type BaseCallFilter = frame_support::traits::Everything;
-	type BlockWeights = ();
-	type BlockLength = ();
-	type RuntimeOrigin = RuntimeOrigin;
-	type RuntimeCall = RuntimeCall;
-	type Nonce = u64;
-	type Hash = H256;
-	type Hashing = BlakeTwo256;
-	type AccountId = AccountId;
-	type Lookup = IdentityLookup<Self::AccountId>;
 	type Block = Block;
-	type RuntimeEvent = RuntimeEvent;
-	type BlockHashCount = ConstU64<250>;
-	type DbWeight = ();
-	type Version = ();
-	type PalletInfo = PalletInfo;
 	type AccountData = pallet_balances::AccountData<u64>;
-	type OnNewAccount = ();
-	type OnKilledAccount = ();
-	type SystemWeightInfo = ();
-	type SS58Prefix = ();
-	type OnSetCode = ();
-	type MaxConsumers = ConstU32<3>;
 }
 
-// impl pallet_balances::Config for Test {
-// 	type Balance = u64;
-// 	type DustRemoval = ();
-// 	type RuntimeEvent = RuntimeEvent;
-// 	type ExistentialDeposit = ConstU64<1>;
-// 	type AccountStore = System;
-// 	type WeightInfo = ();
-// 	type MaxLocks = ();
-// 	type MaxReserves = ();
-// 	type ReserveIdentifier = [u8; 8];
-// 	type RuntimeHoldReason = RuntimeHoldReason;
-// 	type RuntimeFreezeReason = RuntimeFreezeReason;
-// 	type FreezeIdentifier = ();
-// 	type MaxHolds = ConstU32<10>;
-// 	type MaxFreezes = ();
-// }
-
-
-// impl pallet_timestamp::Config for Test {
-// 	type Moment = u64;
-// 	type OnTimestampSet = Aura;
-// 	type MinimumPeriod = ConstU64<1>;
-// 	type WeightInfo = ();
-// }
-
-// impl pallet_etf_aura::Config for Test {
-// 	type AuthorityId = AuraId;
-// 	type DisabledValidators = ();
-// 	type MaxAuthorities = ConstU32<32>;
-// 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-
-// 	#[cfg(feature = "experimental")]
-// 	type SlotDuration = pallet_etf_aura::MinimumPeriodTimesTwo<Test>;
-// }
-
-// impl pallet_etf::Config for Test {
-// 	type RuntimeEvent = RuntimeEvent;
-// 	type WeightInfo = pallet_etf::weights::SubstrateWeightInfo<Test>;
-// }
+impl pallet_balances::Config for Test {
+	type MaxLocks = ();
+	type MaxReserves = ();
+	type ReserveIdentifier = [u8; 8];
+	type Balance = u128;
+	type DustRemoval = ();
+	type RuntimeEvent = RuntimeEvent;
+	type ExistentialDeposit = ConstU128<1>;
+	type AccountStore = System;
+	type WeightInfo = ();
+	type RuntimeHoldReason = ();
+	type RuntimeFreezeReason = ();
+	type FreezeIdentifier = ();
+	type MaxFreezes = ();
+}
 
 impl pallet_proxy::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
@@ -109,20 +66,24 @@ impl pallet_proxy::Config for Test {
 /// a passthrough dummy tlock provider
 /// doesn't actually do anything, just passes the ciphertext as the plaintext
 pub struct DummyTlock;
-impl TlockProvider<u64> for DummyTlock {
+impl TimelockEncryptionProvider<u64> for DummyTlock {
     fn decrypt_at(
         passthrough: &[u8], 
         block_number: u64
-    ) -> Result<DecryptionResult, pallet_randomness_beacon::TimelockError> {
-        let result = DecryptionResult {
+    ) -> Result<etf_crypto_primitives::encryption::tlock::DecryptionResult, pallet_randomness_beacon::TimelockError> {
+        let result = etf_crypto_primitives::encryption::tlock::DecryptionResult {
             message: passthrough.clone().to_vec(),
-            secret: &[],
+            secret: [0;32],
         };
         Ok(result)
     }
+
+	fn latest() -> u64 {
+		2u64
+	}
 }
 
-impl pallet_otp::Config for Test {
+impl pallet_murmur::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
 	type TlockProvider = DummyTlock;
@@ -132,7 +93,7 @@ impl pallet_otp::Config for Test {
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut storage = frame_system::GenesisConfig::<Test>::default().build_storage().unwrap();
 
-	config.assimilate_storage(&mut storage).unwrap();
+	// config.assimilate_storage(&mut storage).unwrap();
     let mut ext: sp_io::TestExternalities = storage.into();
 	// Clear thread local vars for https://github.com/paritytech/substrate/issues/10479.
 	// ext.execute_with(|| take_hooks());
