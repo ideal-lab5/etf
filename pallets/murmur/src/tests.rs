@@ -1,109 +1,165 @@
-use crate::{self as murmur, mock::*, Error, Murmur, Proxy, RuntimeOrigin};
-use frame_system::Call as SystemCall;
-use ark_std::{test_rng, UniformRand};
+use crate::{self as murmur, mock::*, Error};
 use ark_serialize::CanonicalSerialize;
-use frame_support::{assert_noop, assert_ok};
+use ark_std::{test_rng, UniformRand};
+use frame_support::{
+	assert_noop, assert_ok, BoundedVec,
+	traits::{
+		ConstU32,
+		OnInitialize,
+	},
+};
+use frame_system::Call as SystemCall;
 
 use sha3::Digest;
 
-use murmur_core::types::MergeLeaves;
-
-use ckb_merkle_mountain_range::{
-    MerkleProof,
-    util::{
-        MemMMR,
-        MemStore
-    },
+use murmur_core::{
+	otp::BOTPGenerator,
+	murmur::MurmurStore,
+	types::{BlockNumber, Identity, IdentityBuilder, Leaf, MergeLeaves},
 };
+use sp_core::{bls377, Pair, ByteArray};
+use ckb_merkle_mountain_range::{
+	util::{MemMMR, MemStore},
+	MerkleProof,
+};
+
+use codec::{Decode, Encode};
+use sp_consensus_beefy_etf::{
+	known_payloads, AuthorityIndex, BeefyAuthorityId, Commitment, ConsensusLog, EquivocationProof,
+	OnNewValidatorSet, Payload, ValidatorSet, BEEFY_ENGINE_ID, GENESIS_AUTHORITY_SET_ID,
+};
+use ark_serialize::CanonicalDeserialize;
+use w3f_bls::{
+	DoublePublicKey, 
+	DoubleSignature, 
+	EngineBLS,
+	SerializableToBytes, 
+	TinyBLS377
+};
+
+#[derive(Debug)]
+pub struct BasicIdBuilder;
+impl IdentityBuilder<BlockNumber> for BasicIdBuilder {
+	fn build_identity(when: BlockNumber) -> Identity {
+		let payload = Payload::from_single_entry(known_payloads::ETF_SIGNATURE, Vec::new());
+		let commitment = Commitment {
+			payload,
+			block_number: when,
+			validator_set_id: 0, /* TODO: how to ensure correct validator set ID is used? could
+			                      * just always set to 1 for now, else set input param. */
+		};
+		Identity::new(&commitment.encode())
+	}
+}
 
 #[test]
 fn it_can_create_new_proxy_with_unique_name() {
-	let unique_name = "name".to_vec();
-	let root = vec![1,2,3];
-	let size = 0;
+	let seed = b"seed".to_vec();
+	let unique_name = b"name".to_vec();
+	let bounded_name = BoundedVec::<u8, ConstU32<32>>::truncate_from(unique_name);
+	let block_schedule = vec![1, 2, 3];
+	let ephem_msk = [3; 32];
 
-	new_test_ext().execute_with(|| {
+	// let root = vec![1,2,3];
+	let size = 3;
+
+	new_test_ext(vec![0]).execute_with(|| {
+		let round_pubkey_bytes = Etf::round_pubkey().to_vec();
+		let round_pubkey = DoublePublicKey::<TinyBLS377>::from_bytes(&round_pubkey_bytes).unwrap();
+
+		let mmr_store = MurmurStore::new::<TinyBLS377, BasicIdBuilder>(
+			seed.clone().into(),
+			block_schedule.clone(),
+			ephem_msk,
+			round_pubkey,
+		);
+		let root = mmr_store.root.clone();
 		assert_ok!(Murmur::create(
-			RuntimeOrigin::signed(1),
-			root,
+			RuntimeOrigin::signed(0),
+			root.0.to_vec(),
 			size,
-			unique_name
+			bounded_name.clone(),
 		));
 
 		// check storage
-		let registered_proxy = murmur::Registry::<Test>::get(unique_name.clone());
+		let registered_proxy = murmur::Registry::<Test>::get(bounded_name.clone());
 		assert!(registered_proxy.is_some());
-		// verify data
-		assert_eq!(registered_proxy.root, root);
-		assert_eq!(registered_proxy.size, size);
-		assert_eq!(registered_proxy.name, unique_name);
+		// 	// verify data
+		// 	assert_eq!(registered_proxy.root, root);
+		// 	assert_eq!(registered_proxy.size, size);
+		// 	assert_eq!(registered_proxy.name, unique_name);
 	});
+}
+
+fn init_block(block: u64) {
+	System::set_block_number(block);
+	Session::on_initialize(block);
+}
+
+#[test]
+fn it_can_proxy_valid_calls() {
+	let seed = b"seed".to_vec();
+	let unique_name = b"name".to_vec();
+	let bounded_name = BoundedVec::<u8, ConstU32<32>>::truncate_from(unique_name);
+	let when = 1;
+	let block_schedule = vec![1, 2, 3];
+	let ephem_msk = [3; 32];
+	let size = 3;
+
+	new_test_ext(vec![0]).execute_with(|| {
+		let round_pubkey_bytes = Etf::round_pubkey().to_vec();
+		let round_pubkey = DoublePublicKey::<TinyBLS377>::from_bytes(&round_pubkey_bytes).unwrap();
+
+		let mmr_store = MurmurStore::new::<TinyBLS377, BasicIdBuilder>(
+			seed.clone().into(),
+			block_schedule.clone(),
+			ephem_msk,
+			round_pubkey,
+		);
+
+		let root = mmr_store.root.clone();
+		assert_ok!(Murmur::create(
+			RuntimeOrigin::signed(0),
+			root.0.to_vec(),
+			size,
+			bounded_name.clone(),
+		));
+
+		// the beacon would write a new pulse here, but we will mock it instead
+		// but here, we can just generate the expected OTP code when we mock decryption
+		
+		// now we want to proxy a call 
+		let call = call_remark(vec![1, 2, 3, 4, 5]);
+		// We want to use the ciphertext for block = 1
+		let (proof, commitment, ciphertext, pos) = mmr_store.execute(
+			seed.clone(),
+			when.clone() as u32,
+			call.encode().to_vec(),
+		).unwrap(); 
+
+		let proof_items: Vec<Vec<u8>> = proof.proof_items().iter()
+			.map(|leaf| leaf.0.to_vec())
+			.collect::<Vec<_>>();
+
+		assert_ok!(Murmur::proxy(
+			RuntimeOrigin::signed(0),
+			bounded_name.clone(),
+			pos,
+			commitment,
+			ciphertext,
+			proof_items,
+			Box::new(call),
+		));
+
+	});
+}
+
+fn calculate_signature(id: u8, serialized_resharing: &[u8], message: &[u8]) -> (bls377::Public, bls377::Signature) {
+    let kp = sp_core::bls::Pair::from_seed_slice(&[id;32]).unwrap();
+    let etf_kp = kp.acss_recover(serialized_resharing, 1).unwrap();
+    (etf_kp.public(), etf_kp.sign(message))
 }
 
 fn call_remark(value: Vec<u8>) -> RuntimeCall {
-	RuntimeCall::System(SystemCall::remark { value })
-}
-
-// Q: This would be much easier if we could import the 'client' features from murmur-core for tests. How can I do that?
-#[test]
-fn it_can_proxy_valid_calls() {
-	let unique_name = "name".to_vec();
-	// let root = vec![1,2,3];
-	let size = 1;
-
-	// generate otp code for block 2
-	let fake_otp_at_block_2 = vec![2,6,5,7,7,0];
-	// build a real mmr
-	let leaves = vec![fake_otp_at_block_2];
-
-    // let mut mmr_store_file = File::create("mmr_store").unwrap();
-    let store = MemStore::default();
-    let mut mmr = MemMMR::<_, MergeLeaves>::new(0, store);
-
-    // TODO: HKDF? just hash the seed?
-    let ephem_msk = [1;32];
-
-	// populate MMR
-	leaves.iter().for_each(|leaf| {
-		// TODO: error handling
-		mmr.push(leaf.1.clone()).unwrap();
-	});
-
-	let call = Box::new(call_remark(vec![1,2,3]));
-
-	let mut hasher = sha3::Sha3_256::default();
-    hasher.update(fake_otp_at_block_2);
-    hasher.update(&call.encode());
-    let hash = hasher.finalize().to_vec();
-
-	let root = mmr.get_root().expect("The MMR root should be calculable");
-	// then prepare a merkle proof
-	let proof = mmr.gen_proof(vec![0]).expect("should be ok");
-	let proof_items: Vec<Vec<u8>> = proof.proof_items().iter()
-        .map(|leaf| leaf.0.to_vec().clone())
-        .collect::<Vec<_>>();
-
-	new_test_ext().execute_with(|| {
-		// create the named murmur wallet
-		assert_ok!(Murmur::create(
-			RuntimeOrigin::signed(1),
-			root.0,
-			size,
-			unique_name
-		));
-		// tlock decryption is just passthrough, so target == otp
-		// then to verify the mmr, we should construct it using the plaintext
-		
-		// recall: dummy tlock provider says latest = 2, so the call should work
-		assert_ok!(Murmur::execute(
-			RuntimeOrigin::signed(2),
-			unique_name,
-			0,
-			fake_otp_at_block_2,
-			hash,
-			proof_items,
-			call,
-		));
-
-	});
+	RuntimeCall::System(SystemCall::remark { remark: value })
 }

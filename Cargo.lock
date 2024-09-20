@@ -3996,7 +3996,7 @@ dependencies = [
 [[package]]
 name = "etf-crypto-primitives"
 version = "0.2.4"
-source = "git+https://github.com/ideal-lab5/etf-sdk/?branch=tony/dev#159ed603ca8a31b7d2e5f4437c62411c4d1fd743"
+source = "git+https://github.com/ideal-lab5/etf-sdk.git?branch=tony/dev#159ed603ca8a31b7d2e5f4437c62411c4d1fd743"
 dependencies = [
  "aes-gcm",
  "ark-bls12-377",
@@ -7166,24 +7166,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "murmur-core"
-version = "0.1.0"
-dependencies = [
- "ark-bls12-377",
- "ark-ff 0.4.2",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
- "array-bytes 6.2.3",
- "ckb-merkle-mountain-range",
- "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk/?branch=tony/dev)",
- "hex",
- "parity-scale-codec",
- "serde",
- "sha3",
- "w3f-bls",
-]
-
-[[package]]
 name = "nalgebra"
 version = "0.32.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9204,13 +9186,13 @@ dependencies = [
  "ark-std 0.4.0",
  "array-bytes 4.2.0",
  "ckb-merkle-mountain-range",
+ "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk.git?branch=tony/dev)",
  "frame-benchmarking",
  "frame-support",
  "frame-support-test",
  "frame-system",
  "hex",
  "log",
- "murmur-core",
  "pallet-balances",
  "pallet-proxy 28.1.0",
  "pallet-randomness-beacon",

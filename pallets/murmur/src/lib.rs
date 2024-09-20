@@ -17,6 +17,7 @@ mod benchmarking;
 // pub mod weights;
 // pub use weights::WeightInfo;
 
+use log::info;
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_std::{vec, vec::Vec, prelude::ToOwned};
@@ -31,13 +32,13 @@ use ckb_merkle_mountain_range::{
     MMR, Merge, Result as MMRResult,
     util::{MemMMR, MemStore},
 };
-// use murmur_core::{
-// 	murmur,
-// 	types::{
-// 		Leaf, MergeLeaves,
-// 		BlockNumber,
-// 	}
-// };
+use murmur_core::{
+	murmur,
+	types::{
+		Leaf, MergeLeaves,
+		BlockNumber,
+	}
+};
 use pallet_randomness_beacon::{Ciphertext, TimelockEncryptionProvider};
 
 pub type Name = BoundedVec<u8, ConstU32<32>>;
@@ -108,6 +109,8 @@ pub mod pallet {
 		DuplicateName,
 		InvalidOTP,
 		InvalidMerkleProof,
+		InvalidProxy,
+		ProxyDNE,
 	}
  
 	#[pallet::call]
@@ -140,7 +143,12 @@ pub mod pallet {
 				true,
 			)?;
 
-			let address = pallet_proxy::Pallet::<T>::pure_account(&who, &T::ProxyType::default(), 0, None);
+			let address = pallet_proxy::Pallet::<T>::pure_account(
+				&who, 
+				&T::ProxyType::default(), 
+				0, None
+			);
+			
 			Registry::<T>::insert(name, &OtpProxyDetails { address, root, size });
 			Self::deposit_event(Event::OtpProxyCreated);
 
@@ -162,52 +170,50 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		#[pallet::call_index(1)]
 		pub fn proxy(
-			origin: OriginFor<T>,
+			_origin: OriginFor<T>,
 			name: BoundedVec<u8, ConstU32<32>>,
 			position: u64,
-			target_leaf: Vec<u8>,
 			hash: Vec<u8>,
+			ciphertext: Vec<u8>,
 			proof: Vec<Vec<u8>>,
 			call: sp_std::boxed::Box<<T as pallet_proxy::Config>::RuntimeCall>,
 		) -> DispatchResult {
-			let who = ensure_signed(origin)?;
+			// let who = ensure_signed(origin)?;
 			let when = T::TlockProvider::latest();
-			// let proxy_details = Registry::<T>::get(name).unwrap_or(return Err(Error::<T>::InvalidMerkleProof));
-			if let Some(proxy_details) = Registry::<T>::get(name) {
-				// // verify the merkle proof
-				// let leaves: Vec<Leaf> = proof.clone().into_iter().map(|p| Leaf(p)).collect::<Vec<_>>();
-				// let size = proxy_details.size;
-				// let merkle_proof = MerkleProof::<Leaf, MergeLeaves>::new(size, leaves);
-				// let root = Leaf(proxy_details.root);
 
-				// let result = T::TlockProvider::decrypt_at(&target_leaf, when)
-				// 	.map_err(|_| Error::<T>::BadCiphertext)?;
-				// let mut otp = result.message;
+			let result = T::TlockProvider::decrypt_at(&ciphertext, when)
+				.map_err(|_| Error::<T>::BadCiphertext)?;
+			let mut otp = result.message;
 
-				// let execution_payload = murmur_core::types::ExecutionPayload {
-				// 	root: root.clone(),
-				// 	proof: merkle_proof,
-				// 	target: Leaf(target_leaf),
-				// 	pos: position,
-				// 	hash,
-				// };
+			let proxy_details = Registry::<T>::get(name.clone()).ok_or(Error::<T>::InvalidProxy)?;
 
-				// let validity = murmur::verify(root, otp, call.encode().to_vec(), execution_payload);
-				// frame_support::ensure!(validity, Error::<T>::InvalidMerkleProof);
+			let result = T::TlockProvider::decrypt_at(&ciphertext, when)
+				.map_err(|_| Error::<T>::BadCiphertext)?;
+			let mut otp = result.message;
 
-				let signed_origin: T::RuntimeOrigin = frame_system::RawOrigin::Signed(who.clone()).into();
-				let def = pallet_proxy::Pallet::<T>::find_proxy(
-					&proxy_details.address, 
-					None, 
-					Some(T::ProxyType::default())
-				)?;
-				// ensure!(def.delay.is_zero(), Error::<T>::Unannounced);
-				pallet_proxy::Pallet::<T>::do_proxy(def, proxy_details.address, *call);
-				Self::deposit_event(Event::OtpProxyExecuted);
-			} else {
-				// an error? 
-			}
+			let leaves: Vec<Leaf> = proof.clone().into_iter()
+				.map(|p| Leaf(p)).collect::<Vec<_>>();
+			let size = proxy_details.size;
+			let merkle_proof = MerkleProof::<Leaf, MergeLeaves>::new(size, leaves);
+			let root = Leaf(proxy_details.root);
 
+			let validity = murmur::verify(
+				root, merkle_proof, hash, 
+				ciphertext, otp, 
+				call.encode().to_vec(), position
+			);
+
+			frame_support::ensure!(validity, Error::<T>::InvalidMerkleProof);
+
+			let def = pallet_proxy::Pallet::<T>::find_proxy(
+				&proxy_details.address, 
+				None, 
+				Some(T::ProxyType::default())
+			).map_err(|_| Error::<T>::InvalidProxy)?;
+
+			pallet_proxy::Pallet::<T>::do_proxy(def, proxy_details.address, *call);
+
+			Self::deposit_event(Event::OtpProxyExecuted);
 			Ok(())
 		}
 	}
