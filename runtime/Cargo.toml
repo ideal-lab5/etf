@@ -33,8 +33,8 @@ primitive-types = { version = "0.12.0", default-features = false, features = ["c
 # primitives
 sp-authority-discovery = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false, features = ["serde"] }
 sp-consensus-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false, features = ["serde"] }
-# sp-consensus-beefy-etf-etf = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false, features = ["bls-experimental"] }
-beefy-primitives = { package = "sp-consensus-beefy-etf", path = "../primitives/consensus/beefy-etf", default-features = false, features = ["bls-experimental"]}
+# beefy-primitives = { package = "sp-consensus-beefy-etf", path = "../../pallets/primitives/consensus/beefy-etf", default-features = false, features = ["bls-experimental"]}
+beefy-primitives = { package = "sp-consensus-beefy-etf", git = "https://github.com/driemworks/pallets.git", default-features = false, features = ["bls-experimental"]}
 sp-consensus-grandpa = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false, features = ["serde"] }
 sp-block-builder = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 sp-genesis-builder = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
@@ -63,13 +63,20 @@ frame = { package = "polkadot-sdk-frame", git = "https://github.com/ideal-lab5/p
 ]  }
 
 # local dependencies
-pallet-scheduler = { path = "../pallets/scheduler",  default-features = false }
-pallet-proxy = { path = "../pallets/proxy",  default-features = false }
-pallet-murmur = { path = "../pallets/murmur",  default-features = false }
-pallet-etf = { path = "../pallets/etf", default-features = false }
-pallet-randomness-beacon = { path = "../pallets/randomness-beacon", default-features = false }
-pallet-beefy-etf = { path = "../pallets/beefy-etf",  default-features = false }
-pallet-beefy-mmr-etf = { path = "../pallets/beefy-mmr-etf",  default-features = false }
+# pallet-scheduler = { path = "../../pallets/pallets/scheduler",  default-features = false }
+# pallet-proxy = { path = "../../pallets/pallets/proxy",  default-features = false }
+# pallet-murmur = { path = "../../pallets/pallets/murmur",  default-features = false }
+# pallet-etf = { path = "../../pallets/pallets/etf", default-features = false }
+# pallet-randomness-beacon = { path = "../../pallets/pallets/randomness-beacon", default-features = false }
+# pallet-beefy-etf = { path = "../../pallets/pallets/beefy-etf",  default-features = false }
+# pallet-beefy-mmr-etf = { path = "../../pallets/pallets/beefy-mmr-etf",  default-features = false }
+pallet-scheduler = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
+pallet-proxy = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
+pallet-murmur = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
+pallet-etf = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
+pallet-randomness-beacon = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
+pallet-beefy-etf = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
+pallet-beefy-mmr-etf = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
 
 frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 frame-executive = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
@@ -90,7 +97,6 @@ pallet-authorship = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", br
 pallet-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-bags-list = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-balances = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
-# pallet-beefy-etf = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-bounties = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-broker = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-child-bounties = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
@@ -127,7 +133,6 @@ pallet-offences = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", bran
 pallet-offences-benchmarking = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false, optional = true }
 pallet-glutton = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-preimage = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
-# pallet-proxy = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-insecure-randomness-collective-flip = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-ranked-collective = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-recovery = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
@@ -142,7 +147,6 @@ pallet-staking-reward-curve = { git = "https://github.com/ideal-lab5/polkadot-sd
 pallet-staking-runtime-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-state-trie-migration = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-statement = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
-# pallet-scheduler = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-society = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-sudo = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 pallet-timestamp = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }

@@ -28,9 +28,10 @@ sc-consensus-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", br
 # sc-consensus-babe-rpc = { path = "../../client/consensus/babe/rpc" }
 sc-consensus-babe-rpc = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 # sc-consensus-beefy-etf-etf = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
-sp-consensus-beefy-etf = { path = "../../primitives/consensus/beefy-etf" }
-sc-consensus-beefy-etf = { path = "../../client/consensus/beefy-etf" }
-sc-consensus-beefy-etf-rpc = { path = "../../client/consensus/beefy-etf/rpc" }
+sc-consensus-beefy-etf = { git = "https://github.com/driemworks/pallets.git", branch = "main" }
+sc-consensus-beefy-etf-rpc = { git = "https://github.com/driemworks/pallets.git", branch = "main" }
+# sc-consensus-beefy-etf = { path = "../../../pallets/client/consensus/beefy-etf" }
+# sc-consensus-beefy-etf-rpc = { path = "../../../pallets/client/consensus/beefy-etf/rpc" }
 # sc-consensus-beefy-etf-etf-rpc = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 sc-consensus-grandpa = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 sc-consensus-grandpa-rpc = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }

@@ -152,7 +152,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
  "syn-solidity",
  "tiny-keccak",
 ]
@@ -280,7 +280,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -355,24 +355,6 @@ dependencies = [
  "ark-ff 0.4.2",
  "ark-models-ext",
  "ark-std 0.4.0",
-]
-
-[[package]]
-name = "ark-crypto-primitives"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f3a13b34da09176a8baba701233fdffbaa7c1b1192ce031a3da4e55ce1f1a56"
-dependencies = [
- "ark-ec",
- "ark-ff 0.4.2",
- "ark-relations",
- "ark-serialize 0.4.2",
- "ark-snark",
- "ark-std 0.4.0",
- "blake2 0.10.6",
- "derivative",
- "digest 0.10.7",
- "sha2 0.10.8",
 ]
 
 [[package]]
@@ -553,17 +535,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-relations"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00796b6efc05a3f48225e59cb6a2cda78881e7c390872d5786aaf112f31fb4f0"
-dependencies = [
- "ark-ff 0.4.2",
- "ark-std 0.4.0",
- "tracing",
-]
-
-[[package]]
 name = "ark-scale"
 version = "0.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -586,7 +557,7 @@ dependencies = [
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
  "ark-std 0.4.0",
- "ark-transcript",
+ "ark-transcript 0.0.2 (git+https://github.com/w3f/ring-vrf?rev=e9782f9)",
  "digest 0.10.7",
  "getrandom_or_panic",
  "zeroize",
@@ -626,18 +597,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-snark"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84d3cc6833a335bb8a600241889ead68ee89a3cf8448081fb7694c0fe503da63"
-dependencies = [
- "ark-ff 0.4.2",
- "ark-relations",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
-]
-
-[[package]]
 name = "ark-std"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -662,6 +621,19 @@ dependencies = [
 name = "ark-transcript"
 version = "0.0.2"
 source = "git+https://github.com/w3f/ring-vrf?rev=e9782f9#e9782f938629c90f3adb3fff2358bc8d1386af3e"
+dependencies = [
+ "ark-ff 0.4.2",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+ "digest 0.10.7",
+ "rand_core 0.6.4",
+ "sha3",
+]
+
+[[package]]
+name = "ark-transcript"
+version = "0.0.2"
+source = "git+https://github.com/w3f/ring-vrf#0fef8266d851932ad25d6b41bc4b34d834d1e11d"
 dependencies = [
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
@@ -985,7 +957,7 @@ checksum = "6e0c28dcc82d7c8ead5cb13beb15405b57b8546e93215673ff8ca0349a028107"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -1032,7 +1004,7 @@ checksum = "3c87f3f15e7794432337fc718554eaa4dc8f04c9677a950ffe366f20a162ae42"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -1160,7 +1132,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -2115,7 +2087,7 @@ dependencies = [
  "heck 0.5.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -2184,7 +2156,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/w3f/ring-proof#665f5f51af5734c7b6d90b985dd6861d4c5b4752"
+source = "git+https://github.com/w3f/ring-proof#1472ce9cd87cee49c56ce7869a0aba872d837c51"
 dependencies = [
  "ark-ec",
  "ark-ff 0.4.2",
@@ -2193,8 +2165,7 @@ dependencies = [
  "ark-std 0.4.0",
  "fflonk",
  "getrandom_or_panic",
- "merlin",
- "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -2936,7 +2907,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -3310,7 +3281,7 @@ checksum = "f46882e17999c6cc590af592290432be3bce0428cb0d5f8b6715e4dc7b383eb3"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -3350,7 +3321,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "scratch",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -3367,7 +3338,7 @@ checksum = "4b2c1c1776b986979be68bb2285da855f8d8a35851a769fca8740df7c3d07877"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -3461,7 +3432,7 @@ checksum = "d65d7ce8132b7c0e54497a4d9a55a1c2a0912a0d786cf894472ba818fba45762"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -3474,14 +3445,8 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustc_version 0.4.0",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
-
-[[package]]
-name = "diff"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
 
 [[package]]
 name = "difflib"
@@ -3569,14 +3534,8 @@ checksum = "97369cbbc041bc366949bc74d34658d6cda5621039731c6310521892a3a20ae0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
-
-[[package]]
-name = "dissimilar"
-version = "1.0.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59f8e79d1fbf76bdfbde321e902714bf6c49df88a7dda6fc682fc2979226962d"
 
 [[package]]
 name = "dleq_vrf"
@@ -3589,7 +3548,7 @@ dependencies = [
  "ark-secret-scalar",
  "ark-serialize 0.4.2",
  "ark-std 0.4.0",
- "ark-transcript",
+ "ark-transcript 0.0.2 (git+https://github.com/w3f/ring-vrf?rev=e9782f9)",
  "arrayvec 0.7.4",
  "zeroize",
 ]
@@ -3621,7 +3580,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "syn 2.0.72",
+ "syn 2.0.77",
  "termcolor",
  "toml 0.8.19",
  "walkdir",
@@ -3842,7 +3801,7 @@ dependencies = [
  "heck 0.4.1",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -3862,7 +3821,7 @@ checksum = "de0d48a183585823424a4ce1aa132d174a6a81bd540895822eb4c8373a8e49e8"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -3873,7 +3832,7 @@ checksum = "2f9ed6b3789237c8a0c1c505af1c7eb2c560df6186f01b098c3a1064ea532f38"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -3955,60 +3914,6 @@ dependencies = [
  "chacha20poly1305",
  "generic-array 0.14.7",
  "log",
- "parity-scale-codec",
- "rand_chacha 0.3.1",
- "scale-info",
- "serde",
- "serde_cbor",
- "serde_json",
- "sha2 0.10.8",
- "sha3",
- "w3f-bls",
-]
-
-[[package]]
-name = "etf-crypto-primitives"
-version = "0.2.4"
-source = "git+https://github.com/ideal-lab5/etf-sdk.git?branch=main#1bdfddc0c8b01cab2d0bc95b30768215f3be4d25"
-dependencies = [
- "aes-gcm",
- "ark-bls12-377",
- "ark-bls12-381",
- "ark-ec",
- "ark-ff 0.4.2",
- "ark-poly",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
- "array-bytes 6.2.3",
- "chacha20poly1305",
- "generic-array 0.14.7",
- "parity-scale-codec",
- "rand_chacha 0.3.1",
- "scale-info",
- "serde",
- "serde_cbor",
- "serde_json",
- "sha2 0.10.8",
- "sha3",
- "w3f-bls",
-]
-
-[[package]]
-name = "etf-crypto-primitives"
-version = "0.2.4"
-source = "git+https://github.com/ideal-lab5/etf-sdk/?branch=tony/dev#159ed603ca8a31b7d2e5f4437c62411c4d1fd743"
-dependencies = [
- "aes-gcm",
- "ark-bls12-377",
- "ark-bls12-381",
- "ark-ec",
- "ark-ff 0.4.2",
- "ark-poly",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
- "array-bytes 6.2.3",
- "chacha20poly1305",
- "generic-array 0.14.7",
  "parity-scale-codec",
  "rand_chacha 0.3.1",
  "scale-info",
@@ -4147,7 +4052,7 @@ dependencies = [
  "prettyplease 0.2.20",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -4209,7 +4114,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -4489,7 +4394,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -4634,7 +4539,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "sp-crypto-hashing",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -4646,7 +4551,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -4656,48 +4561,7 @@ source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
-]
-
-[[package]]
-name = "frame-support-test"
-version = "3.0.0"
-source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1f08ed576063e678539edafdf3a589ff3989e"
-dependencies = [
- "frame-benchmarking",
- "frame-executive",
- "frame-metadata",
- "frame-support",
- "frame-support-test-pallet",
- "frame-system",
- "parity-scale-codec",
- "pretty_assertions",
- "rustversion",
- "scale-info",
- "serde",
- "sp-api",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-metadata-ir",
- "sp-runtime",
- "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
- "sp-version",
- "static_assertions",
- "trybuild",
-]
-
-[[package]]
-name = "frame-support-test-pallet"
-version = "4.0.0-dev"
-source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1f08ed576063e678539edafdf3a589ff3989e"
-dependencies = [
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-runtime",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -4883,7 +4747,7 @@ checksum = "87750cf4b7a4c0625b1529e4c543c2182106e4dedc60a2a6455e00d212c489ac"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -5820,7 +5684,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -6687,7 +6551,7 @@ dependencies = [
  "macro_magic_core",
  "macro_magic_macros",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -6701,7 +6565,7 @@ dependencies = [
  "macro_magic_core_macros",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -6712,7 +6576,7 @@ checksum = "b02abfe41815b5bd98dbd4260173db2c116dda171dc0fe7838cb206333b83308"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -6723,7 +6587,7 @@ checksum = "73ea28ee64b88876bf45277ed9a5817c1817df061a74f2b988971a12570e5869"
 dependencies = [
  "macro_magic_core",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -6997,7 +6861,7 @@ dependencies = [
  "cfg-if",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -7135,7 +6999,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
  "synstructure 0.13.1",
 ]
 
@@ -7168,6 +7032,7 @@ dependencies = [
 [[package]]
 name = "murmur-core"
 version = "0.1.0"
+source = "git+https://github.com/ideal-lab5/murmur.git?branch=dev#990808ddf11054168398663dfe727a42704c15d4"
 dependencies = [
  "ark-bls12-377",
  "ark-ff 0.4.2",
@@ -7175,7 +7040,7 @@ dependencies = [
  "ark-std 0.4.0",
  "array-bytes 6.2.3",
  "ckb-merkle-mountain-range",
- "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk/?branch=tony/dev)",
+ "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk.git?branch=dev)",
  "hex",
  "parity-scale-codec",
  "serde",
@@ -7207,7 +7072,7 @@ checksum = "254a5372af8fc138e36684761d3c0cdb758a4410e938babcff1c860ce14ddbfc"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -7364,7 +7229,7 @@ dependencies = [
  "clap 4.5.15",
  "clap_complete",
  "criterion",
- "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk.git?branch=w3fbls-migration)",
+ "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk.git?branch=dev)",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "frame-metadata-hash-extension",
@@ -7442,7 +7307,7 @@ dependencies = [
  "sp-consensus",
  "sp-consensus-aura",
  "sp-consensus-babe",
- "sp-consensus-beefy-etf",
+ "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
  "sp-consensus-grandpa",
  "sp-core",
  "sp-crypto-ec-utils 0.10.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
@@ -7555,7 +7420,6 @@ dependencies = [
  "sp-blockchain",
  "sp-consensus",
  "sp-consensus-babe",
- "sp-consensus-beefy-etf",
  "sp-keystore",
  "sp-runtime",
  "sp-statement-store",
@@ -7711,7 +7575,7 @@ dependencies = [
  "sp-authority-discovery",
  "sp-block-builder",
  "sp-consensus-babe",
- "sp-consensus-beefy-etf",
+ "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git)",
  "sp-consensus-grandpa",
  "sp-core",
  "sp-genesis-builder",
@@ -7853,7 +7717,7 @@ checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -7998,7 +7862,7 @@ checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -8374,33 +8238,25 @@ dependencies = [
 [[package]]
 name = "pallet-beefy-etf"
 version = "28.0.0"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-377",
  "ark-serialize 0.4.2",
  "ark-std 0.4.0",
- "frame-election-provider-support",
  "frame-support",
  "frame-system",
  "getrandom 0.2.15",
  "log",
  "pallet-authorship",
- "pallet-balances",
  "pallet-etf",
- "pallet-offences",
  "pallet-session",
- "pallet-staking",
- "pallet-staking-reward-curve",
- "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-consensus-beefy-etf",
- "sp-core",
- "sp-io",
+ "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
  "sp-runtime",
  "sp-session",
  "sp-staking",
- "sp-state-machine",
  "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
 ]
 
@@ -8432,6 +8288,7 @@ dependencies = [
 [[package]]
 name = "pallet-beefy-mmr-etf"
 version = "28.0.0"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "array-bytes 6.2.3",
  "binary-merkle-tree",
@@ -8439,18 +8296,16 @@ dependencies = [
  "frame-system",
  "log",
  "pallet-beefy-etf",
- "pallet-etf",
  "pallet-mmr",
  "pallet-session",
  "parity-scale-codec",
  "scale-info",
  "serde",
  "sp-api",
- "sp-consensus-beefy-etf",
+ "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-staking",
  "sp-state-machine",
  "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
 ]
@@ -8719,7 +8574,7 @@ source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -8877,37 +8732,24 @@ dependencies = [
 [[package]]
 name = "pallet-etf"
 version = "28.0.0"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-377",
  "ark-serialize 0.4.2",
  "ark-std 0.4.0",
- "array-bytes 6.2.3",
- "binary-merkle-tree",
- "frame-election-provider-support",
  "frame-support",
  "frame-system",
  "getrandom 0.2.15",
  "log",
  "pallet-authorship",
- "pallet-balances",
- "pallet-beefy-etf",
- "pallet-beefy-mmr-etf",
- "pallet-mmr",
- "pallet-offences",
  "pallet-session",
- "pallet-staking",
- "pallet-staking-reward-curve",
- "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-consensus-beefy-etf",
- "sp-core",
- "sp-io",
+ "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
  "sp-runtime",
  "sp-session",
  "sp-staking",
- "sp-state-machine",
  "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
 ]
 
@@ -9198,31 +9040,25 @@ dependencies = [
 [[package]]
 name = "pallet-murmur"
 version = "4.0.0-dev"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-381",
  "ark-serialize 0.4.2",
- "ark-std 0.4.0",
  "array-bytes 4.2.0",
  "ckb-merkle-mountain-range",
  "frame-benchmarking",
  "frame-support",
- "frame-support-test",
  "frame-system",
- "hex",
  "log",
  "murmur-core",
- "pallet-balances",
  "pallet-proxy 28.1.0",
  "pallet-randomness-beacon",
- "pallet-timestamp",
  "parity-scale-codec",
  "primitive-types",
- "rand_chacha 0.3.1",
  "scale-info",
  "serde",
  "sha3",
  "sp-core",
- "sp-io",
  "sp-runtime",
  "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
 ]
@@ -9468,15 +9304,13 @@ dependencies = [
 [[package]]
 name = "pallet-proxy"
 version = "28.1.0"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
- "pallet-balances",
- "pallet-utility",
  "parity-scale-codec",
  "scale-info",
- "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
@@ -9484,7 +9318,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-randomness-beacon"
-version = "28.0.0"
+version = "1.0.0"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-377",
  "ark-ff 0.4.2",
@@ -9492,32 +9327,22 @@ dependencies = [
  "ark-std 0.4.0",
  "array-bytes 6.2.3",
  "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk.git?branch=dev)",
- "frame-election-provider-support",
  "frame-support",
  "frame-system",
  "log",
  "pallet-authorship",
- "pallet-balances",
  "pallet-beefy-etf",
- "pallet-beefy-mmr-etf",
  "pallet-etf",
- "pallet-mmr",
  "pallet-session",
- "pallet-staking",
- "pallet-staking-reward-curve",
- "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "serde",
  "sha2 0.10.8",
  "sha3",
- "sp-consensus-beefy-etf",
- "sp-core",
- "sp-io",
+ "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
  "sp-runtime",
  "sp-session",
  "sp-staking",
- "sp-state-machine",
  "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
  "w3f-bls",
 ]
@@ -9663,34 +9488,20 @@ dependencies = [
 [[package]]
 name = "pallet-scheduler"
 version = "4.0.0-dev"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
- "ark-bls12-381",
- "ark-crypto-primitives",
- "ark-ec",
- "ark-ff 0.4.2",
- "ark-poly",
- "ark-serialize 0.4.2",
- "ark-std 0.4.0",
  "docify",
- "etf-crypto-primitives 0.2.4 (git+https://github.com/ideal-lab5/etf-sdk.git?branch=main)",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
- "pallet-etf",
- "pallet-insecure-randomness-collective-flip",
- "pallet-preimage",
  "pallet-randomness-beacon",
- "pallet-timestamp",
  "parity-scale-codec",
- "rand_chacha 0.3.1",
  "scale-info",
- "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std 14.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
  "sp-weights",
- "substrate-test-utils",
 ]
 
 [[package]]
@@ -9826,7 +9637,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -10495,7 +10306,7 @@ dependencies = [
  "pest_meta",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -10536,7 +10347,7 @@ checksum = "2f38a4412a78282e09a2cf38d195ea5420d15ba0602cb375210efbc877243965"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -12206,7 +12017,7 @@ dependencies = [
  "polkavm-common",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -12216,7 +12027,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ba81f7b5faac81e528eb6158a6f3c9e0bb1008e0ffa19653bc8dea925ecb429"
 dependencies = [
  "polkavm-derive-impl",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -12357,16 +12168,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pretty_assertions"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af7cee1a6c8a5b9208b3cb1061f10c0cb689087b3d8ce85fb9d2dd7a29b6ba66"
-dependencies = [
- "diff",
- "yansi",
-]
-
-[[package]]
 name = "prettyplease"
 version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12383,7 +12184,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f12335488a2f3b0a83b14edad48dca9879ce89b2edd10e80237e4e852dd645e"
 dependencies = [
  "proc-macro2",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -12477,7 +12278,7 @@ checksum = "834da187cfe638ae8abb0203f0b33e5ccdb02a28e7199f2f47b3e2754f50edca"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -12523,7 +12324,7 @@ checksum = "440f724eba9f6996b75d63681b0a92b06947f1457076d503a4d2e2c8f56442b8"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -12605,7 +12406,7 @@ dependencies = [
  "prost 0.12.6",
  "prost-types 0.12.6",
  "regex",
- "syn 2.0.72",
+ "syn 2.0.77",
  "tempfile",
 ]
 
@@ -12632,7 +12433,7 @@ dependencies = [
  "itertools 0.12.1",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -12767,9 +12568,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.36"
+version = "1.0.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fa76aaf39101c457836aec0ce2316dbdc3ab723cdda1c6bd4e6ad4208acaca7"
+checksum = "b5b9d34b8991d19d98081b46eacdd8eb58c6f2b201139f7c5f643cc155a633af"
 dependencies = [
  "proc-macro2",
 ]
@@ -12984,7 +12785,7 @@ checksum = "bcc303e793d3734489387d205e9b186fac9c6cfacedd98cbb2e8a5943595f3e6"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -13079,18 +12880,18 @@ dependencies = [
 [[package]]
 name = "ring"
 version = "0.1.0"
-source = "git+https://github.com/w3f/ring-proof#665f5f51af5734c7b6d90b985dd6861d4c5b4752"
+source = "git+https://github.com/w3f/ring-proof#1472ce9cd87cee49c56ce7869a0aba872d837c51"
 dependencies = [
  "ark-ec",
  "ark-ff 0.4.2",
  "ark-poly",
  "ark-serialize 0.4.2",
  "ark-std 0.4.0",
+ "ark-transcript 0.0.2 (git+https://github.com/w3f/ring-vrf)",
  "arrayvec 0.7.4",
  "blake2 0.10.6",
  "common",
  "fflonk",
- "merlin",
 ]
 
 [[package]]
@@ -13632,7 +13433,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -13879,6 +13680,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-beefy-etf"
 version = "13.0.0"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-377",
  "ark-serialize 0.4.2",
@@ -13890,34 +13692,26 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "parking_lot 0.12.3",
- "sc-block-builder",
  "sc-client-api",
  "sc-consensus",
  "sc-network",
  "sc-network-gossip",
  "sc-network-sync",
- "sc-network-test",
  "sc-network-types",
  "sc-transaction-pool-api",
  "sc-utils",
- "serde",
  "sp-api",
  "sp-application-crypto",
  "sp-arithmetic",
  "sp-blockchain",
  "sp-consensus",
- "sp-consensus-beefy-etf",
- "sp-consensus-grandpa",
+ "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
  "sp-core",
  "sp-crypto-hashing",
- "sp-keyring",
  "sp-keystore",
  "sp-mmr-primitives",
  "sp-runtime",
- "sp-tracing 16.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
  "substrate-prometheus-endpoint",
- "substrate-test-runtime-client",
- "tempfile",
  "thiserror",
  "tokio",
  "w3f-bls",
@@ -13927,6 +13721,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-beefy-etf-rpc"
 version = "13.0.0"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "futures",
  "jsonrpsee",
@@ -13936,13 +13731,10 @@ dependencies = [
  "sc-consensus-beefy-etf",
  "sc-rpc",
  "serde",
- "serde_json",
- "sp-consensus-beefy-etf",
+ "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
  "sp-core",
  "sp-runtime",
- "substrate-test-runtime-client",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -14423,38 +14215,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sc-network-test"
-version = "0.8.0"
-source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1f08ed576063e678539edafdf3a589ff3989e"
-dependencies = [
- "async-trait",
- "futures",
- "futures-timer",
- "libp2p",
- "log",
- "parking_lot 0.12.3",
- "rand 0.8.5",
- "sc-block-builder",
- "sc-client-api",
- "sc-consensus",
- "sc-network",
- "sc-network-common",
- "sc-network-light",
- "sc-network-sync",
- "sc-network-types",
- "sc-service",
- "sc-utils",
- "sp-blockchain",
- "sp-consensus",
- "sp-core",
- "sp-runtime",
- "sp-tracing 16.0.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
- "substrate-test-runtime",
- "substrate-test-runtime-client",
- "tokio",
-]
-
-[[package]]
 name = "sc-network-transactions"
 version = "0.33.0"
 source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1f08ed576063e678539edafdf3a589ff3989e"
@@ -14881,7 +14641,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -15216,9 +14976,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.207"
+version = "1.0.210"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5665e14a49a4ea1b91029ba7d3bca9f299e1f7cfa194388ccc20f14743e784f2"
+checksum = "c8e3592472072e6e22e0a54d5904d9febf8508f65fb8552499a1abc7d1078c3a"
 dependencies = [
  "serde_derive",
 ]
@@ -15253,13 +15013,13 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.207"
+version = "1.0.210"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6aea2634c86b0e8ef2cfdc0c340baede54ec27b1e46febd7f80dffb2aa44a00e"
+checksum = "243902eda00fad750862fc144cea25caca5e20d615af0a81bee94ca738f1df1f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -15998,7 +15758,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -16168,8 +15928,8 @@ dependencies = [
 [[package]]
 name = "sp-consensus-beefy-etf"
 version = "13.0.0"
+source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
- "array-bytes 6.2.3",
  "lazy_static",
  "parity-scale-codec",
  "scale-info",
@@ -16183,7 +15943,26 @@ dependencies = [
  "sp-mmr-primitives",
  "sp-runtime",
  "strum 0.24.1",
- "w3f-bls",
+]
+
+[[package]]
+name = "sp-consensus-beefy-etf"
+version = "13.0.0"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
+dependencies = [
+ "lazy_static",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-crypto-hashing",
+ "sp-io",
+ "sp-keystore",
+ "sp-mmr-primitives",
+ "sp-runtime",
+ "strum 0.24.1",
 ]
 
 [[package]]
@@ -16313,7 +16092,7 @@ dependencies = [
 [[package]]
 name = "sp-crypto-ec-utils"
 version = "0.10.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#819a5818284a96a5a5bd65ce67e69bab860d4534"
+source = "git+https://github.com/paritytech/polkadot-sdk#c77095f51119d2eccdc54d2f3518bed0ffbd6d53"
 dependencies = [
  "ark-bls12-377",
  "ark-bls12-377-ext",
@@ -16350,7 +16129,7 @@ source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1
 dependencies = [
  "quote",
  "sp-crypto-hashing",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -16369,17 +16148,17 @@ source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
 name = "sp-debug-derive"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#819a5818284a96a5a5bd65ce67e69bab860d4534"
+source = "git+https://github.com/paritytech/polkadot-sdk#c77095f51119d2eccdc54d2f3518bed0ffbd6d53"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -16395,7 +16174,7 @@ dependencies = [
 [[package]]
 name = "sp-externalities"
 version = "0.25.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#819a5818284a96a5a5bd65ce67e69bab860d4534"
+source = "git+https://github.com/paritytech/polkadot-sdk#c77095f51119d2eccdc54d2f3518bed0ffbd6d53"
 dependencies = [
  "environmental",
  "parity-scale-codec",
@@ -16612,7 +16391,7 @@ dependencies = [
 [[package]]
 name = "sp-runtime-interface"
 version = "24.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#819a5818284a96a5a5bd65ce67e69bab860d4534"
+source = "git+https://github.com/paritytech/polkadot-sdk#c77095f51119d2eccdc54d2f3518bed0ffbd6d53"
 dependencies = [
  "bytes",
  "impl-trait-for-tuples",
@@ -16638,20 +16417,20 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
 name = "sp-runtime-interface-proc-macro"
 version = "17.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#819a5818284a96a5a5bd65ce67e69bab860d4534"
+source = "git+https://github.com/paritytech/polkadot-sdk#c77095f51119d2eccdc54d2f3518bed0ffbd6d53"
 dependencies = [
  "Inflector",
  "expander",
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -16733,7 +16512,7 @@ source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1
 [[package]]
 name = "sp-std"
 version = "14.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#819a5818284a96a5a5bd65ce67e69bab860d4534"
+source = "git+https://github.com/paritytech/polkadot-sdk#c77095f51119d2eccdc54d2f3518bed0ffbd6d53"
 
 [[package]]
 name = "sp-storage"
@@ -16750,7 +16529,7 @@ dependencies = [
 [[package]]
 name = "sp-storage"
 version = "19.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#819a5818284a96a5a5bd65ce67e69bab860d4534"
+source = "git+https://github.com/paritytech/polkadot-sdk#c77095f51119d2eccdc54d2f3518bed0ffbd6d53"
 dependencies = [
  "impl-serde",
  "parity-scale-codec",
@@ -16785,7 +16564,7 @@ dependencies = [
 [[package]]
 name = "sp-tracing"
 version = "16.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#819a5818284a96a5a5bd65ce67e69bab860d4534"
+source = "git+https://github.com/paritytech/polkadot-sdk#c77095f51119d2eccdc54d2f3518bed0ffbd6d53"
 dependencies = [
  "parity-scale-codec",
  "tracing",
@@ -16864,7 +16643,7 @@ dependencies = [
  "parity-scale-codec",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -16882,8 +16661,9 @@ dependencies = [
 [[package]]
 name = "sp-wasm-interface"
 version = "20.0.0"
-source = "git+https://github.com/paritytech/polkadot-sdk#819a5818284a96a5a5bd65ce67e69bab860d4534"
+source = "git+https://github.com/paritytech/polkadot-sdk#c77095f51119d2eccdc54d2f3518bed0ffbd6d53"
 dependencies = [
+ "anyhow",
  "impl-trait-for-tuples",
  "log",
  "parity-scale-codec",
@@ -17263,7 +17043,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -17475,15 +17255,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "substrate-test-utils"
-version = "4.0.0-dev"
-source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1f08ed576063e678539edafdf3a589ff3989e"
-dependencies = [
- "futures",
- "tokio",
-]
-
-[[package]]
 name = "substrate-wasm-builder"
 version = "17.0.0"
 source = "git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing#0bd1f08ed576063e678539edafdf3a589ff3989e"
@@ -17542,9 +17313,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.72"
+version = "2.0.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc4b9b9bf2add8093d3f2c0204471e951b2285580335de42f9d2534f3ae7a8af"
+checksum = "9f35bcdf61fd8e7be6caf75f429fdca8beb3ed76584befb503b1569faee373ed"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -17560,7 +17331,7 @@ dependencies = [
  "paste",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -17583,7 +17354,7 @@ checksum = "c8af7666ab7b6390ab78131fb5b0fce11d6b7a6951602017c35fa82800708971"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -17704,7 +17475,7 @@ checksum = "e4c60d69f36615a077cc7663b9cb8e42275722d23e58a7fa3d2c7f2915d09d04"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -17715,7 +17486,7 @@ checksum = "a4558b58466b9ad7ca0f102865eccc95938dca1a74a856f2b57b6629050da261"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -17878,7 +17649,7 @@ checksum = "693d596312e88961bc67d7f1f97af8a70227d9f90c31bba5806eec004978d752"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -18084,7 +17855,7 @@ checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -18127,7 +17898,7 @@ dependencies = [
  "proc-macro-crate 3.1.0",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -18279,21 +18050,6 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
-
-[[package]]
-name = "trybuild"
-version = "1.0.99"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "207aa50d36c4be8d8c6ea829478be44a372c6a77669937bb39c698e52f1491e8"
-dependencies = [
- "dissimilar",
- "glob",
- "serde",
- "serde_derive",
- "serde_json",
- "termcolor",
- "toml 0.8.19",
-]
 
 [[package]]
 name = "tt-call"
@@ -18584,7 +18340,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
  "wasm-bindgen-shared",
 ]
 
@@ -18618,7 +18374,7 @@ checksum = "e94f17b526d0a461a191c78ea52bbce64071ed5c04c9ffe424dcb38f74171bb7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -19522,7 +19278,7 @@ dependencies = [
  "Inflector",
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -19562,12 +19318,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "yansi"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
-
-[[package]]
 name = "yasna"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -19594,7 +19344,7 @@ checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -19614,7 +19364,7 @@ checksum = "ce36e65b0d2999d2aafac989fb249189a141aee1f53c612c1f37d72631959f69"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.72",
+ "syn 2.0.77",
 ]
 
 [[package]]
