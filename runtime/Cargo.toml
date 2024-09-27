@@ -70,13 +70,13 @@ frame = { package = "polkadot-sdk-frame", git = "https://github.com/ideal-lab5/p
 # pallet-randomness-beacon = { path = "../../pallets/pallets/randomness-beacon", default-features = false }
 # pallet-beefy-etf = { path = "../../pallets/pallets/beefy-etf",  default-features = false }
 # pallet-beefy-mmr-etf = { path = "../../pallets/pallets/beefy-mmr-etf",  default-features = false }
-pallet-scheduler = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
-pallet-proxy = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
-pallet-murmur = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
-pallet-etf = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
-pallet-randomness-beacon = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
-pallet-beefy-etf = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
-pallet-beefy-mmr-etf = { git = "https://github.com/driemworks/pallets.git", branch = "main",  default-features = false }
+pallet-scheduler = { git = "https://github.com/driemworks/pallets.git", default-features = false }
+pallet-proxy = { git = "https://github.com/driemworks/pallets.git", default-features = false }
+pallet-murmur = { git = "https://github.com/driemworks/pallets.git",  default-features = false }
+pallet-etf = { git = "https://github.com/driemworks/pallets.git", default-features = false }
+pallet-randomness-beacon = { git = "https://github.com/driemworks/pallets.git",  default-features = false }
+pallet-beefy-etf = { git = "https://github.com/driemworks/pallets.git",  default-features = false }
+pallet-beefy-mmr-etf = { git = "https://github.com/driemworks/pallets.git",  default-features = false }
 
 frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 frame-executive = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }

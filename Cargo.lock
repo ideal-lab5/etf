@@ -7307,7 +7307,7 @@ dependencies = [
  "sp-consensus",
  "sp-consensus-aura",
  "sp-consensus-babe",
- "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
+ "sp-consensus-beefy-etf",
  "sp-consensus-grandpa",
  "sp-core",
  "sp-crypto-ec-utils 0.10.0 (git+https://github.com/ideal-lab5/polkadot-sdk.git?branch=testing)",
@@ -7575,7 +7575,7 @@ dependencies = [
  "sp-authority-discovery",
  "sp-block-builder",
  "sp-consensus-babe",
- "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git)",
+ "sp-consensus-beefy-etf",
  "sp-consensus-grandpa",
  "sp-core",
  "sp-genesis-builder",
@@ -8238,7 +8238,7 @@ dependencies = [
 [[package]]
 name = "pallet-beefy-etf"
 version = "28.0.0"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-377",
  "ark-serialize 0.4.2",
@@ -8253,7 +8253,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
+ "sp-consensus-beefy-etf",
  "sp-runtime",
  "sp-session",
  "sp-staking",
@@ -8288,7 +8288,7 @@ dependencies = [
 [[package]]
 name = "pallet-beefy-mmr-etf"
 version = "28.0.0"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "array-bytes 6.2.3",
  "binary-merkle-tree",
@@ -8302,7 +8302,7 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-api",
- "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
+ "sp-consensus-beefy-etf",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -8732,7 +8732,7 @@ dependencies = [
 [[package]]
 name = "pallet-etf"
 version = "28.0.0"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-377",
  "ark-serialize 0.4.2",
@@ -8746,7 +8746,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
+ "sp-consensus-beefy-etf",
  "sp-runtime",
  "sp-session",
  "sp-staking",
@@ -9040,7 +9040,7 @@ dependencies = [
 [[package]]
 name = "pallet-murmur"
 version = "4.0.0-dev"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-381",
  "ark-serialize 0.4.2",
@@ -9304,7 +9304,7 @@ dependencies = [
 [[package]]
 name = "pallet-proxy"
 version = "28.1.0"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -9319,7 +9319,7 @@ dependencies = [
 [[package]]
 name = "pallet-randomness-beacon"
 version = "1.0.0"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-377",
  "ark-ff 0.4.2",
@@ -9339,7 +9339,7 @@ dependencies = [
  "serde",
  "sha2 0.10.8",
  "sha3",
- "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
+ "sp-consensus-beefy-etf",
  "sp-runtime",
  "sp-session",
  "sp-staking",
@@ -9488,7 +9488,7 @@ dependencies = [
 [[package]]
 name = "pallet-scheduler"
 version = "4.0.0-dev"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "docify",
  "frame-benchmarking",
@@ -13680,7 +13680,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-beefy-etf"
 version = "13.0.0"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "ark-bls12-377",
  "ark-serialize 0.4.2",
@@ -13705,7 +13705,7 @@ dependencies = [
  "sp-arithmetic",
  "sp-blockchain",
  "sp-consensus",
- "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
+ "sp-consensus-beefy-etf",
  "sp-core",
  "sp-crypto-hashing",
  "sp-keystore",
@@ -13721,7 +13721,7 @@ dependencies = [
 [[package]]
 name = "sc-consensus-beefy-etf-rpc"
 version = "13.0.0"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
+source = "git+https://github.com/driemworks/pallets.git#af828c4ccb52275aff837d23685ce58f040889b8"
 dependencies = [
  "futures",
  "jsonrpsee",
@@ -13731,7 +13731,7 @@ dependencies = [
  "sc-consensus-beefy-etf",
  "sc-rpc",
  "serde",
- "sp-consensus-beefy-etf 13.0.0 (git+https://github.com/driemworks/pallets.git?branch=main)",
+ "sp-consensus-beefy-etf",
  "sp-core",
  "sp-runtime",
  "thiserror",
@@ -15923,26 +15923,6 @@ dependencies = [
  "sp-mmr-primitives",
  "sp-runtime",
  "strum 0.26.3",
-]
-
-[[package]]
-name = "sp-consensus-beefy-etf"
-version = "13.0.0"
-source = "git+https://github.com/driemworks/pallets.git?branch=main#af828c4ccb52275aff837d23685ce58f040889b8"
-dependencies = [
- "lazy_static",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-api",
- "sp-application-crypto",
- "sp-core",
- "sp-crypto-hashing",
- "sp-io",
- "sp-keystore",
- "sp-mmr-primitives",
- "sp-runtime",
- "strum 0.24.1",
 ]
 
 [[package]]
