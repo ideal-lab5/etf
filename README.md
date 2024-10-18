@@ -18,10 +18,16 @@ cargo build --release
 
 **Docker**
 
-From the root directory, run:
+To build the Docker image, navigate to the root directory and run one of the following commands, depending on your target architecture:
 
-``` sh
-docker build .
+For AMD64 architecture:
+```sh
+docker build -f Dockerfile.amd64 -t etf:amd64 .
+```
+
+For ARM64 architecture:
+```sh
+docker build -f Dockerfile.arm64 -t etf:arm64 .
 ```
 
 ### Testing
