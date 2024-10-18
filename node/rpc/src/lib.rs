@@ -171,7 +171,6 @@ where
 		subscription_executor,
 		finality_provider,
 	} = grandpa;
-
 	let chain_name = chain_spec.name().to_string();
 	let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
 	let properties = chain_spec.properties();

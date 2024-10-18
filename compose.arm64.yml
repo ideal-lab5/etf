@@ -1,0 +1,38 @@
+version: '3.7'
+services:
+  node_alice:
+    image: "ideallabs/etf-arm64"
+    ports:
+      - "30333:30333"
+      - "9933:9933"
+      - "9944:9944"
+    command: >
+      --tmp
+      --dev
+      --unsafe-rpc-external
+      --rpc-cors all
+      --alice
+      --node-key 0000000000000000000000000000000000000000000000000000000000000001
+    links:
+      - "idn_explorer"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "ws://localhost:9944"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      local_testnet:
+        aliases:
+          - alice
+
+  idn_explorer:
+    image: "ideallabs/etf-explorer:local"
+    ports:
+      - "3000:3000"
+    networks:
+      local_testnet:
+        aliases: 
+          - dapp
+
+networks:
+  local_testnet:

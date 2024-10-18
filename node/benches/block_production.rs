@@ -18,7 +18,7 @@
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughput};
 
-use kitchensink_runtime::{constants::currency::*, BalancesCall};
+use node_template_runtime::{constants::currency::*, BalancesCall};
 use crate::service::{create_extrinsic, FullClient};
 use sc_block_builder::{BlockBuilderBuilder, BuiltBlock};
 use sc_consensus::{
@@ -109,9 +109,9 @@ fn new_node(tokio_handle: Handle) -> crate::service::NewFullBase {
 }
 
 fn extrinsic_set_time(now: u64) -> OpaqueExtrinsic {
-	kitchensink_runtime::UncheckedExtrinsic {
+	node_template_runtime::UncheckedExtrinsic {
 		signature: None,
-		function: kitchensink_runtime::RuntimeCall::Timestamp(pallet_timestamp::Call::set { now }),
+		function: node_template_runtime::RuntimeCall::Timestamp(pallet_timestamp::Call::set { now }),
 	}
 	.into()
 }

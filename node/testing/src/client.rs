@@ -16,13 +16,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! Utilities to build a `TestClient` for `kitchensink-runtime`.
+//! Utilities to build a `TestClient` for `node_template-runtime`.
 
 use sp_runtime::BuildStorage;
 /// Re-export test-client utilities.
 pub use substrate_test_client::*;
 
-/// Call executor for `kitchensink-runtime` `TestClient`.
+/// Call executor for `node_template-runtime` `TestClient`.
 use node_cli::service::RuntimeExecutor;
 
 /// Default backend type.
@@ -33,7 +33,7 @@ pub type Client = client::Client<
 	Backend,
 	client::LocalCallExecutor<node_primitives::Block, Backend, RuntimeExecutor>,
 	node_primitives::Block,
-	kitchensink_runtime::RuntimeApi,
+	node_template_runtime::RuntimeApi,
 >;
 
 /// Genesis configuration parameters for `TestClient`.
@@ -45,7 +45,7 @@ impl substrate_test_client::GenesisInit for GenesisParameters {
 		let mut storage = crate::genesis::config().build_storage().unwrap();
 		storage.top.insert(
 			sp_core::storage::well_known_keys::CODE.to_vec(),
-			kitchensink_runtime::wasm_binary_unwrap().into(),
+			node_template_runtime::wasm_binary_unwrap().into(),
 		);
 		storage
 	}

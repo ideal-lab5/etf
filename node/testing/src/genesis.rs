@@ -19,7 +19,7 @@
 //! Genesis Configuration.
 
 use crate::keyring::*;
-use kitchensink_runtime::{
+use node_template_runtime::{
 	constants::currency::*, AccountId, AssetsConfig, BalancesConfig, IndicesConfig,
 	RuntimeGenesisConfig, SessionConfig, SocietyConfig, StakerStatus, StakingConfig,
 };
