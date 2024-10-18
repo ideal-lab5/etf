@@ -13,47 +13,26 @@ services:
       --rpc-cors all
       --alice
       --node-key 0000000000000000000000000000000000000000000000000000000000000001
+    links:
+      - "idn_explorer"
     healthcheck:
       test: ["CMD", "curl", "-f", "ws://localhost:9944"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 3
     networks:
-      testing_net:
-        ipv4_address: 172.28.1.1
+      local_testnet:
         aliases:
           - alice
 
-  # node_bob:
-  #   image: "ideallabs/etf"
-  #   ports:
-  #     - "30334:30333"
-  #     - "9934:9933"
-  #     - "9945:9944"
-  #   command: >
-  #     --tmp
-  #     --dev
-  #     --unsafe-rpc-external
-  #     --rpc-cors all
-  #     --bob
-  #     --bootnodes /ip4/172.28.1.1/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp
-  #   depends_on:
-  #     - node_alice
-  #       # condition: service_healthy
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "ws://localhost:9944"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   networks:
-  #     testing_net:
-  #       ipv4_address: 172.28.1.2
-  #       aliases:
-  #         - bob
+  idn_explorer:
+    image: "ideallabs/etf-explorer:local"
+    ports:
+      - "3000:3000"
+    networks:
+      local_testnet:
+        aliases: 
+          - dapp
 
 networks:
-  testing_net:
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.28.0.0/16
+  local_testnet:
