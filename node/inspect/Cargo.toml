@@ -18,14 +18,14 @@ targets = ["x86_64-unknown-linux-gnu"]
 clap = { version = "4.5.3", features = ["derive"] }
 codec = { package = "parity-scale-codec", version = "3.6.1" }
 thiserror = { workspace = true }
-sc-cli = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
-sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
-sc-service = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev",  default-features = false }
-sp-blockchain = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
-sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
-sp-io = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
-sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
-sp-statement-store = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "tony/dev" }
+sc-cli = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
+sc-client-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
+sc-service = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
+sp-blockchain = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
+sp-core = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
+sp-io = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
+sp-runtime = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
+sp-statement-store = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
 
 [features]
 runtime-benchmarks = [
