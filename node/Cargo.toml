@@ -53,8 +53,7 @@ rand = "0.8"
 sp-authority-discovery = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 sp-consensus-aura = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 sp-consensus-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
-# beefy-primitives = { package = "sp-consensus-beefy-etf", path = "../../pallets/primitives/consensus/beefy-etf", features = ["bls-experimental"]}
-beefy-primitives = { package = "sp-consensus-beefy-etf", git = "https://github.com/driemworks/pallets.git", features = ["bls-experimental"] }
+beefy-primitives = { package = "sp-consensus-beefy-etf", git = "https://github.com/ideal-lab5/idn-sdk.git", features = ["bls-experimental"] }
 
 grandpa-primitives = { package = "sp-consensus-grandpa", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 sp-api = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
@@ -88,10 +87,7 @@ sc-network-statement = { git = "https://github.com/ideal-lab5/polkadot-sdk.git",
 sc-consensus-slots = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 sc-consensus-aura = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 sc-consensus-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
-# sc-consensus-babe = { path = "../client/consensus/babe" }
-# beefy = { package = "sc-consensus-beefy-etf-etf", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true, features = ["bls-experimental"] }
-# beefy = { package = "sc-consensus-beefy-etf", path = "../../pallets/client/consensus/beefy-etf", features = ["bls-experimental"] }
-beefy = { package = "sc-consensus-beefy-etf", git = "https://github.com/driemworks/pallets.git", default-features = false, features = ["bls-experimental"] }
+beefy = { package = "sc-consensus-beefy-etf", git = "https://github.com/ideal-lab5/idn-sdk.git", default-features = true, features = ["bls-experimental"] }
 grandpa = { package = "sc-consensus-grandpa", git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 mmr-gadget = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }
 sc-rpc = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing", default-features = true }

@@ -33,8 +33,7 @@ primitive-types = { version = "0.12.0", default-features = false, features = ["c
 # primitives
 sp-authority-discovery = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false, features = ["serde"] }
 sp-consensus-babe = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false, features = ["serde"] }
-# beefy-primitives = { package = "sp-consensus-beefy-etf", path = "../../pallets/primitives/consensus/beefy-etf", default-features = false, features = ["bls-experimental"]}
-beefy-primitives = { package = "sp-consensus-beefy-etf", git = "https://github.com/driemworks/pallets.git", default-features = false, features = ["bls-experimental"]}
+beefy-primitives = { package = "sp-consensus-beefy-etf", git = "https://github.com/ideal-lab5/idn-sdk.git", default-features = false, features = ["bls-experimental"]}
 sp-consensus-grandpa = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false, features = ["serde"] }
 sp-block-builder = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 sp-genesis-builder = { default-features = false, git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing" }
@@ -62,21 +61,13 @@ frame = { package = "polkadot-sdk-frame", git = "https://github.com/ideal-lab5/p
 	"runtime",
 ]  }
 
-# local dependencies
-# pallet-scheduler = { path = "../../pallets/pallets/scheduler",  default-features = false }
-# pallet-proxy = { path = "../../pallets/pallets/proxy",  default-features = false }
-# pallet-murmur = { path = "../../pallets/pallets/murmur",  default-features = false }
-# pallet-etf = { path = "../../pallets/pallets/etf", default-features = false }
-# pallet-randomness-beacon = { path = "../../pallets/pallets/randomness-beacon", default-features = false }
-# pallet-beefy-etf = { path = "../../pallets/pallets/beefy-etf",  default-features = false }
-# pallet-beefy-mmr-etf = { path = "../../pallets/pallets/beefy-mmr-etf",  default-features = false }
-pallet-scheduler = { git = "https://github.com/driemworks/pallets.git", default-features = false }
-pallet-proxy = { git = "https://github.com/driemworks/pallets.git", default-features = false }
-pallet-murmur = { git = "https://github.com/driemworks/pallets.git",  default-features = false }
-pallet-etf = { git = "https://github.com/driemworks/pallets.git", default-features = false }
-pallet-randomness-beacon = { git = "https://github.com/driemworks/pallets.git",  default-features = false }
-pallet-beefy-etf = { git = "https://github.com/driemworks/pallets.git",  default-features = false }
-pallet-beefy-mmr-etf = { git = "https://github.com/driemworks/pallets.git",  default-features = false }
+pallet-scheduler = { git = "https://github.com/ideal-lab5/idn-sdk.git", default-features = false }
+pallet-proxy = { git = "https://github.com/ideal-lab5/idn-sdk.git", default-features = false }
+pallet-murmur = { git = "https://github.com/ideal-lab5/idn-sdk.git",  default-features = false }
+pallet-etf = { git = "https://github.com/ideal-lab5/idn-sdk.git", default-features = false }
+pallet-randomness-beacon = { git = "https://github.com/ideal-lab5/idn-sdk.git",  default-features = false }
+pallet-beefy-etf = { git = "https://github.com/ideal-lab5/idn-sdk.git",  default-features = false }
+pallet-beefy-mmr-etf = { git = "https://github.com/ideal-lab5/idn-sdk.git",  default-features = false }
 
 frame-metadata-hash-extension = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }
 frame-executive = { git = "https://github.com/ideal-lab5/polkadot-sdk.git", branch = "testing",  default-features = false }

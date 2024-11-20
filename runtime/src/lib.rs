@@ -2596,8 +2596,6 @@ impl pallet_etf::Config for Runtime {
 
 impl pallet_randomness_beacon::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-	// type BeefyId = BeefyId; we inherit this from pallet_etf
-    type MaxPulses = ConstU32<1024>;
 } 
 
 parameter_types! {
